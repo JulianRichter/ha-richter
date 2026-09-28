@@ -1,0 +1,47 @@
+automation:
+  # ====================================================================
+  # Kitchen - Motion Sensor
+  # - Controls kitchen light automatically based on occupancy detection
+  # - Turns light on when motion detected
+  # - Turns light off when motion cleared
+  # ====================================================================
+
+  - id: "kitchen_motion_sensor"
+    alias: "Kitchen - Motion Sensor"
+    mode: single
+    trigger:
+      # Motion detected
+      - trigger: state
+        entity_id: binary_sensor.kitchen_motion_sensor_occupancy
+        to: "on"
+        id: motion_on
+
+      # Motion cleared
+      - trigger: state
+        entity_id: binary_sensor.kitchen_motion_sensor_occupancy
+        to: "off"
+        id: motion_off
+
+    condition: []
+
+    action:
+      - choose:
+          # Motion detected: turn on kitchen light
+          - conditions:
+              - condition: trigger
+                id: motion_on
+            sequence:
+              - action: light.turn_on
+                target:
+                  entity_id: light.kitchen_light
+                data:
+                  brightness: 255
+
+          # Motion cleared: turn off kitchen light
+          - conditions:
+              - condition: trigger
+                id: motion_off
+            sequence:
+              - action: light.turn_off
+                target:
+                  entity_id: light.kitchen_light

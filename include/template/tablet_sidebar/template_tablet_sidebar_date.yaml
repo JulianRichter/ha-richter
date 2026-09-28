@@ -1,0 +1,18 @@
+template:
+  # ====================================================================
+  # Tablet Sidebar - Date
+  # ====================================================================
+
+  # Date display for tablet dashboard sidebar
+  - sensor:
+      - unique_id: tablet_sidebar_date
+        state: "{{now().hour}}:{{now().minute}}"
+        attributes:
+          sidebar_html_text: >
+            {% set days = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] %}
+            {% set months = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'] %}
+            {% set date = as_timestamp( now() ) | timestamp_custom('%d') %}
+            <span class="date">
+              {{ days[now().weekday()] }},
+              {{ date }}. {{ months[now().month-1] }}
+            </span>

@@ -1,0 +1,16 @@
+utility_meter:
+  # ====================================================================
+  # Basic Price Utility Meter
+  # ====================================================================
+
+  # Daily power consumption converted from basic daily price
+  basic_price_kwh_daily:
+    name: Grundpreis
+    source: sensor.template_bs_energy_basic_usage
+    cycle: daily
+
+  # Monthly power consumption converted from basic daily price
+  basic_price_kwh_monthly:
+    name: Grundpreis
+    source: sensor.template_bs_energy_basic_usage
+    cycle: monthly

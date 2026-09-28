@@ -1,0 +1,5 @@
+residents:
+  name: Residents
+  entities:
+    - person.julian
+    - person.xingyang

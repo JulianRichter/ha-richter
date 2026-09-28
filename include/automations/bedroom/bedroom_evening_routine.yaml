@@ -1,0 +1,23 @@
+automation:
+  # ====================================================================
+  # Bedroom - Evening Routine
+  # - Sunset: Closes bedroom roller blinds
+  # ====================================================================
+
+  - id: "bedroom_evening_routine"
+    alias: "Bedroom - Evening Routine"
+    mode: single
+
+    trigger:
+      # Sunset trigger
+      - trigger: sun
+        event: sunset
+
+    condition: []
+
+    action:
+      # Close bedroom roller blinds
+      - action: cover.close_cover
+        target:
+          entity_id: cover.bedroom_roller_blinds
+

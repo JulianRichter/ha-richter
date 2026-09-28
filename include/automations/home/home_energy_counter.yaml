@@ -1,0 +1,26 @@
+automation:
+  # ====================================================================
+  # Home - Energy Basic Price Counter
+  # - Increments hourly counter to track elapsed operational hours
+  # - Supplies runtime base for simulated energy calculations
+  # ====================================================================
+
+  - id: "1644188424632"
+    alias: "Energy - Basic Price Increase Counter"
+    mode: single
+
+    trigger:
+      # Hourly trigger at top of the hour
+      - trigger: time_pattern
+        hours: "*"
+        minutes: "0"
+        seconds: "0"
+
+    condition: []
+
+    action:
+      # Increment hourly counter
+      - action: counter.increment
+        target:
+          entity_id: counter.energy_basic_price_increase_counter
+

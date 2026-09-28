@@ -1,0 +1,9 @@
+input_boolean:
+  ######################################################################
+  # Chinese TTS
+  ######################################################################
+
+  # Enable or disable the Chinese TTS messages in automations
+  home_chinese_tts_enabled:
+    name: Home - Chinese TTS Enabled
+    icon: mdi:translate

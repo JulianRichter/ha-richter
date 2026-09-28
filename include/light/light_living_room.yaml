@@ -1,0 +1,14 @@
+light:
+  # ====================================================================
+  # Living Room Light Group
+  # ====================================================================
+
+  # Group living room lights to control them together
+  - platform: group
+    name: Wohnzimmer Licht
+    unique_id: living_room_light_group
+    entities:
+      - light.living_room_light_1
+      - light.living_room_light_2
+      - light.living_room_light_3
+      - light.living_room_light_4

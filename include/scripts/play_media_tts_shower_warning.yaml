@@ -1,0 +1,116 @@
+script:
+  # ====================================================================
+  # Play Media - TTS Shower Warning
+  # - Plays a natural, caring TTS announcement for bathroom shower humidity changes
+  # - Notifies when humidity is high (prompting to open window) or stabilized (prompting to close)
+  # - Randomly selects from 4 friendly variations to avoid repetitive phrasing
+  # - Announces in German and optionally in Chinese via play_media_tts_message
+  # ====================================================================
+
+  play_media_tts_shower_warning:
+    alias: "Play Media - TTS Shower Warning"
+    mode: queued
+    max: 10
+    icon: mdi:shower-head
+
+    fields:
+      entity_id:
+        name: Speaker
+        description: "Entity ID of the media player to announce on."
+        example: media_player.bathroom
+        required: false
+        selector:
+          entity:
+            domain: media_player
+
+      media_player:
+        name: Speaker (Alternative)
+        description: "Alternative entity ID of the media player to announce on."
+        example: media_player.bathroom
+        required: false
+        selector:
+          entity:
+            domain: media_player
+
+      status:
+        name: Status
+        description: "Humidity status: high (open window) or low / converged (close window)."
+        example: "high"
+        required: true
+        selector:
+          select:
+            options:
+              - "high"
+              - "low"
+              - "converged"
+
+      humidity_sensor:
+        name: Humidity Sensor
+        description: "Optional entity ID of the bathroom humidity sensor."
+        example: sensor.bathroom_multi_sensor_humidity
+        required: false
+        selector:
+          entity:
+            domain: sensor
+            device_class: humidity
+
+    sequence:
+      # Prepare TTS text variables with random variation and humidity formatting
+      - variables:
+          target_player: "{{ media_player | default(entity_id | default('media_player.bathroom', true), true) }}"
+          h_sensor: "{{ humidity_sensor | default('', true) }}"
+          has_humidity: "{{ h_sensor != '' and states(h_sensor) not in ['unavailable', 'unknown', ''] }}"
+          humidity: "{{ states(h_sensor) | float(0) | round if h_sensor != '' else 0 }}"
+          variant: "{{ [1, 2, 3, 4] | random }}"
+          is_high: "{{ status in ['high', 'warning', 'too_high'] }}"
+          message_de: >-
+            {% if is_high %}
+              {% if variant == 1 %}
+                Das war wohl eine schöne warme Dusche! Die Luftfeuchtigkeit im Bad ist ziemlich hoch{% if has_humidity %} – wir liegen bei {{ humidity }} %{% endif %}. Am besten kurz das Fenster aufmachen, damit der Dampf abziehen kann.
+              {% elif variant == 2 %}
+                Herrlich geduscht? Die Luft im Badezimmer ist ganz schön feucht geworden{% if has_humidity %} mit {{ humidity }} % Luftfeuchtigkeit{% endif %}. Wenn du kurz das Fenster öffnest, zieht der Dampf schnell wieder ab.
+              {% elif variant == 3 %}
+                Ganz schön dampfig hier! Nach dem Duschen steht die Feuchtigkeit im Bad{% if has_humidity %} bei {{ humidity }} %{% endif %}. Ein kurzes Stoßlüften würde jetzt richtig guttun.
+              {% else %}
+                Kleine Erinnerung aus dem Bad: Die Luftfeuchtigkeit ist nach dem Duschen stark gestiegen{% if has_humidity %} auf {{ humidity }} %{% endif %}. Wärst du so lieb und machst kurz das Fenster auf?
+              {% endif %}
+            {% else %}
+              {% if variant == 1 %}
+                Super gelüftet! Das Badezimmer ist wieder schön trocken{% if has_humidity %}, die Luftfeuchtigkeit liegt bei {{ humidity }} %{% endif %}. Das Fenster kann wieder geschlossen werden.
+              {% elif variant == 2 %}
+                Wunderbar, der ganze Wasserdampf ist raus! Die Luftfeuchtigkeit im Bad ist wieder im normalen Bereich. Das Fenster kann wieder zu.
+              {% elif variant == 3 %}
+                Die Feuchtigkeit nach dem Duschen hat sich wieder gelegt. Im Bad herrscht wieder ein prima Raumklima, ihr könnt das Fenster jetzt wieder zumachen.
+              {% else %}
+                Perfekt! Die Luft im Badezimmer ist wieder frisch und ausgeglichen{% if has_humidity %} bei {{ humidity }} %{% endif %}. Vielen Dank fürs Lüften, das Fenster kann wieder geschlossen werden.
+              {% endif %}
+            {% endif %}
+          message_zh: >-
+            {% if is_high %}
+              {% if variant == 1 %}
+                刚刚洗了个舒服的热水澡吧！浴室现在湿度偏高{% if has_humidity %}，已经达到 {{ humidity }}% 了{% endif %}。建议开窗通风散散水汽哦。
+              {% elif variant == 2 %}
+                浴室里现在满是热腾腾的水蒸气呢{% if has_humidity %}，湿度有 {{ humidity }}% 了{% endif %}。顺手把窗户打开透透气吧，这样干得更快哦。
+              {% elif variant == 3 %}
+                洗完澡浴室湿气有点重哦{% if has_humidity %}，当前湿度是 {{ humidity }}%{% endif %}。打开窗户通一下风，房间很快就会干爽啦。
+              {% else %}
+                温馨提醒：洗澡后浴室湿度明显上升啦{% if has_humidity %}，现在是 {{ humidity }}%{% endif %}。能麻烦把窗户开一下散散湿气吗？
+              {% endif %}
+            {% else %}
+              {% if variant == 1 %}
+                通风效果真好！浴室的水汽已经散去{% if has_humidity %}，湿度降到了 {{ humidity }}%{% endif %}。可以把窗户关上啦。
+              {% elif variant == 2 %}
+                太棒啦，浴室里的湿气已经恢复正常，空气很清新。窗户可以放心关好咯。
+              {% elif variant == 3 %}
+                水汽已经完全散开啦，浴室环境恢复舒适干爽。记得顺手把窗户关上哦。
+              {% else %}
+                通风完成！浴室的湿度已经回到正常范围{% if has_humidity %}，现在是 {{ humidity }}%{% endif %}。辛苦啦，窗户可以关起来了。
+              {% endif %}
+            {% endif %}
+
+      # Announce TTS message (German and optional Chinese)
+      - action: script.play_media_tts_message
+        data:
+          entity_id: "{{ target_player }}"
+          message: "{{ message_de }}"
+          message_chinese: "{{ message_zh }}"

@@ -1,0 +1,186 @@
+script:
+  # ====================================================================
+  # Play Media - TTS Person Zone
+  # - Announces person zone events (departure, approaching home, zone arrival)
+  # - Selects from natural German and optional Chinese phrasing variations
+  # - Formulates appropriate German prepositions and articles (am / im / beim / in der / den / die / das)
+  # - Plays announcements via play_media_tts_message
+  # ====================================================================
+
+  play_media_tts_person_zone:
+    alias: "Play Media - TTS Person Zone"
+    mode: queued
+    max: 10
+    icon: mdi:map-marker-account
+
+    fields:
+      person:
+        name: Person
+        description: "Name of the person (e.g. Julian, Xingyang) or person entity ID."
+        example: "Julian"
+        required: true
+        selector:
+          text:
+
+      event:
+        name: Event
+        description: "Type of event: left_home, returns_home, or reaches_zone."
+        example: "reaches_zone"
+        required: true
+        selector:
+          select:
+            options:
+              - "left_home"
+              - "returns_home"
+              - "reaches_zone"
+
+      zone:
+        name: Zone
+        description: "Name of the zone reached (used for reaches_zone event)."
+        example: "Kuka"
+        required: false
+        default: ""
+        selector:
+          text:
+
+      entity_id:
+        name: Speaker
+        description: "Entity ID of the media player to announce on (default: media_player.living_room)."
+        example: media_player.living_room
+        required: false
+        selector:
+          entity:
+            domain: media_player
+
+      media_player:
+        name: Speaker (Alternative)
+        description: "Alternative entity ID of the media player to announce on."
+        example: media_player.living_room
+        required: false
+        selector:
+          entity:
+            domain: media_player
+
+    sequence:
+      # Prepare variables, person names, prepositions, articles and randomized variations
+      - variables:
+          target_player: "{{ media_player | default(entity_id | default('media_player.living_room', true), true) }}"
+          raw_person: "{{ person | default('', true) }}"
+          p_name: >-
+            {%- if raw_person.startswith('person.') -%}
+              {{ state_attr(raw_person, 'friendly_name') | default(raw_person.split('.')[1] | title, true) }}
+            {%- else -%}
+              {{ raw_person }}
+            {%- endif -%}
+          p_name_zh: "{{ p_name }}"
+          current_event: "{{ event | default('reaches_zone', true) }}"
+          current_zone: "{{ zone | default('', true) | trim }}"
+          prep: >-
+            {%- set z = current_zone.lower() -%}
+            {%- if current_zone in ['Bahnhof', 'Floßländle', 'Flossländle', 'Königsplatz', 'Moritzplatz', 'Rathausplatz', 'Schlößle', 'Schlössle'] or z.endswith('platz') or 'bahnhof' in z -%}
+              am
+            {%- elif current_zone in ['City Galery', 'City Galerie', 'Fahrschule', "L'Osteria", "L’Osteria"] or z.endswith(('schule', 'galerie', 'galery')) or 'osteria' in z -%}
+              in der
+            {%- elif 'kaufland' in z -%}
+              im
+            {%- elif current_zone in ['Aldi', 'Frauenarzt', 'Lidl', 'Segmüller', 'Segmueller'] or z.endswith('arzt') or 'aldi' in z or 'lidl' in z or 'segmüller' in z or 'segmueller' in z -%}
+              beim
+            {%- else -%}
+              bei
+            {%- endif -%}
+          art_akk: >-
+            {%- set z = current_zone.lower() -%}
+            {%- if current_zone in ['Aldi', 'Bahnhof', 'Frauenarzt', 'Königsplatz', 'Lidl', 'Moritzplatz', 'Rathausplatz', 'Segmüller', 'Segmueller'] or z.endswith(('platz', 'arzt')) or 'bahnhof' in z or 'aldi' in z or 'lidl' in z or 'segmüller' in z or 'segmueller' in z -%}
+              den
+            {%- elif current_zone in ['City Galery', 'City Galerie', 'Fahrschule', "L'Osteria", "L’Osteria"] or z.endswith(('schule', 'galerie', 'galery')) or 'osteria' in z -%}
+              die
+            {%- elif current_zone in ['Floßländle', 'Flossländle', 'Kaufland', 'Schlößle', 'Schlössle'] or z.endswith(('land', 'le')) -%}
+              das
+            {%- else -%}
+            {%- endif -%}
+          zone_akk: >-
+            {%- if art_akk | trim != '' -%}
+              {{ art_akk | trim }} {{ current_zone }}
+            {%- else -%}
+              {{ current_zone }}
+            {%- endif -%}
+          variant: "{{ [1, 2, 3, 4] | random }}"
+          message_de: >-
+            {%- if current_event in ['left_home', 'departed'] -%}
+              {%- if variant == 1 -%}
+                {{ p_name }} ist jetzt unterwegs.
+              {%- elif variant == 2 -%}
+                {{ p_name }} hat gerade das Haus verlassen.
+              {%- elif variant == 3 -%}
+                {{ p_name }} ist losgefahren.
+              {%- else -%}
+                {{ p_name }} ist gerade aufgebrochen.
+              {%- endif -%}
+            {%- elif current_event in ['returns_home', 'approaching'] -%}
+              {%- if variant == 1 -%}
+                {{ p_name }} ist gleich zu Hause.
+              {%- elif variant == 2 -%}
+                {{ p_name }} ist bald da.
+              {%- elif variant == 3 -%}
+                {{ p_name }} ist auf dem Rückweg.
+              {%- else -%}
+                {{ p_name }} nähert sich dem Zuhause.
+              {%- endif -%}
+            {%- else -%}
+              {%- if current_zone != '' -%}
+                {%- if variant == 1 -%}
+                  {{ p_name }} ist jetzt {{ prep }} {{ current_zone }}.
+                {%- elif variant == 2 -%}
+                  {{ p_name }} ist soeben {{ prep }} {{ current_zone }} angekommen.
+                {%- elif variant == 3 -%}
+                  {{ p_name }} hat {{ zone_akk }} erreicht.
+                {%- else -%}
+                  Kurze Info: {{ p_name }} ist jetzt {{ prep }} {{ current_zone }}.
+                {%- endif -%}
+              {%- else -%}
+                {{ p_name }} ist am Ziel angekommen.
+              {%- endif -%}
+            {%- endif -%}
+          message_zh: >-
+            {%- if current_event in ['left_home', 'departed'] -%}
+              {%- if variant == 1 -%}
+                {{ p_name_zh }}出发了。
+              {%- elif variant == 2 -%}
+                {{ p_name_zh }}刚离开家。
+              {%- elif variant == 3 -%}
+                {{ p_name_zh }}出门了。
+              {%- else -%}
+                {{ p_name_zh }}正在路上。
+              {%- endif -%}
+            {%- elif current_event in ['returns_home', 'approaching'] -%}
+              {%- if variant == 1 -%}
+                {{ p_name_zh }}马上就到家了。
+              {%- elif variant == 2 -%}
+                {{ p_name_zh }}快要到家啦。
+              {%- elif variant == 3 -%}
+                {{ p_name_zh }}正在回家的路上。
+              {%- else -%}
+                {{ p_name_zh }}快回来了。
+              {%- endif -%}
+            {%- else -%}
+              {%- if current_zone != '' -%}
+                {%- if variant == 1 -%}
+                  {{ p_name_zh }}现在在{{ current_zone }}。
+                {%- elif variant == 2 -%}
+                  {{ p_name_zh }}已经到达{{ current_zone }}了。
+                {%- elif variant == 3 -%}
+                  {{ p_name_zh }}刚到{{ current_zone }}。
+                {%- else -%}
+                  通知一下，{{ p_name_zh }}已经到了{{ current_zone }}。
+                {%- endif -%}
+              {%- else -%}
+                {{ p_name_zh }}已经到达目的地。
+              {%- endif -%}
+            {%- endif -%}
+
+      # Announce TTS message via play_media_tts_message
+      - action: script.play_media_tts_message
+        data:
+          entity_id: "{{ target_player }}"
+          message: "{{ message_de }}"
+          message_chinese: "{{ message_zh }}"

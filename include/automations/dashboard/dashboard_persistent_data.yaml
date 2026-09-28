@@ -1,0 +1,62 @@
+automation:
+  # ====================================================================
+  # Dashboard - Persistent Data
+  # - Persists person and vacuum timestamps via MQTT retained messages
+  # - Preserves state timestamps across Home Assistant restarts
+  # ====================================================================
+
+  - id: "dashboard_persistent_data"
+    alias: "Dashboard - Persistent Data"
+    mode: single
+    trigger:
+      # Person state changes
+      - trigger: state
+        entity_id:
+          - person.julian
+          - person.xingyang
+
+      # Vacuum docked state change
+      - trigger: state
+        entity_id: vacuum.robi
+        from: returning
+        to: docked
+
+    condition:
+      # Ensure state actually changed
+      - condition: template
+        value_template: "{{ trigger.to_state.state != trigger.from_state.state }}"
+
+    action:
+      - choose:
+          # Julian state change timestamp
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.entity_id == 'person.julian' }}"
+            sequence:
+              - action: mqtt.publish
+                data:
+                  topic: homeassistant/persistence/julian_last_changed
+                  payload: "{{ now().isoformat() }}"
+                  retain: true
+
+          # Xingyang state change timestamp
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.entity_id == 'person.xingyang' }}"
+            sequence:
+              - action: mqtt.publish
+                data:
+                  topic: homeassistant/persistence/xingyang_last_changed
+                  payload: "{{ now().isoformat() }}"
+                  retain: true
+
+          # Vacuum docked timestamp
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.entity_id == 'vacuum.robi' }}"
+            sequence:
+              - action: mqtt.publish
+                data:
+                  topic: homeassistant/persistence/vacuum_last_end_time
+                  payload: "{{ now().isoformat() }}"
+                  retain: true

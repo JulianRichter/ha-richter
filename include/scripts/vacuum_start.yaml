@@ -1,0 +1,164 @@
+script:
+  # ====================================================================
+  # Vacuum - Start
+  # - Starts vacuuming: cleans room toggles if active, or passed room_ids, otherwise full house clean
+  # - Sets sweeping vs sweeping & mopping based on vacuum_mopping_enabled
+  # ====================================================================
+
+  vacuum_start:
+    alias: "Vacuum - Start"
+    mode: single
+    icon: mdi:robot-vacuum
+    description: >
+      Starts vacuuming: checks room toggles first; if selected, cleans those
+      specific rooms and resets the toggles; otherwise performs a full house clean.
+
+    fields:
+      room_ids:
+        name: Room IDs
+        description: "Optional list or comma-separated string of segment IDs (e.g. [1, 2]). Full clean otherwise."
+        required: false
+        example: "[1, 2]"
+        selector:
+          text:
+
+    sequence:
+      # Map room toggle helpers directly to their segment ID input text helper
+      - variables:
+          room_map:
+            input_boolean.vacuum_clean_kitchen: input_text.vacuum_room_id_kitchen
+            input_boolean.vacuum_clean_entrance: input_text.vacuum_room_id_entrance
+            input_boolean.vacuum_clean_living_room: input_text.vacuum_room_id_living_room
+            input_boolean.vacuum_clean_bathroom: input_text.vacuum_room_id_bathroom
+            input_boolean.vacuum_clean_kidroom: input_text.vacuum_room_id_kidroom
+            input_boolean.vacuum_clean_bedroom: input_text.vacuum_room_id_bedroom
+
+          # Collect list of active room toggle helpers
+          active_helpers: >
+            {% set ns = namespace(helpers=[]) %}
+            {% for helper in [
+              'input_boolean.vacuum_clean_kitchen',
+              'input_boolean.vacuum_clean_entrance',
+              'input_boolean.vacuum_clean_living_room',
+              'input_boolean.vacuum_clean_bathroom',
+              'input_boolean.vacuum_clean_kidroom',
+              'input_boolean.vacuum_clean_bedroom'
+            ] %}
+              {% if is_state(helper, 'on') %}
+                {% set ns.helpers = ns.helpers + [helper] %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.helpers }}
+
+          # Resolve segment IDs directly from input text helpers for active rooms
+          helper_segments: >
+            {% set ns = namespace(segments=[]) %}
+            {% for helper in active_helpers %}
+              {% set raw_ids = states(room_map[helper]) %}
+              {% if raw_ids not in ['unknown', 'unavailable', ''] %}
+                {% for seg in (raw_ids | string).split(',') %}
+                  {% set num = seg | trim | int(default=0) %}
+                  {% if num > 0 %}
+                    {% set ns.segments = ns.segments + [num] %}
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.segments }}
+
+          # Parse optional passed room_ids parameter (handles string, JSON list, or sequence)
+          passed_segments: >
+            {% if room_ids is defined and room_ids not in ['', 'none', 'None', None, '[]'] %}
+              {% set ns = namespace(segs=[]) %}
+              {% if room_ids is string %}
+                {% set clean_str = room_ids | trim %}
+                {% if clean_str.startswith('[') and clean_str.endswith(']') %}
+                  {% for item in clean_str | from_json %}
+                    {% set num = item | int(default=0) %}
+                    {% if num > 0 %}
+                      {% set ns.segs = ns.segs + [num] %}
+                    {% endif %}
+                  {% endfor %}
+                {% else %}
+                  {% for s in clean_str.split(',') %}
+                    {% set num = s | trim | int(default=0) %}
+                    {% if num > 0 %}
+                      {% set ns.segs = ns.segs + [num] %}
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+              {% elif room_ids is sequence %}
+                {% for item in room_ids %}
+                  {% set num = item | int(default=0) %}
+                  {% if num > 0 %}
+                    {% set ns.segs = ns.segs + [num] %}
+                  {% endif %}
+                {% endfor %}
+              {% else %}
+                {% set num = room_ids | int(default=0) %}
+                {% if num > 0 %}
+                  {% set ns.segs = [num] %}
+                {% endif %}
+              {% endif %}
+              {{ ns.segs }}
+            {% else %}
+              {{ [] }}
+            {% endif %}
+
+          # All configured room segments from input text helpers
+          all_configured_segments: >
+            {% set ns = namespace(segments=[]) %}
+            {% for helper_entity in room_map.values() %}
+              {% set raw_ids = states(helper_entity) %}
+              {% if raw_ids not in ['unknown', 'unavailable', ''] %}
+                {% for seg in (raw_ids | string).split(',') %}
+                  {% set num = seg | trim | int(default=0) %}
+                  {% if num > 0 and num not in ns.segments %}
+                    {% set ns.segments = ns.segments + [num] %}
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.segments }}
+
+          # Target segments: active helpers first, then passed room_ids, otherwise all configured rooms
+          target_segments: >
+            {% if helper_segments | length > 0 %}
+              {{ helper_segments }}
+            {% elif passed_segments | length > 0 %}
+              {{ passed_segments }}
+            {% else %}
+              {{ all_configured_segments }}
+            {% endif %}
+
+      # Set cleaning mode based on mopping helper
+      - action: select.select_option
+        target:
+          entity_id: select.robi_cleaning_mode
+        data:
+          option: "{{ 'sweeping_and_mopping' if is_state('input_boolean.vacuum_mopping_enabled', 'on') else 'sweeping' }}"
+
+      # Start segment clean for target rooms
+      - action: dreame_vacuum.vacuum_clean_segment
+        target:
+          entity_id: vacuum.robi
+        data:
+          segments: "{{ target_segments }}"
+          repeats: 1
+
+      # Record active segments in history for error recovery
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.vacuum_clean_history
+        data:
+          value: "{{ target_segments | string }}"
+
+      # Reset room selection toggles if any were active
+      - if:
+          - condition: template
+            value_template: "{{ active_helpers | length > 0 }}"
+        then:
+          - action: input_boolean.turn_off
+            target:
+              entity_id: "{{ active_helpers }}"
+

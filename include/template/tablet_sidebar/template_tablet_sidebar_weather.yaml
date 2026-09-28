@@ -1,0 +1,55 @@
+template:
+  # ====================================================================
+  # Tablet Sidebar - Weather
+  # ====================================================================
+
+  # Weather widget for tablet dashboard sidebar
+  - sensor:
+      - unique_id: tablet_sidebar_weather
+        state: "{{now().hour}}:{{now().minute}}"
+        attributes:
+          sidebar_html_text: >
+            {% set day = is_state('sun.sun', 'above_horizon') %}
+            {% set weather_raw = states('sensor.weather_home_current_condition') %}
+            {% set weather =
+              'clear-night' if weather_raw in ['sunny', 'clear'] and not day else
+              'sunny' if weather_raw in ['sunny', 'clear'] and day else
+              weather_raw %}
+            {% set temperature = states('sensor.weather_home_current_temperature') %}
+            {% set condition =
+              'Sonnig' if weather == 'sunny' else
+              'Klar' if weather == 'clear-night' or weather == 'fog' else
+              'Bewölkt' if weather == 'cloudy' or weather == 'partlycloudy' else
+              'Regen' if weather == 'rainy' else
+              'Schnee' if weather == 'snowy' else
+              'Gewitter' if weather == 'lightning' else
+              'Unknown' %}
+            {% set weather_icon =
+              '<img src="/local/svg/weather/day.svg">' if weather == 'sunny' else
+              '<img src="/local/svg/weather/night.svg">' if weather == 'clear-night' else
+              '<img src="/local/svg/weather/cloudy-day-3.svg">' if weather == 'partlycloudy' and day else
+              '<img src="/local/svg/weather/cloudy-night-3.svg">' if weather == 'partlycloudy' and not day else
+              '<img src="/local/svg/weather/cloudy.svg">' if weather == 'cloudy' else
+              '<img src="/local/svg/weather/cloudy.svg">' if weather == 'fog' else
+              '<img src="/local/svg/weather/rainy-5.svg">' if weather == 'rainy' else
+              '<img src="/local/svg/weather/snowy-5.svg">' if weather == 'snowy' else
+              '<img src="/local/svg/weather/thunder.svg">' if weather == 'lightning' else
+              '<img src="/local/svg/weather/weather.svg">' %}
+
+            <div class="weather-widget">
+              <div class="weather-info">
+                <div class="condition">
+                  {{ condition }}
+                </div>
+                <div class="temperature">
+                  {% if temperature is not none and temperature != 'unknown' and temperature != 'unavailable' %}
+                    {{ temperature | float(0) | round(1) }}°C
+                  {% else %}
+                    --°C
+                  {% endif %}
+                </div>
+              </div>
+              <div class="weather-icon">
+                {{ weather_icon }}
+              </div>
+            </div>

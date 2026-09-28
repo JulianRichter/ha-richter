@@ -1,0 +1,118 @@
+# Example configuration.yaml entry
+frontend:
+  extra_module_url:
+    - /hacsfiles/lovelace-card-mod/card-mod.js
+
+  themes:
+    tablet_grid_theme:
+      modes:
+        dark:
+          # background image
+          lovelace-background: center / cover no-repeat url("/local/image/themes/theme_background_blur.png") fixed
+
+          # colors
+          accent-color: "rgb(80, 110, 172)"
+          background-color: "rgba(115, 115, 115, 0.2)" # seperator line color
+          background-color-2: "var(--background-color)" # actual button background color
+
+          # view & layout spacing resets
+          ha-view-padding: 0px
+          masonry-view-card-margin: 0px
+
+          # grid layout
+          dashboard-grid-vertical-gap: 3.3vw
+          dashboard-grid-horizontal-gap: 3.3vw
+          dashboard-sidebar-element-padding: "1em var(--dashboard-grid-horizontal-gap) 0 var(--dashboard-grid-horizontal-gap)"
+
+          # text
+          dashboard-header-font-size: 28px
+          dashboard-header-font-weight: 500
+
+          custom-hui-grid-card-padding: 1vw 0 2vw 0
+
+      ####################################################
+      # card-mod setup (name has to be the theme name!)
+      ####################################################
+
+      card-mod-theme: tablet_grid_theme
+
+      card-mod-root-yaml: |
+        #view {
+          padding: 0 !important;
+          margin: 0 !important;
+        }
+
+      ####################################################
+      # hui-view
+      ####################################################
+
+      card-mod-view-yaml: |
+
+        # view container margin and padding reset
+        .: |
+          :host {
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+
+        # grid layout container
+        grid-layout$:
+          .: |
+            /* compute sidebar width from grid-layout internal variables */
+            :host {
+              --sidebar-width: var(--grid-column-width-1);
+              --layout-margin: 0 !important;
+              --layout-padding: 0 !important;
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+            #root {
+              margin: 0 !important;
+              padding: 0 !important;
+              height: 100vh !important;
+            }
+            #root > * {
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+
+        # sidebar (support both direct and hui-card wrapped hierarchies)
+        grid-layout$hui-vertical-stack-card$: |
+          :host {
+            background-color: rgba(0, 0, 0, 0.06) !important;
+            border-right: 0.1vw solid rgba(58, 69, 73, 0.5) !important;
+            height: 100% !important;
+            min-height: 100vh !important;
+            display: block !important;
+            box-sizing: border-box !important;
+          }
+          #root {
+            gap: 0 !important;
+            height: 100% !important;
+            min-height: 100vh !important;
+          }
+        grid-layout$ hui-card hui-vertical-stack-card$: |
+          :host {
+            background-color: rgba(0, 0, 0, 0.06) !important;
+            border-right: 0.1vw solid rgba(58, 69, 73, 0.5) !important;
+            height: 100% !important;
+            min-height: 100vh !important;
+            display: block !important;
+            box-sizing: border-box !important;
+          }
+          #root {
+            gap: 0 !important;
+            height: 100% !important;
+            min-height: 100vh !important;
+          }
+
+        # footer
+        # grid-layout$hui-horizontal-stack-card:
+        #   $: |
+        #     /* default */
+        #     #root {
+        #       flex-wrap: nowrap;
+        #       justify-content: space-between;
+        #       margin-top: -1.6vh;
+        #       padding-bottom: 0;
+        #     }

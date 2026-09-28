@@ -1,0 +1,22 @@
+automation:
+  # ====================================================================
+  # Baby Room - Evening Routine
+  # - Sunset: Closes baby room roller blinds
+  # ====================================================================
+
+  - id: "baby_room_evening_routine"
+    alias: "Baby Room - Evening Routine"
+    mode: single
+
+    trigger:
+      # Sunset trigger
+      - trigger: sun
+        event: sunset
+
+    condition: []
+
+    action:
+      # Close baby room roller blinds
+      - action: cover.close_cover
+        target:
+          entity_id: cover.baby_room_roller_blinds

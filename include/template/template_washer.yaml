@@ -1,0 +1,15 @@
+template:
+  # ==============================================
+  # Bathroom Washer
+  # Binary sensor determining washer running state based on power draw
+  # ==============================================
+
+  # Washer running state with 5 minute off-delay
+  - binary_sensor:
+      - name: "Bathroom - Washer"
+        unique_id: bathroom_washer
+        state: "{{ states('sensor.bathroom_washer_power') | float(0) > 3.0 }}"
+        delay_off:
+          minutes: 5
+        device_class: running
+        icon: mdi:washing-machine

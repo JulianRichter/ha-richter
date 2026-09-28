@@ -1,0 +1,23 @@
+#######################################################
+# Persistence states (Using mqtt sensors)
+#######################################################
+
+mqtt:
+  sensor:
+    # Save 'now()' published from automation on state change for julian
+    - name: julian_last_changed
+      state_topic: homeassistant/persistence/julian_last_changed
+      value_template: >
+        {{ value }}
+
+    # Save 'now()' published from automation on state change for xingyang
+    - name: xingyang_last_changed
+      state_topic: homeassistant/persistence/xingyang_last_changed
+      value_template: >
+        {{ value }}
+
+    # Save 'now()' published from automation when vacuum docked
+    - name: vacuum_last_end_time
+      state_topic: homeassistant/persistence/vacuum_last_end_time
+      value_template: >
+        {{ value }}

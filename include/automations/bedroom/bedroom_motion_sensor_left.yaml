@@ -1,0 +1,134 @@
+automation:
+  # ====================================================================
+  # Bedroom - Motion Sensor Left
+  # - Controls left bedside light and air purifier LED based on occupancy
+  # - Motion on: Dims air purifier display for 10s then turns off
+  # - Sun down & home (awake): Turns on warm ambient light (brightness 126)
+  # - Sun down & away (sleeping): Turns on ultra-dim red night light (brightness 5)
+  # - Motion cleared: Smoothly turns off light if set by automation
+  # ====================================================================
+
+  - id: "bedroom_motion_sensor_left"
+    alias: "Bedroom - Motion Sensor Left"
+    mode: parallel
+    max: 10
+
+    variables:
+      brightness_sleep: 5
+      brightness_awake: 126
+      color_sleep: [255, 0, 0]
+      color_awake: [255, 166, 87]
+
+    trigger:
+      # Motion detected
+      - trigger: state
+        entity_id: binary_sensor.bedroom_motion_sensor_left_occupancy
+        to: "on"
+        id: motion_detected
+
+      # Motion cleared
+      - trigger: state
+        entity_id: binary_sensor.bedroom_motion_sensor_left_occupancy
+        to: "off"
+        id: motion_cleared
+
+    condition: []
+
+    action:
+      - choose:
+          # ============================================================
+          # Motion detected
+          # ============================================================
+          - conditions:
+              - condition: trigger
+                id: motion_detected
+            sequence:
+              # Run air purifier LED and bedroom light control concurrently
+              - parallel:
+                  # Air purifier LED: Dim for 10 seconds then Off
+                  - sequence:
+                      - action: select.select_option
+                        target:
+                          entity_id: select.living_room_air_purifier_led_brightness
+                        data:
+                          option: "dim"
+                        continue_on_error: true
+                      - delay: "00:00:10"
+                      - action: select.select_option
+                        target:
+                          entity_id: select.living_room_air_purifier_led_brightness
+                        data:
+                          option: "off"
+                        continue_on_error: true
+
+                  # Bedroom light control
+                  - sequence:
+                      - choose:
+                          # ----------------------------------------------------
+                          # Sleeping mode (Sun down & sleeping)
+                          # ----------------------------------------------------
+                          - conditions:
+                              - condition: state
+                                entity_id: sun.sun
+                                state: below_horizon
+                              - condition: state
+                                entity_id: input_boolean.presence_home
+                                state: "off"
+                              - condition: template
+                                value_template: >-
+                                  {% set brightness = state_attr('light.bedroom_light_left', 'brightness') %}
+                                  {{ brightness is none or brightness | int <= brightness_sleep or brightness | int == brightness_awake }}
+                            sequence:
+                              - action: light.turn_on
+                                target:
+                                  entity_id: light.bedroom_light_left
+                                data:
+                                  brightness: "{{ brightness_sleep }}"
+                                  rgb_color: "{{ color_sleep }}"
+
+                          # ----------------------------------------------------
+                          # Awake mode (Sun down & not sleeping)
+                          # ----------------------------------------------------
+                          - conditions:
+                              - condition: state
+                                entity_id: sun.sun
+                                state: below_horizon
+                              - condition: state
+                                entity_id: input_boolean.presence_home
+                                state: "on"
+                              - condition: template
+                                value_template: >-
+                                  {% set brightness = state_attr('light.bedroom_light_left', 'brightness') %}
+                                  {{ brightness is none or brightness | int <= brightness_sleep or brightness | int == brightness_awake }}
+                            sequence:
+                              - action: light.turn_on
+                                target:
+                                  entity_id: light.bedroom_light_left
+                                data:
+                                  brightness: "{{ brightness_awake }}"
+                                  rgb_color: "{{ color_awake }}"
+
+          # ============================================================
+          # Motion cleared
+          # ============================================================
+          - conditions:
+              - condition: trigger
+                id: motion_cleared
+            sequence:
+              - choose:
+                  # Turn off light only if currently on and set by automation
+                  - conditions:
+                      - condition: state
+                        entity_id: light.bedroom_light_left
+                        state: "on"
+                      - condition: template
+                        value_template: >-
+                          {% set brightness = state_attr('light.bedroom_light_left', 'brightness') %}
+                          {{ brightness | int <= brightness_sleep or brightness | int == brightness_awake }}
+                    sequence:
+                      - action: script.light_low_before_off
+                        data:
+                          entity_id: light.bedroom_light_left
+
+        default: []
+

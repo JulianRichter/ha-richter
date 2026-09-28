@@ -1,0 +1,18 @@
+# Security & Credentials
+secrets.yaml
+*.json
+.google.token
+.storage/
+ip_bans.yaml
+
+# Databases & High-Churn Logs
+zigbee.db
+*.db
+*.log*
+.ha_run_lock
+
+# Media & Dependencies
+tts/
+image/
+deps/
+.cloud/

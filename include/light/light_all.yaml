@@ -1,0 +1,17 @@
+light:
+  # ====================================================================
+  # All Lights Group
+  # ====================================================================
+
+  # Group all lights together
+  - platform: group
+    name: Alle Lichter
+    unique_id: all
+    entities:
+      - light.living_room_light_1
+      - light.living_room_light_2
+      - light.living_room_light_3
+      - light.living_room_light_4
+      - light.kitchen_light_left
+      - light.kitchen_light_right
+      - light.bathroom_light

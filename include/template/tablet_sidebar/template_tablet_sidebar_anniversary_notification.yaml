@@ -1,0 +1,33 @@
+template:
+  # ====================================================================
+  # Tablet Sidebar - Anniversary Notification
+  # ====================================================================
+
+  # Anniversary notification widget for tablet dashboard sidebar
+  - binary_sensor:
+      - unique_id: tablet_sidebar_anniversary_notification
+        state: >
+          {{ states('calendar.family_anniversary') }}
+        attributes:
+          count: >
+            {{ 1 if is_state('calendar.family_anniversary', 'on') else 0 }}
+          sidebar_html_text: >
+            {% set family_anniversary = states('calendar.family_anniversary') %}
+
+            {% if family_anniversary == 'on' %}
+              <p>
+              {% set birthday_message = state_attr('calendar.family_anniversary','message') %}
+              {% set birthday_comment = state_attr('calendar.family_anniversary','description') %}
+              {% set name = birthday_message | replace('Hochzeitstag ', '') %}
+              Hochzeitstag von<br>
+              {{ name }}
+              
+              {# Add years info if available. #}
+              {% if birthday_comment != '' %}
+                {% set years = now().year | int - birthday_comment | int %}
+                ({{ years }}) 
+              {% endif %}
+              
+              &#x1F389;
+              </p>
+            {% endif %}

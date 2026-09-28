@@ -1,0 +1,164 @@
+script:
+  # ====================================================================
+  # Google - Pass Command To Home Assistant
+  # - Receives Google Assistant command via dummy cover position
+  # - Translates cover position number into light, music, or vacuum actions
+  # ====================================================================
+
+  google_pass_command_to_home_assistant:
+    alias: "Google - Pass Command To Home Assistant"
+    mode: parallel
+    icon: mdi:google
+
+    fields:
+      cover_position:
+        name: Position
+        description: "Cover position representing a specific routine call."
+        example: 1
+        required: true
+        selector:
+          number:
+            min: 0
+            max: 100
+
+    sequence:
+      - choose:
+          # ============================================================
+          # Lighting
+          # ============================================================
+
+          # Sunrise in bedroom (pos 1)
+          - conditions:
+              - condition: template
+                value_template: "{{ cover_position == 1 }}"
+            sequence:
+              - action: script.light_sunrise
+                data:
+                  entity_id: light.bedroom_light_left
+                  seconds: 600
+
+          # Sunrise in baby room (pos 2)
+          - conditions:
+              - condition: template
+                value_template: "{{ cover_position == 2 }}"
+            sequence:
+              - action: script.light_sunrise
+                data:
+                  entity_id: light.baby_room_light
+                  seconds: 600
+
+          # Sunset in bedroom (pos 6)
+          - conditions:
+              - condition: template
+                value_template: "{{ cover_position == 6 }}"
+            sequence:
+              - action: script.light_sunset
+                data:
+                  entity_id: light.bedroom_light_left
+                  seconds: 600
+
+          # Sunset in baby room (pos 7)
+          - conditions:
+              - condition: template
+                value_template: "{{ cover_position == 7 }}"
+            sequence:
+              - action: script.light_sunset
+                data:
+                  entity_id: light.baby_room_light
+                  seconds: 600
+
+          # ============================================================
+          # Vacuum
+          # ============================================================
+
+          # Vacuum all rooms (pos 20)
+          - conditions:
+              - condition: template
+                value_template: "{{ cover_position == 20 }}"
+            sequence:
+              - action: script.vacuum_start
+
+          # Vacuum living room (pos 22)
+          - conditions:
+              - condition: template
+                value_template: "{{ cover_position == 22 }}"
+            sequence:
+              - action: script.vacuum_start
+                data:
+                  room_ids: "{{ states('input_text.vacuum_room_id_living_room') | list }}"
+
+          # Vacuum kitchen (pos 23)
+          - conditions:
+              - condition: template
+                value_template: "{{ cover_position == 23 }}"
+            sequence:
+              - action: script.vacuum_start
+                data:
+                  room_ids: "{{ states('input_text.vacuum_room_id_kitchen') | list }}"
+
+          # Vacuum bedroom (pos 24)
+          - conditions:
+              - condition: template
+                value_template: "{{ cover_position == 24 }}"
+            sequence:
+              - action: script.vacuum_start
+                data:
+                  room_ids: "{{ states('input_text.vacuum_room_id_bedroom') | list }}"
+
+          # Vacuum entrance (pos 25)
+          - conditions:
+              - condition: template
+                value_template: "{{ cover_position == 25 }}"
+            sequence:
+              - action: script.vacuum_start
+                data:
+                  room_ids: "{{ states('input_text.vacuum_room_id_entrance') | list }}"
+
+          # Vacuum bathroom (pos 26)
+          - conditions:
+              - condition: template
+                value_template: "{{ cover_position == 26 }}"
+            sequence:
+              - action: script.vacuum_start
+                data:
+                  room_ids: "{{ states('input_text.vacuum_room_id_bathroom') | list }}"
+
+          # Vacuum kidroom (pos 27)
+          - conditions:
+              - condition: template
+                value_template: "{{ cover_position == 27 }}"
+            sequence:
+              - action: script.vacuum_start
+                data:
+                  room_ids: "{{ states('input_text.vacuum_room_id_kidroom') | list }}"
+
+          # Vacuum return to dock (pos 28)
+          - conditions:
+              - condition: template
+                value_template: "{{ cover_position == 28 }}"
+            sequence:
+              - action: vacuum.return_to_base
+                target:
+                  entity_id: vacuum.robi
+
+          # ============================================================
+          # Settings
+          # ============================================================
+
+          # Enable Zigbee2MQTT pairing for 3 minutes (pos 99)
+          - conditions:
+              - condition: template
+                value_template: "{{ cover_position == 99 }}"
+            sequence:
+              - action: mqtt.publish
+                data:
+                  topic: zigbee2mqtt/bridge/request/permit_join
+                  payload: '{"value": true, "time": 180}'
+
+        # Catch unhandled commands
+        default:
+          - action: script.play_media_tts_message
+            data:
+              entity_id: media_player.living_room
+              message: Oh, dafür kenne ich noch keinen Befehl in Home Assistant.
+

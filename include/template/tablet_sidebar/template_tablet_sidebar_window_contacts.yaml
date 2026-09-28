@@ -1,0 +1,47 @@
+template:
+  # ====================================================================
+  # Tablet Sidebar - Window Contacts
+  # ====================================================================
+
+  # Window contacts status display for tablet dashboard sidebar
+  - binary_sensor:
+      - unique_id: tablet_sidebar_window_contacts
+        variables:
+          entities:
+            - binary_sensor.kitchen_window_contact
+            - binary_sensor.living_room_window_contact
+            - binary_sensor.bedroom_window_contact
+            - binary_sensor.baby_room_window_contact
+          derivatives:
+            - sensor.kitchen_humidity_change
+            - sensor.living_room_humidity_change
+            - sensor.bedroom_humidity_change
+            - sensor.baby_room_humidity_change
+        state: >
+          {{ 'on' if entities|select('is_state','on')|list|count>0 else 'off' }}
+        attributes:
+          count: >
+            {{ entities|select('is_state','on')|list|count }}
+          sidebar_html_text: >-
+            {%- set open_windows = entities|select('is_state','on')|list -%}
+            {%- if open_windows|count>0 -%}
+            <p>Fenster offen:
+            {%- for sensor in open_windows -%}
+              {%- set idx = entities.index(sensor) -%}
+              {%- set deriv = states(derivatives[idx])|float(default=0) -%}
+              {%- set time_now = as_timestamp(now()) -%}
+              {%- set time_changed = as_timestamp(states[sensor].last_updated) -%}
+              {%- set diff = time_now - time_changed -%}
+              {%- set m = (diff/60)|int -%}
+              <br>- {{ state_attr(sensor,'friendly_name') | replace(' (F)','') }}
+              {%- if m<60 -%}
+                <br>&nbsp {{ '{:02}'.format(m) }}:{{ '{:02}'.format((diff%60)|int) }} min
+              {%- else -%}
+                {%- set h = (m/60)|int -%}
+                {%- set rm = (m-60*h)|int -%}
+                <br>&nbsp {{ '{:02}'.format(h) }}:{{ '{:02}'.format(rm) }} h
+              {%- endif -%}
+              &nbsp ({{ '{:+.2f}'.format(deriv) }} %)
+            {%- endfor -%}
+            </p>
+            {%- endif -%}

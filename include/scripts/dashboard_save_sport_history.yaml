@@ -1,0 +1,35 @@
+script:
+  # ====================================================================
+  # Dashboard - Save Sport History
+  # - Records workout in Google Calendar and marks daily sport toggle
+  # ====================================================================
+
+  dashboard_save_sport_history:
+    alias: "Dashboard - Save Sport History"
+    mode: single
+    icon: mdi:check-bold
+    description: "Record a sport workout in Google Calendar and mark the daily toggle."
+
+    fields:
+      person:
+        name: Person
+        description: "Name of the person (e.g. julian or xingyang)."
+        example: julian
+        required: true
+        selector:
+          text:
+
+    sequence:
+      # Mark sport toggle boolean helper as completed
+      - action: input_boolean.turn_on
+        target:
+          entity_id: "input_boolean.dashboard_sport_{{ person }}"
+
+      # Create Google Calendar event for 90-minute session
+      - action: google.add_event
+        data:
+          calendar_id: 3nuckb9p9b06f3mslqnqelr2qo@group.calendar.google.com
+          summary: "Sport {{ person }}"
+          start_date_time: "{{ (now().timestamp() - 5400) | timestamp_custom('%Y-%m-%d %H:%M:%S') }}"
+          end_date_time: "{{ now().timestamp() | timestamp_custom('%Y-%m-%d %H:%M:%S') }}"
+

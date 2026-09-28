@@ -1,0 +1,107 @@
+automation:
+  # ====================================================================
+  # Bedroom - Light Switch Door
+  # - Controls bedroom ceiling light group and sphere lamp via door switch
+  # - Single press up: Toggles ceiling light group (full 255 / warm 127)
+  # - Single press down: Smoothly turns off ceiling light group via light_low_before_off
+  # - Hold up: Toggles sphere lamp (full 255 / warm 127)
+  # - Hold down: Smoothly turns off sphere lamp via light_low_before_off
+  # ====================================================================
+
+  - id: "bedroom_light_switch_door"
+    alias: "Bedroom - Light Switch Door"
+    mode: single
+
+    trigger:
+      # Switch action event
+      - trigger: state
+        entity_id: event.bedroom_light_switch_door_action
+        not_from: unavailable
+        not_to: unavailable
+
+    condition: []
+
+    action:
+      - choose:
+          # ============================================================
+          # Up: Light group on
+          # ============================================================
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.attributes.event_type == 'on' }}"
+            sequence:
+              - choose:
+                  # If not full brightness, turn on full
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ state_attr('light.bedroom_light_group', 'brightness') | int != 255 }}"
+                    sequence:
+                      - action: light.turn_on
+                        data:
+                          brightness: 255
+                          color_temp_kelvin: 2700
+                        target:
+                          entity_id: light.bedroom_light_group
+                default:
+                  # Toggle to warm 50% brightness
+                  - action: light.turn_on
+                    data:
+                      brightness: 127
+                      rgb_color: [255, 166, 87]
+                    target:
+                      entity_id: light.bedroom_light_group
+
+          # ============================================================
+          # Down: Light group off
+          # ============================================================
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.attributes.event_type == 'off' }}"
+            sequence:
+              # Smooth turn off
+              - action: script.light_low_before_off
+                data:
+                  entity_id: light.bedroom_light_group
+
+          # ============================================================
+          # Up hold: Sphere light on
+          # ============================================================
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.attributes.event_type == 'brightness_move_up' }}"
+            sequence:
+              - choose:
+                  # If not full brightness, turn on full
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ state_attr('light.bedroom_light_sphere', 'brightness') | int != 255 }}"
+                    sequence:
+                      - action: light.turn_on
+                        data:
+                          brightness: 255
+                          color_temp_kelvin: 2700
+                        target:
+                          entity_id: light.bedroom_light_sphere
+                default:
+                  # Toggle to warm 50% brightness
+                  - action: light.turn_on
+                    data:
+                      brightness: 127
+                      rgb_color: [255, 166, 87]
+                    target:
+                      entity_id: light.bedroom_light_sphere
+
+          # ============================================================
+          # Down hold: Sphere light off
+          # ============================================================
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.attributes.event_type == 'brightness_move_down' }}"
+            sequence:
+              # Smooth turn off sphere light
+              - action: script.light_low_before_off
+                data:
+                  entity_id: light.bedroom_light_sphere
+
+        default: []
+

@@ -1,0 +1,87 @@
+input_boolean:
+  # Toggle cleaning for kitchen
+  vacuum_clean_kitchen:
+    name: Vacuum - Clean Kitchen
+    icon: mdi:silverware-fork-knife
+
+  # Toggle cleaning for entrance
+  vacuum_clean_entrance:
+    name: Vacuum - Clean Entrance
+    icon: mdi:door
+
+  # Toggle cleaning for living room
+  vacuum_clean_living_room:
+    name: Vacuum - Clean Living Room
+    icon: mdi:sofa
+
+  # Toggle cleaning for bathroom
+  vacuum_clean_bathroom:
+    name: Vacuum - Clean Bathroom
+    icon: mdi:shower
+
+  # Toggle cleaning for kidroom
+  vacuum_clean_kidroom:
+    name: Vacuum - Clean Kidroom
+    icon: mdi:teddy-bear
+
+  # Toggle cleaning for bedroom
+  vacuum_clean_bedroom:
+    name: Vacuum - Clean Bedroom
+    icon: mdi:bed
+
+  # Toggle mopping mode (on = sweeping & mopping, off = sweeping only)
+  vacuum_mopping_enabled:
+    name: Vacuum - Mopping Enabled
+    icon: mdi:water
+
+input_text:
+  # Segment number for kitchen
+  vacuum_room_id_kitchen:
+    name: Vacuum Room ID - Kitchen
+    icon: mdi:silverware-fork-knife
+    initial: "6"
+
+  # Segment number for entrance
+  vacuum_room_id_entrance:
+    name: Vacuum Room ID - Entrance
+    icon: mdi:door
+    initial: "8"
+
+  # Segment numbers for living room and corridor
+  vacuum_room_id_living_room:
+    name: Vacuum Room ID - Living Room
+    icon: mdi:sofa
+    initial: "3"
+
+  # Segment number for bathroom
+  vacuum_room_id_bathroom:
+    name: Vacuum Room ID - Bathroom
+    icon: mdi:shower
+    initial: "7"
+
+  # Segment number for kidroom
+  vacuum_room_id_kidroom:
+    name: Vacuum Room ID - Kidroom
+    icon: mdi:teddy-bear
+    initial: "5"
+
+  # Segment number for bedroom
+  vacuum_room_id_bedroom:
+    name: Vacuum Room ID - Bedroom
+    icon: mdi:bed
+    initial: "2"
+
+  # Stores segment IDs of the last active clean
+  vacuum_clean_history:
+    name: Vacuum - Clean History
+    icon: mdi:history
+    initial: ""
+
+input_datetime:
+  # Scheduled start time for automated vacuum cleaning
+  vacuum_cleaning_time:
+    name: Vacuum - Cleaning Time
+    has_date: false
+    has_time: true
+    initial: "06:30:00"
+    icon: mdi:clock-outline

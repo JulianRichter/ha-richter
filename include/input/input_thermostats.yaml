@@ -1,0 +1,40 @@
+input_number:
+  ######################################################################
+  # Thermostat setpoints
+  ######################################################################
+
+  # Inputs to save thermostat setpoints for all rooms.
+  dashboard_thermostat_setpoint_bedroom:
+    name: Dashboard - Thermostat Setpoint Bedroom
+    icon: mdi:thermometer
+    min: 16
+    max: 25
+    step: 1
+
+  dashboard_thermostat_setpoint_kitchen:
+    name: Dashboard - Thermostat Setpoint Kitchen
+    icon: mdi:thermometer
+    min: 16
+    max: 25
+    step: 1
+
+  dashboard_thermostat_setpoint_living_room:
+    name: Dashboard - Thermostat Setpoint Living Room
+    icon: mdi:thermometer
+    min: 16
+    max: 25
+    step: 1
+
+  dashboard_thermostat_setpoint_baby_room:
+    name: Dashboard - Thermostat Setpoint Baby Room
+    icon: mdi:thermometer
+    min: 16
+    max: 25
+    step: 1
+
+  dashboard_thermostat_setpoint_night:
+    name: Dashboard - Thermostat Setpoint Night
+    icon: mdi:thermometer
+    min: 16
+    max: 25
+    step: 1

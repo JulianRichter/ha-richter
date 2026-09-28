@@ -1,0 +1,14 @@
+input_boolean:
+  ######################################################################
+  # Presence detection
+  ######################################################################
+
+  # Single source of truth: on = home/awake, off = away/sleeping
+  presence_home:
+    name: Presence - Home
+    icon: mdi:home-outline
+
+  # Dashboard-only mirror (always inverse of presence_home, not used in conditions)
+  presence_away:
+    name: Presence - Away
+    icon: mdi:sleep

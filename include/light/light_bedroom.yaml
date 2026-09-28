@@ -1,0 +1,12 @@
+light:
+  # ====================================================================
+  # Bedroom Light Group
+  # ====================================================================
+
+  # Group bedroom lights to control them together
+  - platform: group
+    name: Schlafzimmer Licht
+    unique_id: bedroom_light_group
+    entities:
+      - light.bedroom_light_left
+      - light.bedroom_light_right

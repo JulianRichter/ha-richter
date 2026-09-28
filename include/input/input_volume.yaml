@@ -1,0 +1,30 @@
+input_number:
+  ######################################################################
+  # Speaker volumes
+  ######################################################################
+
+  # Inputs to save current volume to workaround loading animation reset
+  dashboard_speaker_bathroom:
+    name: Dashboard - Speaker Bathroom
+    icon: mdi:volume-high
+    min: 0
+    max: 100
+    step: 1
+  dashboard_speaker_bedroom:
+    name: Dashboard - Speaker Bedroom
+    icon: mdi:volume-high
+    min: 0
+    max: 100
+    step: 1
+  dashboard_speaker_kitchen:
+    name: Dashboard - Speaker Kitchen
+    icon: mdi:volume-high
+    min: 0
+    max: 100
+    step: 1
+  dashboard_speaker_living_room:
+    name: Dashboard - Speaker Living Room
+    icon: mdi:volume-high
+    min: 0
+    max: 100
+    step: 1

@@ -1,0 +1,80 @@
+script:
+  # ====================================================================
+  # Light - Sunrise
+  # - Gradually raises light brightness from 1% to 100% and shifts color
+  # - Aborts automatically if the light is turned off during the animation
+  # ====================================================================
+
+  light_sunrise:
+    alias: "Light - Sunrise"
+    mode: restart
+    icon: mdi:weather-sunset-up
+
+    fields:
+      entity_id:
+        name: Light
+        description: "Light to be turned on."
+        required: true
+        selector:
+          entity:
+            domain: light
+
+      seconds:
+        name: Seconds
+        description: "Total duration of the sunrise in seconds."
+        default: 600
+        selector:
+          number:
+            min: 30
+            max: 3600
+            unit_of_measurement: seconds
+
+    sequence:
+      # Initialize step counters and delays
+      - variables:
+          steps: 100
+          step_delay: "{{ (seconds | default(600) / steps) | float }}"
+          light: "{{ entity_id }}"
+
+      # Start dim and warm
+      - action: light.turn_on
+        target:
+          entity_id: "{{ light }}"
+        data:
+          brightness_pct: 1
+          rgb_color: [255, 166, 87]
+
+      # Allow bulb to apply initial state
+      - delay:
+          seconds: 1
+
+      # Progressive brightness step loop (1% to 100%)
+      - repeat:
+          count: "{{ steps }}"
+          sequence:
+            # Stop if light was turned off by user
+            - choose:
+                - conditions:
+                    - condition: template
+                      value_template: "{{ is_state(light, 'off') }}"
+                  sequence:
+                    - stop: "Sunrise stopped because the light was turned off."
+
+            # Increment brightness percentage
+            - action: light.turn_on
+              target:
+                entity_id: "{{ light }}"
+              data:
+                brightness_pct: "{{ repeat.index }}"
+
+            # Delay before next step
+            - delay:
+                seconds: "{{ step_delay }}"
+
+      # Final neutral white color temperature
+      - action: light.turn_on
+        target:
+          entity_id: "{{ light }}"
+        data:
+          color_temp_kelvin: 2700
+

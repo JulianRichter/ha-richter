@@ -1,0 +1,24 @@
+automation:
+  # ====================================================================
+  # Baby Room - Heater Off Timer
+  # - Automatically shuts off heater after running for 10 minutes
+  # - Safety mechanism to prevent overheating or excessive energy usage
+  # ====================================================================
+
+  - id: "baby_room_heater_off_timer"
+    alias: "Baby Room - Heater Off Timer"
+    mode: single
+
+    trigger:
+      # Heater has been on continuously for 10 minutes
+      - trigger: state
+        entity_id: switch.baby_room_heater
+        to: "on"
+        for: "00:10:00"
+
+    action:
+      # Turn off baby room heater
+      - action: switch.turn_off
+        target:
+          entity_id: switch.baby_room_heater
+

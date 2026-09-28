@@ -1,0 +1,15 @@
+input_boolean:
+
+  ######################################################################
+  # Bathroom
+  ######################################################################
+
+  # Laundry reminder
+  bathroom_laundry:
+    name: Bathroom - Laundry
+    icon: mdi:washing-machine
+
+  # Helper to trigger humidity warning notification only once
+  bathroom_humidity_warning_active:
+    name: Bathroom - Humidity Warning Active
+    icon: mdi:water-percent-alert

@@ -1,0 +1,211 @@
+automation:
+  # ====================================================================
+  # Home - Presence Detection
+  # - Automates Home and Away scenes via a single presence_home toggle
+  # - on = home/awake, off = away/sleeping
+  # - Triggered via manual dashboard/switch toggles or GPS resident tracking
+  # - Regulates thermostats, transitions lights, and announces status via TTS
+  # - Announces in German and optionally in Chinese via play_media_tts_message
+  # ====================================================================
+
+  - id: "home_presence_detection"
+    alias: "Home - Presence Detection"
+    mode: single
+    trigger:
+      # Manual or switch input: Home (presence_home turned on)
+      - id: home_manual
+        trigger: state
+        entity_id: input_boolean.presence_home
+        to: "on"
+
+      # Manual dashboard input: Away
+      - id: away_manual
+        trigger: state
+        entity_id: input_boolean.presence_away
+        to: "on"
+
+      # Manual switch/assistant input: Away (presence_home turned off)
+      - id: away_manual_switch
+        trigger: state
+        entity_id: input_boolean.presence_home
+        to: "off"
+
+      # GPS presence detection: Arrived home
+      - id: home_gps
+        trigger: state
+        entity_id: group.residents
+        to: "home"
+
+      # GPS presence detection: Left home
+      - id: away_gps
+        trigger: state
+        entity_id: group.residents
+        to: "not_home"
+
+    condition:
+      # Ignore secondary sync events between presence_home and presence_away
+      - condition: template
+        value_template: >-
+          {% if trigger.id == 'away_manual' %}
+            {{ is_state('input_boolean.presence_home', 'on') }}
+          {% elif trigger.id == 'away_manual_switch' %}
+            {{ is_state('input_boolean.presence_away', 'off') }}
+          {% else %}
+            true
+          {% endif %}
+
+    action:
+      - choose:
+          # ============================================================
+          # Home Scene
+          # ============================================================
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id in ['home_manual', 'home_gps'] }}"
+            sequence:
+              # Ensure presence_home is on (idempotent for GPS trigger)
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.presence_home
+
+              # Sync dashboard mirror
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.presence_away
+
+              # Set thermostat daytime target temperatures
+              - action: climate.set_temperature
+                target:
+                  entity_id: climate.living_room_thermostat
+                data:
+                  temperature: "{{ states('input_number.dashboard_thermostat_setpoint_living_room') | float(21) }}"
+
+              - action: climate.set_temperature
+                target:
+                  entity_id: climate.kitchen_thermostat
+                data:
+                  temperature: "{{ states('input_number.dashboard_thermostat_setpoint_kitchen') | float(21) }}"
+
+              - action: climate.set_temperature
+                target:
+                  entity_id: climate.bedroom_thermostat
+                data:
+                  temperature: "{{ states('input_number.dashboard_thermostat_setpoint_bedroom') | float(19) }}"
+
+              - action: climate.set_temperature
+                target:
+                  entity_id: climate.baby_room_thermostat
+                data:
+                  temperature: "{{ states('input_number.dashboard_thermostat_setpoint_baby_room') | float(20) }}"
+
+              # Smooth transition for bathroom light if already turned on
+              - if:
+                  - condition: state
+                    entity_id: light.bathroom_light
+                    state: "on"
+                then:
+                  - action: light.turn_on
+                    target:
+                      entity_id: light.bathroom_light
+                    data:
+                      brightness: 255
+                      transition: 10
+
+              # Scenario-specific greetings
+              - choose:
+                  # Manual wake/home greeting
+                  - conditions:
+                      - condition: trigger
+                        id: home_manual
+                    sequence:
+                      # TTS announcement (German and optional Chinese)
+                      - action: script.play_media_tts_message
+                        data:
+                          entity_id: media_player.living_room
+                          message: Guten Morgen!
+                          message_chinese: 早上好！
+
+                  # GPS arrival greeting
+                  - conditions:
+                      - condition: trigger
+                        id: home_gps
+                    sequence:
+                      # German TTS announcement
+                      - action: script.play_media_tts_message
+                        data:
+                          entity_id: media_player.minis
+                          message: Willkommen zu Hause! GPS wurde erkannt.
+
+          # ============================================================
+          # Away / Night Scene
+          # ============================================================
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.id in ['away_manual', 'away_manual_switch', 'away_gps'] }}"
+            sequence:
+              # Ensure presence_home is off (idempotent for GPS trigger)
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.presence_home
+
+              # Sync dashboard mirror
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.presence_away
+
+              # Set thermostat setback temperature for nighttime/away
+              - action: climate.set_temperature
+                target:
+                  entity_id:
+                    - climate.living_room_thermostat
+                    - climate.kitchen_thermostat
+                    - climate.bedroom_thermostat
+                    - climate.baby_room_thermostat
+                data:
+                  temperature: "{{ states('input_number.dashboard_thermostat_setpoint_night') | float(17) }}"
+
+              # Smooth transition for bathroom light if already turned on
+              - if:
+                  - condition: state
+                    entity_id: light.bathroom_light
+                    state: "on"
+                then:
+                  - action: light.turn_on
+                    target:
+                      entity_id: light.bathroom_light
+                    data:
+                      brightness: 5
+                      transition: 10
+
+              # Scenario-specific departures/goodnight actions
+              - choose:
+                  # Manual goodnight
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ trigger.id in ['away_manual', 'away_manual_switch'] }}"
+                    sequence:
+                      # TTS announcement (German and optional Chinese)
+                      - action: script.play_media_tts_message
+                        data:
+                          entity_id: media_player.living_room
+                          volume_level: 0.4
+                          message: Gute Nacht!
+                          message_chinese: 晚安！
+
+                  # GPS departure: announce and start vacuuming
+                  - conditions:
+                      - condition: trigger
+                        id: away_gps
+                    sequence:
+                      # German TTS announcement
+                      - action: script.play_media_tts_message
+                        data:
+                          entity_id: media_player.minis
+                          message: Viel Spaß draußen! GPS erkannt.
+                      # Set vacuum to sweeping mode and start
+                      - action: select.select_option
+                        target:
+                          entity_id: select.robi_cleaning_mode
+                        data:
+                          option: "sweeping"
+                      - action: script.vacuum_start

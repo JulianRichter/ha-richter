@@ -1,0 +1,73 @@
+automation:
+  # ====================================================================
+  # Bedroom - Humidity Warning
+  # - Warns via caring TTS to open window when humidity is high for 5 minutes
+  # - Notifies via caring TTS to close window when humidity rate stabilizes
+  # - Announces in German and optionally in Chinese via play_media_tts_humidity_warning
+  # ====================================================================
+
+  # Bedroom humidity warning
+  - id: "bedroom_humidity_warning"
+    alias: Bedroom - Humidity Warning
+    mode: single
+
+    triggers:
+      ##################################################################
+      # Humidity high (>5 minutes)
+      ##################################################################
+      - trigger: numeric_state
+        entity_id: sensor.bedroom_multi_sensor_humidity
+        above: input_number.dashboard_humidity_threshold_medium
+        for:
+          minutes: 5
+        id: humidity_high
+
+      ##################################################################
+      # Humidity decrease converged
+      ##################################################################
+      - trigger: numeric_state
+        entity_id: sensor.bedroom_humidity_change
+        above: -1.0
+        for:
+          seconds: 30
+        id: humidity_converged
+
+    conditions: []
+
+    actions:
+      - choose:
+          ##############################################################
+          # CASE 1: Humidity high -> notify to open window
+          ##############################################################
+          - conditions:
+              - condition: trigger
+                id: humidity_high
+            sequence:
+              # Announce caring humidity warning via TTS
+              - action: script.play_media_tts_humidity_warning
+                data:
+                  entity_id: media_player.living_room
+                  room: bedroom
+                  status: high
+                  humidity_sensor: sensor.bedroom_multi_sensor_humidity
+
+          ##############################################################
+          # CASE 2: Humidity converged & window open -> notify to close window
+          ##############################################################
+          - conditions:
+              - condition: trigger
+                id: humidity_converged
+              # Only if window is open
+              - condition: state
+                entity_id: binary_sensor.bedroom_window_contact
+                state: "on"
+            sequence:
+              # Announce stabilized humidity via TTS
+              - action: script.play_media_tts_humidity_warning
+                data:
+                  entity_id: media_player.living_room
+                  room: bedroom
+                  status: converged
+                  humidity_sensor: sensor.bedroom_multi_sensor_humidity
+
+        default: []

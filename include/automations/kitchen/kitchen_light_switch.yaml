@@ -1,0 +1,54 @@
+automation:
+  # ====================================================================
+  # Kitchen - Light Switch
+  # - Controls kitchen lighting via wall switch button events
+  # - Up single click turns on kitchen light
+  # - Down single click turns off kitchen light
+  # ====================================================================
+
+  - id: "kitchen_light_switch"
+    alias: "Kitchen - Light Switch"
+    mode: single
+    trigger:
+      # Button action event from kitchen switch
+      - trigger: state
+        entity_id: event.kitchen_light_switch_action
+        not_from: unavailable
+        not_to: unavailable
+
+    condition: []
+
+    action:
+      - choose:
+          # Up single press: turn on light
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.attributes.event_type == 'on' }}"
+            sequence:
+              - action: light.turn_on
+                target:
+                  entity_id: light.kitchen_light
+                data:
+                  brightness: 255
+                  color_temp_kelvin: 2700
+
+          # Down single press: turn off light
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.attributes.event_type == 'off' }}"
+            sequence:
+              - action: light.turn_off
+                target:
+                  entity_id: light.kitchen_light
+
+          # Up hold: reserved
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.attributes.event_type == 'brightness_move_up' }}"
+            sequence: []
+
+          # Down hold: reserved
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.attributes.event_type == 'brightness_move_down' }}"
+            sequence: []

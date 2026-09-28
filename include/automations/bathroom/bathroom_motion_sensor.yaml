@@ -1,0 +1,61 @@
+automation:
+  # ====================================================================
+  # Bathroom - Motion Sensor
+  # - Controls bathroom lighting based on occupancy sensors
+  # - Sets brightness based on presence_home state when motion detected
+  # - Uses smooth transition off when no motion detected on any sensor
+  # ====================================================================
+
+  - id: "bathroom_motion_sensor"
+    alias: "Bathroom - Motion Sensor"
+    mode: single
+    trigger:
+      # Motion detected or cleared on either occupancy sensor
+      - trigger: state
+        entity_id:
+          - binary_sensor.bathroom_motion_sensor_occupancy
+          - binary_sensor.bathroom_shower_motion_sensor_occupancy
+
+    condition: []
+
+    action:
+      - choose:
+          # Motion detected: turn on light if currently off or dimmed low
+          - conditions:
+              # Motion active
+              - condition: template
+                value_template: "{{ trigger.to_state.state == 'on' }}"
+
+              # Light is currently off or low dimmed (<= 5)
+              - condition: template
+                value_template: "{{ state_attr('light.bathroom_light', 'brightness') | default(0, true) | int(0) <= 5 }}"
+            sequence:
+              # Turn light on (dimmed if sleeping, full brightness otherwise)
+              - action: light.turn_on
+                target:
+                  entity_id: light.bathroom_light
+                data:
+                  brightness: "{{ 5 if is_state('input_boolean.presence_home', 'off') else 255 }}"
+                  transition: 1
+
+          # Motion cleared: turn off light once all sensors are clear
+          - conditions:
+              # Motion cleared on trigger sensor
+              - condition: template
+                value_template: "{{ trigger.to_state.state == 'off' }}"
+
+              # Neither motion sensor is active
+              - condition: state
+                entity_id: binary_sensor.bathroom_motion_sensor_occupancy
+                state: "off"
+
+              - condition: state
+                entity_id: binary_sensor.bathroom_shower_motion_sensor_occupancy
+                state: "off"
+            sequence:
+              # Turn off slowly if bright, fast if already dim
+              - action: light.turn_off
+                target:
+                  entity_id: light.bathroom_light
+                data:
+                  transition: "{{ 1 if (state_attr('light.bathroom_light', 'brightness') | default(0, true) | int(0) <= 5) else 15 }}"

@@ -1,0 +1,49 @@
+sensor:
+  # =============================================
+  # Monitor rate of change for humidity sensors
+  # =============================================
+
+  # kitchen
+  - platform: derivative
+    name: Kitchen - Humidity Change
+    unique_id: kitchen_humidity_change
+    source: sensor.kitchen_multi_sensor_humidity
+    round: 2
+    unit_time: min
+    time_window: "00:05:00"
+
+  # living_room
+  - platform: derivative
+    name: Living Room - Humidity Change
+    unique_id: living_room_humidity_change
+    source: sensor.living_room_multi_sensor_humidity
+    round: 2
+    unit_time: min
+    time_window: "00:05:00"
+
+  # bathroom
+  - platform: derivative
+    name: Bathroom - Humidity Change
+    unique_id: bathroom_humidity_change
+    source: sensor.bathroom_multi_sensor_humidity
+    round: 2
+    unit_time: min
+    time_window: "00:05:00"
+
+  # bedroom
+  - platform: derivative
+    name: Bedroom - Humidity Change
+    unique_id: bedroom_humidity_change
+    source: sensor.bedroom_multi_sensor_humidity
+    round: 2
+    unit_time: min
+    time_window: "00:05:00"
+
+  # baby_room
+  - platform: derivative
+    name: Baby Room - Humidity Change
+    unique_id: baby_room_humidity_change
+    source: sensor.baby_room_multi_sensor_humidity
+    round: 2
+    unit_time: min
+    time_window: "00:05:00"

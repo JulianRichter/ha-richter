@@ -1,0 +1,12 @@
+cover:
+  # ====================================================================
+  # Living Room Curtains Group
+  # - Groups left and right living room curtains into a single cover entity
+  # ====================================================================
+
+  # Group living room curtains to control them together
+  - platform: group
+    name: Living Room Curtains
+    entities:
+      - cover.living_room_curtain_left
+      - cover.living_room_curtain_right

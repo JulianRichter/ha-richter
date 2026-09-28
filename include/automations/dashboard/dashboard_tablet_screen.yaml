@@ -1,0 +1,22 @@
+automation:
+  # ====================================================================
+  # Dashboard - Tablet Screen
+  # - Turns on the living room tablet screen when motion is detected
+  # ====================================================================
+
+  - id: "dashboard_tablet_screen"
+    alias: "Dashboard - Tablet Screen"
+    mode: single
+    trigger:
+      # Motion detected in living room
+      - trigger: state
+        entity_id: binary_sensor.living_room_motion_sensor_occupancy
+        to: "on"
+
+    condition: []
+
+    action:
+      # Wake tablet screen
+      - action: switch.turn_on
+        target:
+          entity_id: switch.living_room_tablet_screen

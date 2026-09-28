@@ -1,0 +1,16 @@
+template:
+  # ====================================================================
+  # Tablet Sidebar - Time
+  # ====================================================================
+
+  # Time display for tablet dashboard sidebar
+  - sensor:
+      - unique_id: tablet_sidebar_time
+        state: "{{now().hour}}:{{now().minute}}"
+        attributes:
+          sidebar_html_text: >
+            {% set hours = now().strftime('%H') %}
+            {% set minutes = now().strftime('%M') %}
+            <span class="time">
+              {{ hours }}<span class="time-colon">:</span>{{ minutes }}
+            </span>

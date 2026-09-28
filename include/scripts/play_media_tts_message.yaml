@@ -1,0 +1,126 @@
+script:
+  # ====================================================================
+  # Play Media - TTS Message
+  # - Caches initial media player volume and resolves announcement volume based on presence or override
+  # - Sets volume to 20% when away/night (presence_home off) or 40% when home (presence_home on), unless overridden
+  # - Supports optional volume_level override (0.0 to 1.0)
+  # - Plays German text-to-speech message via Google Cloud TTS
+  # - Optionally announces Chinese message if input_boolean.home_chinese_tts_enabled is on
+  # - Restores original media player volume after announcements complete
+  # ====================================================================
+
+  play_media_tts_message:
+    alias: "Play Media - TTS Message"
+    mode: queued
+    max: 10
+    icon: mdi:music
+
+    fields:
+      entity_id:
+        name: Speaker
+        description: "Entity ID of the media player to announce on."
+        example: media_player.living_room
+        required: true
+        selector:
+          entity:
+            domain: media_player
+
+      message:
+        name: Message
+        description: "German text-to-speech message to be announced."
+        example: "Guten Tag."
+        required: true
+        selector:
+          text:
+
+      message_chinese:
+        name: Chinese Message
+        description: "Optional Chinese text-to-speech message to be announced."
+        example: "你好。"
+        required: false
+        default: ""
+        selector:
+          text:
+
+      volume_level:
+        name: Volume Level
+        description: "Optional volume level (0.0 to 1.0) to override default presence-based volume."
+        example: 0.4
+        required: false
+        selector:
+          number:
+            min: 0.0
+            max: 1.0
+            step: 0.05
+            mode: slider
+
+    sequence:
+      # Cache starting volume and determine target volume based on presence or optional override
+      - variables:
+          target_volume: >-
+            {%- set custom_vol = volume_level if volume_level is defined and volume_level not in [none, '']
+                else (volume if volume is defined and volume not in [none, '']
+                else none) -%}
+            {{ custom_vol | float if custom_vol is not none else (0.2 if is_state('input_boolean.presence_home', 'off') else 0.4) }}
+          start_volume: >-
+            {%- set vol = state_attr(entity_id, 'volume_level') -%}
+            {{ vol | float if vol is not none and vol != '' else target_volume }}
+
+      # Set announcement volume on media player
+      - action: media_player.volume_set
+        target:
+          entity_id: "{{ entity_id }}"
+        data:
+          volume_level: "{{ target_volume }}"
+
+      # Announce German TTS via Google Cloud TTS
+      - action: tts.speak
+        target:
+          entity_id: tts.google_cloud
+        data:
+          cache: true
+          media_player_entity_id: "{{ entity_id }}"
+          message: "{{ message }}"
+
+      # Announce Chinese TTS via Google Cloud TTS if enabled and provided
+      - if:
+          - condition: state
+            entity_id: input_boolean.home_chinese_tts_enabled
+            state: "on"
+          - condition: template
+            value_template: "{{ (message_chinese | default(message_ch | default('', true), true) | trim) != '' }}"
+        then:
+          # Wait for German TTS playback to complete before starting Chinese TTS
+          - wait_template: "{{ is_state(entity_id, 'playing') }}"
+            timeout: "00:00:02"
+            continue_on_timeout: true
+          - wait_template: "{{ not is_state(entity_id, 'playing') }}"
+            timeout: "00:00:25"
+            continue_on_timeout: true
+
+          # Announce Chinese speech
+          - action: tts.speak
+            target:
+              entity_id: tts.google_cloud
+            data:
+              cache: true
+              media_player_entity_id: "{{ entity_id }}"
+              message: "{{ message_chinese | default(message_ch, true) }}"
+              language: cmn-CN
+              options:
+                voice: cmn-CN-Chirp3-HD-Achernar
+
+      # Wait for announcement playback to complete before restoring volume
+      - wait_template: "{{ is_state(entity_id, 'playing') }}"
+        timeout: "00:00:02"
+        continue_on_timeout: true
+      - wait_template: "{{ not is_state(entity_id, 'playing') }}"
+        timeout: "00:00:25"
+        continue_on_timeout: true
+
+      # Restore original media player volume
+      - action: media_player.volume_set
+        target:
+          entity_id: "{{ entity_id }}"
+        data:
+          volume_level: "{{ start_volume | float }}"

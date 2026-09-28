@@ -1,0 +1,12 @@
+input_boolean:
+  ######################################################################
+  # Sport
+  ######################################################################
+
+  # Sport reminder
+  dashboard_sport_julian:
+    name: Dashboard - Sport Julian
+    icon: mdi:check-bold
+  dashboard_sport_xingyang:
+    name: Dashboard - Sport Xingyang
+    icon: mdi:check-bold

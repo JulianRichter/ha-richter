@@ -1,0 +1,98 @@
+automation:
+  # ====================================================================
+  # Bedroom - Light Switch Right
+  # - Controls right bedroom bedside light via wall switch
+  # - Single press up: Toggles right light (full 255 / warm 127)
+  # - Single press down: Smoothly turns off right light via light_low_before_off
+  # - Hold up: Activates Home scene (presence_home on)
+  # - Hold down: Activates Away scene (presence_home off, turns off all bedroom lights)
+  # ====================================================================
+
+  - id: "bedroom_light_switch_right"
+    alias: "Bedroom - Light Switch Right"
+    mode: single
+
+    trigger:
+      # Switch action event
+      - trigger: state
+        entity_id: event.bedroom_light_switch_right_action
+        not_from: unavailable
+        not_to: unavailable
+
+    condition: []
+
+    action:
+      - choose:
+          # ============================================================
+          # Up: Light on
+          # ============================================================
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.attributes.event_type == 'on' }}"
+            sequence:
+              - choose:
+                  # If not full brightness, turn on full
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ state_attr('light.bedroom_light_right', 'brightness') | int != 255 }}"
+                    sequence:
+                      - action: light.turn_on
+                        data:
+                          brightness: 255
+                          color_temp_kelvin: 2700
+                        target:
+                          entity_id: light.bedroom_light_right
+                default:
+                  # Toggle to warm 50% brightness
+                  - action: light.turn_on
+                    data:
+                      brightness: 127
+                      rgb_color: [255, 166, 87]
+                    target:
+                      entity_id: light.bedroom_light_right
+
+          # ============================================================
+          # Down: Light off
+          # ============================================================
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.attributes.event_type == 'off' }}"
+            sequence:
+              # Smooth turn off
+              - action: script.light_low_before_off
+                data:
+                  entity_id: light.bedroom_light_right
+
+          # ============================================================
+          # Up hold: Home Scene
+          # ============================================================
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.attributes.event_type == 'brightness_move_up' }}"
+            sequence:
+              # Activate home scene
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.presence_home
+
+          # ============================================================
+          # Down hold: Away Scene
+          # ============================================================
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.attributes.event_type == 'brightness_move_down' }}"
+            sequence:
+              # Activate away scene
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.presence_home
+              # Turn off all bedroom lights
+              - action: script.light_low_before_off
+                data:
+                  entity_id:
+                    - light.bedroom_light_left
+                    - light.bedroom_light_right
+                    - light.bedroom_light_sphere
+
+        default: []
+

@@ -1,0 +1,33 @@
+template:
+  # ====================================================================
+  # Tablet Sidebar - Birthday Notification
+  # ====================================================================
+
+  # Birthday notification widget for tablet dashboard sidebar
+  - binary_sensor:
+      - unique_id: tablet_sidebar_birthday_notification
+        state: >
+          {{ states('calendar.family_birthday') }}
+        attributes:
+          count: >
+            {{ 1 if is_state('calendar.family_birthday', 'on') else 0 }}
+          sidebar_html_text: >
+            {% set family_birthday = states('calendar.family_birthday') %}
+
+            {% if family_birthday == 'on' %}
+              <p>
+              {% set birthday_message = state_attr('calendar.family_birthday','message') %}
+              {% set birthday_comment = state_attr('calendar.family_birthday','description') %}
+              {% set name = birthday_message | replace('s Geburtstag', '') %}
+              Geburtstag von<br>
+              {{ name }}
+              
+              {# Add age info if available. #}
+              {% if birthday_comment != '' %}
+                {% set age = now().year | int - birthday_comment | int %}
+                ({{ age }}) 
+              {% endif %}
+              
+              &#x1F389;
+              </p>
+            {% endif %}

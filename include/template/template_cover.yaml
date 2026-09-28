@@ -1,0 +1,40 @@
+template:
+  # =============================================
+  # Google Home Helper
+  # =============================================
+
+  # Hack: Translate google home commands to cover positions
+  - cover:
+      - unique_id: home_assistant_controller_google
+        name: Home Assistant Controller Google
+        state: "open"
+        position: "100"
+        set_cover_position:
+          - action: script.google_pass_command_to_home_assistant
+            data:
+              cover_position: "{{ position }}"
+
+  # =============================================
+  # Dashboard Helper
+  # =============================================
+
+  # Fix dashboard animation by just changing state when cover stops.
+  - cover:
+      - unique_id: bedroom_roller_blinds_dashboard
+        name: Bedroom - Roller Blinds (Dashboard)
+        device_class: blind
+        availability: "{{ has_value('cover.bedroom_roller_blinds') }}"
+        state: >
+          {% set s = states('cover.bedroom_roller_blinds') %}
+          {{ s if s in ['open', 'opening', 'closed', 'closing'] else 'closed' }}
+        position: "{{ state_attr('cover.bedroom_roller_blinds', 'current_position') | default(0, true) | int(0) }}"
+        set_cover_position:
+          - action: cover.set_cover_position
+            data:
+              position: "{{ position }}"
+            target:
+              entity_id: cover.bedroom_roller_blinds
+        stop_cover:
+          - action: cover.stop_cover
+            target:
+              entity_id: cover.bedroom_roller_blinds

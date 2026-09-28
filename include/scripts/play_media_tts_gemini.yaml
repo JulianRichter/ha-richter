@@ -1,0 +1,104 @@
+script:
+  # ====================================================================
+  # Play Media - TTS Gemini Prompt
+  # - Sends a custom prompt to the Gemini conversation agent
+  # - Announces the generated response on the specified media player via TTS
+  # - Gracefully catches errors or empty responses and speaks a clear fallback message
+  # ====================================================================
+
+  play_media_tts_gemini:
+    alias: "Play Media - TTS Gemini Prompt"
+    mode: queued
+    max: 5
+    icon: mdi:creation
+
+    fields:
+      prompt:
+        name: Prompt
+        description: "Prompt to send to the Gemini AI conversation agent."
+        example: "Erstelle ein kurzes Morgen-Briefing..."
+        required: true
+        selector:
+          text:
+            multiline: true
+
+      entity_id:
+        name: Speaker
+        description: "Entity ID of the media player to announce on (default: media_player.living_room)."
+        example: media_player.bathroom
+        required: false
+        selector:
+          entity:
+            domain: media_player
+
+      media_player:
+        name: Speaker (Alternative)
+        description: "Alternative entity ID of the media player to announce on."
+        example: media_player.bathroom
+        required: false
+        selector:
+          entity:
+            domain: media_player
+
+      agent_id:
+        name: Conversation Agent
+        description: "Entity ID of the conversation agent (default: conversation.google_ai_conversation)."
+        example: conversation.google_ai_conversation
+        required: false
+        default: conversation.google_ai_conversation
+        selector:
+          entity:
+            domain: conversation
+
+      error_message:
+        name: Error Message
+        description: "Custom fallback announcement if Gemini fails or returns an empty response."
+        example: "Entschuldigung, Gemini antwortet leider nicht."
+        required: false
+        selector:
+          text:
+
+      volume_level:
+        name: Volume Level
+        description: "Optional volume level (0.0 to 1.0) to override default announcement volume."
+        example: 0.35
+        required: false
+        selector:
+          number:
+            min: 0.0
+            max: 1.0
+            step: 0.05
+            mode: slider
+
+    sequence:
+      # Resolve target speaker and fallback error announcement
+      - variables:
+          target_player: "{{ media_player | default(entity_id | default('media_player.living_room', true), true) }}"
+          fallback_msg: >-
+            {{ error_message | default('Entschuldigung, ich konnte das Briefing nicht erstellen. Gemini antwortet leider gerade nicht.', true) }}
+
+      # Query Gemini AI conversation agent
+      - action: conversation.process
+        data:
+          agent_id: "{{ agent_id | default('conversation.google_ai_conversation', true) }}"
+          text: "{{ prompt }}"
+        response_variable: agent_response
+        continue_on_error: true
+
+      # Extract speech response safely or choose fallback announcement
+      - variables:
+          raw_speech: >-
+            {%- if agent_response is defined and agent_response and agent_response.response is defined and agent_response.response.speech is defined and agent_response.response.speech.plain is defined -%}
+              {{ agent_response.response.speech.plain.speech | default('', true) | trim }}
+            {%- else -%}
+              
+            {%- endif -%}
+          final_message: >-
+            {{ raw_speech if raw_speech != '' else fallback_msg }}
+
+      # Play announcement via TTS message script
+      - action: script.play_media_tts_message
+        data:
+          entity_id: "{{ target_player }}"
+          message: "{{ final_message }}"
+          volume_level: "{{ volume_level if volume_level is defined else none }}"

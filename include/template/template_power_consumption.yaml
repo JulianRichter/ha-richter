@@ -1,0 +1,82 @@
+template:
+  # ==============================================
+  # Power usage to be used in integration sensors (W -> kWh)
+  # MQTT devices typically already expose this by default
+  # ==============================================
+
+  # kitchen
+  - sensor:
+      - name: Kitchen - Fridge Power
+        unique_id: kitchen_fridge_power
+        state: "{{ state_attr('switch.kitchen_fridge', 'current_consumption') }}"
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+  - sensor:
+      - name: Kitchen - Microwave Power
+        unique_id: kitchen_microwave_power
+        state: "{{ state_attr('switch.kitchen_microwave', 'current_consumption') }}"
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+  # living room
+  - sensor:
+      - name: Living Room - Desktop Power
+        unique_id: living_room_desktop_power
+        state: "{{ state_attr('switch.living_room_desktop', 'current_consumption') }}"
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+  - sensor:
+      - name: Living Room - TV Power
+        unique_id: living_room_tv_power
+        state: "{{ state_attr('switch.living_room_tv', 'current_consumption') }}"
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+  # ==============================================
+  # Total Power usage to be used in integration sensors (W -> kWh)
+  # ==============================================
+
+  # aggregate power usage from all sensors
+  - sensor:
+      - name: Home - Total Power
+        unique_id: home_total_power
+        state: >
+          {% set sensors = [
+            'sensor.kitchen_fridge_power',
+            'sensor.kitchen_microwave_power',
+            'sensor.living_room_desktop_power',
+            'sensor.living_room_tv_power',
+            'sensor.bathroom_washer_power',
+
+            'sensor.kitchen_sink_power',
+            'sensor.kitchen_dish_washer_power',
+            'sensor.kitchen_kettle_power',
+            'sensor.living_room_nintendo_power',
+          ] %}
+          {{ sensors | map('states') | map('float', 0) | sum }}
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+
+  # ===============================================
+  # simulate base cost given base and usage price
+  # ===============================================
+
+  - sensor:
+      - name: Home - Base Energy (Simulated)
+        unique_id: home_base_energy_simulated
+        state: >
+          {% set yearly_fee = states('input_number.home_energy_base_price') | float(0) %}
+          {% set kwh_price  = states('input_number.home_energy_price') | float(0.0001) %}
+          {% set yearly_kwh = yearly_fee / kwh_price %}
+          {% set hours = (as_timestamp(now()) - as_timestamp(now().replace(month=1, day=1, hour=0, minute=0, second=0))) / 3600 %}
+          {{ yearly_kwh * (hours / 8760) }}
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing

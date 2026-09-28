@@ -1,0 +1,16 @@
+utility_meter:
+  # ====================================================================
+  # Desktop Utility Meter
+  # ====================================================================
+
+  # Daily power consumption of the desktop
+  living_room_desktop_kwh_daily:
+    name: Desktop
+    source: sensor.desktop_kwh
+    cycle: daily
+
+  # Monthly power consumption of the desktop
+  living_room_desktop_kwh_monthly:
+    name: Desktop
+    source: sensor.desktop_kwh
+    cycle: monthly

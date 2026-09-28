@@ -1,0 +1,115 @@
+automation:
+  # ====================================================================
+  # Bedroom - Window Sensor
+  # - Window opened: Turns on purifier, sets fan level (3 home / 2 away), turns off thermostat, announces caring TTS with humidity.
+  # - Window closed: Turns on purifier, sets preset mode to Silent, turns on thermostat, announces caring TTS with humidity.
+  # - Announces in German and optionally in Chinese via play_media_tts_window scripts
+  # ====================================================================
+
+  - id: "bedroom_window_sensor"
+    alias: "Bedroom - Window Sensor"
+    mode: restart
+    trigger:
+      # Window opened
+      - trigger: state
+        entity_id:
+          - binary_sensor.bedroom_window_contact
+        from: "off"
+        to: "on"
+        id: window_opened
+
+      # Window closed
+      - trigger: state
+        entity_id:
+          - binary_sensor.bedroom_window_contact
+        from: "on"
+        to: "off"
+        id: window_closed
+
+    condition: []
+
+    action:
+      - choose:
+          # ============================================================
+          # Window opened
+          # ============================================================
+          - conditions:
+              # Trigger is window opened
+              - condition: trigger
+                id: window_opened
+            sequence:
+              # Ensure air purifier is turned on
+              - action: fan.turn_on
+                target:
+                  entity_id: fan.living_room_air_purifier
+
+              # Set fan level based on sleeping mode
+              - choose:
+                  # Away/sleeping mode is active -> level 2
+                  - conditions:
+                      - condition: state
+                        entity_id: input_boolean.presence_home
+                        state: "off"
+                    sequence:
+                      # Set fan level to 2 (sleep)
+                      - action: number.set_value
+                        target:
+                          entity_id: number.living_room_air_purifier_fan_level
+                        data:
+                          value: 2
+
+                  # Home/awake mode -> level 3
+                  - conditions:
+                      - condition: state
+                        entity_id: input_boolean.presence_home
+                        state: "on"
+                    sequence:
+                      # Set fan level to 3 (awake)
+                      - action: number.set_value
+                        target:
+                          entity_id: number.living_room_air_purifier_fan_level
+                        data:
+                          value: 3
+                default: []
+
+              # Turn off bedroom thermostat
+              - action: climate.turn_off
+                target:
+                  entity_id: climate.bedroom_thermostat
+
+              # Announce window opened via caring TTS
+              - action: script.play_media_tts_window_opened
+                data:
+                  entity_id: media_player.bedroom
+                  humidity_sensor: sensor.bedroom_multi_sensor_humidity
+
+          # ============================================================
+          # Window closed
+          # ============================================================
+          - conditions:
+              # Trigger is window closed
+              - condition: trigger
+                id: window_closed
+            sequence:
+              # Ensure air purifier is turned on
+              - action: fan.turn_on
+                target:
+                  entity_id: fan.living_room_air_purifier
+
+              # Set air purifier preset mode to Silent
+              - action: fan.set_preset_mode
+                target:
+                  entity_id: fan.living_room_air_purifier
+                data:
+                  preset_mode: "Silent"
+
+              # Turn on bedroom thermostat
+              - action: climate.turn_on
+                target:
+                  entity_id: climate.bedroom_thermostat
+
+              # Announce window closed via caring TTS
+              - action: script.play_media_tts_window_closed
+                data:
+                  entity_id: media_player.bedroom
+                  humidity_sensor: sensor.bedroom_multi_sensor_humidity

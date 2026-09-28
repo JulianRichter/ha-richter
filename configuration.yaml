@@ -1,0 +1,52 @@
+######################################################################
+# Basic home assistant configs
+######################################################################
+
+# Configure a default setup of Home Assistant (frontend, api, etc)
+default_config:
+
+# Load config that is split into packages. (sensors, switches, ...)
+homeassistant:
+  packages: !include_dir_named include
+frontend:
+  themes: !include_dir_merge_named themes
+
+# MariaDB for history storage.
+recorder:
+  db_url: !secret maria_db_url
+
+# Text to speech.
+tts:
+  # Default free tts service
+  - platform: google_translate
+    # base_url: !secret home_assistant_external_url
+    language: de
+
+# Include automations, scripts, scenes and groups.
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+group: !include groups.yaml
+
+######################################################################
+# Lovelace dashboards (ui and yaml mode)
+######################################################################
+
+# Setup lovelace dashboards.
+lovelace:
+  # Defaul dashboard in UI mode.
+  mode: storage
+  # Add additional yaml dashboards. (name has to contain a hyphen)
+  dashboards:
+    bubble-code-dashboard:
+      mode: yaml
+      title: Bubble Code
+      icon: mdi:view-dashboard
+      show_in_sidebar: true
+      filename: dashboards/bubble_code/bubble_code.yaml
+  # # Load custom resources # (Storage mode uses ressources in dashboard ui)
+  # resources:
+  #   - type: css
+  #     url: /local/my_packages/font.css
+  #   - type: module
+  #     url: /local/my_packages/custom_icons.js

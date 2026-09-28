@@ -1,0 +1,60 @@
+automation:
+  # ====================================================================
+  # Living Room - Humidity Warning
+  # - Warns via caring TTS to open window when humidity is high for 5 minutes
+  # - Notifies via caring TTS to close window when humidity rate stabilizes
+  # - Announces in German and optionally in Chinese via play_media_tts_humidity_warning
+  # ====================================================================
+
+  - id: "living_room_humidity_warning"
+    alias: "Living Room - Humidity Warning"
+    mode: single
+    trigger:
+      # Humidity remains above threshold for 5 minutes
+      - trigger: numeric_state
+        entity_id: sensor.living_room_multi_sensor_humidity
+        above: input_number.dashboard_humidity_threshold_medium
+        for:
+          minutes: 5
+        id: humidity_high
+
+      # Humidity rate of decrease converged for 30 seconds
+      - trigger: numeric_state
+        entity_id: sensor.living_room_humidity_change
+        above: -1.0
+        for:
+          seconds: 30
+        id: humidity_converged
+
+    condition: []
+
+    action:
+      - choose:
+          # Humidity high: prompt to open window
+          - conditions:
+              - condition: trigger
+                id: humidity_high
+            sequence:
+              # Announce caring humidity warning via TTS
+              - action: script.play_media_tts_humidity_warning
+                data:
+                  entity_id: media_player.living_room
+                  room: living_room
+                  status: high
+                  humidity_sensor: sensor.living_room_multi_sensor_humidity
+
+          # Humidity stabilized and window is open: prompt to close window
+          - conditions:
+              - condition: trigger
+                id: humidity_converged
+              - condition: state
+                entity_id: binary_sensor.living_room_window_contact
+                state: "on"
+            sequence:
+              # Announce stabilized humidity via TTS
+              - action: script.play_media_tts_humidity_warning
+                data:
+                  entity_id: media_player.living_room
+                  room: living_room
+                  status: converged
+                  humidity_sensor: sensor.living_room_multi_sensor_humidity

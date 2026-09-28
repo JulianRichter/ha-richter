@@ -1,0 +1,54 @@
+script:
+  # ====================================================================
+  # Light - Low Before Off
+  # - Prevents sudden bright flashes when lights are turned back on
+  # - Briefly switches currently-on lights to a dim red before turning them off
+  # ====================================================================
+
+  light_low_before_off:
+    alias: "Light - Low Before Off"
+    mode: parallel
+    icon: mdi:lightbulb-outline
+
+    fields:
+      entity_id:
+        name: Lights
+        description: "Lights to be turned off smoothly."
+        required: true
+        selector:
+          entity:
+            domain: light
+            multiple: true
+
+    sequence:
+      # Filter only lights that are currently on
+      - variables:
+          lights_on: >
+            {{ expand(entity_id)
+              | selectattr('state', 'equalto', 'on')
+              | map(attribute='entity_id')
+              | list }}
+
+      # Stop early if no target lights are on
+      - choose:
+          - conditions: "{{ lights_on | count == 0 }}"
+            sequence:
+              - stop: "No lights were on."
+
+      # Set low red brightness before off
+      - action: light.turn_on
+        target:
+          entity_id: "{{ lights_on }}"
+        data:
+          brightness: 5
+          rgb_color: [255, 0, 0]
+
+      # Give bulbs time to apply transition
+      - delay:
+          milliseconds: 500
+
+      # Turn off target lights
+      - action: light.turn_off
+        target:
+          entity_id: "{{ lights_on }}"
+

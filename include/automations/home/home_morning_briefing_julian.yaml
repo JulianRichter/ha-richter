@@ -1,0 +1,247 @@
+automation:
+  # ====================================================================
+  # Morning Briefing - Julian
+  # - Triggers when Julian's phone stops charging (6:00–10:00)
+  # - Confirms he's in the bathroom (motion sustained for 5 min)
+  # - Fetches weather forecast, calendar events, and open todo items
+  # - On weekends: includes a family activity suggestion for Augsburg
+  # - Passes assembled prompt to play_media_tts_gemini script
+  # - Plays briefing on bathroom speaker with graceful error fallback
+  # - Runs only once per day (last_triggered check)
+  # ====================================================================
+
+  - id: "morning_briefing_julian"
+    alias: "Morning Briefing - Julian"
+    mode: single
+
+    # ------------------------------------------------------------------
+    # Trigger: phone unplugged (Julian woke up)
+    # ------------------------------------------------------------------
+    trigger:
+      - trigger: state
+        entity_id: binary_sensor.julian_is_charging
+        from: "on"
+        to: "off"
+
+    # ------------------------------------------------------------------
+    # Conditions: morning window + once per day
+    # ------------------------------------------------------------------
+    condition:
+      # Only between 6:00 and 10:00
+      - condition: time
+        after: "06:00:00"
+        before: "10:00:00"
+
+      # Only once per calendar day
+      - condition: template
+        value_template: >
+          {% set last = state_attr('automation.morning_briefing_julian', 'last_triggered') %}
+          {{ last is none or (last | as_datetime).date() != now().date() }}
+
+    # ------------------------------------------------------------------
+    # Actions: confirm bathroom → gather data → Gemini TTS script
+    # ------------------------------------------------------------------
+    action:
+
+      # -- Step 1: Wait for bathroom occupancy (skip if already there) --
+      - choose:
+          - conditions:
+              - condition: or
+                conditions:
+                  - condition: state
+                    entity_id: binary_sensor.bathroom_motion_sensor_occupancy
+                    state: "on"
+                  - condition: state
+                    entity_id: binary_sensor.bathroom_shower_motion_sensor_occupancy
+                    state: "on"
+            sequence: []
+        default:
+          - wait_for_trigger:
+              - trigger: state
+                entity_id:
+                  - binary_sensor.bathroom_motion_sensor_occupancy
+                  - binary_sensor.bathroom_shower_motion_sensor_occupancy
+                to: "on"
+            timeout: "00:30:00"
+            continue_on_timeout: false
+
+      # -- Step 2: Confirm sustained presence (5 min) --
+      - delay:
+          minutes: 5
+
+      # -- Step 3: Verify phone is still not charging --
+      - condition: state
+        entity_id: binary_sensor.julian_is_charging
+        state: "off"
+
+      # -- Step 4: Verify bathroom is still occupied --
+      - condition: or
+        conditions:
+          - condition: state
+            entity_id: binary_sensor.bathroom_motion_sensor_occupancy
+            state: "on"
+          - condition: state
+            entity_id: binary_sensor.bathroom_shower_motion_sensor_occupancy
+            state: "on"
+
+      # -- Step 5: Fetch today's calendar events --
+      - action: calendar.get_events
+        target:
+          entity_id:
+            - calendar.familie
+            - calendar.german_holidays_all
+            - calendar.julian_all
+            - calendar.keno
+            - calendar.leo
+        data:
+          duration:
+            hours: 24
+        response_variable: calendar_events
+
+      # -- Step 6: Fetch open todo items --
+      - action: todo.get_items
+        target:
+          entity_id: todo.julian_google_tasks
+        data:
+          status: needs_action
+        response_variable: todo_items
+
+      # -- Step 7: Generate and play morning briefing via Gemini TTS script --
+      - action: script.play_media_tts_gemini
+        data:
+          entity_id: media_player.bathroom
+          prompt: >
+            {%- set cond_map = {
+              'clear-night': 'klar',
+              'cloudy': 'bewölkt',
+              'fog': 'neblig',
+              'hail': 'Hagel',
+              'lightning': 'Gewitter',
+              'lightning-rainy': 'Gewitter mit Regen',
+              'partlycloudy': 'teilweise bewölkt',
+              'pouring': 'starker Regen',
+              'rainy': 'Regen',
+              'snowy': 'Schnee',
+              'snowy-rainy': 'Schneeregen',
+              'sunny': 'sonnig',
+              'windy': 'windig',
+              'windy-variant': 'windig'
+            } -%}
+            {%- set cur_temp = states('sensor.weather_home_current_temperature') | float(0) | round(0) | int -%}
+            {%- set cur_cond_raw = states('sensor.weather_home_current_condition') -%}
+            {%- set cur_cond = cond_map.get(cur_cond_raw, cur_cond_raw) -%}
+            {%- set dt = state_attr('sensor.weather_home_forecast', 'datetime') | default([], true) -%}
+            {%- set temp = state_attr('sensor.weather_home_forecast', 'temperature') | default([], true) -%}
+            {%- set precip = state_attr('sensor.weather_home_forecast', 'precipitation') | default([], true) -%}
+            {%- set cond = state_attr('sensor.weather_home_forecast', 'condition') | default([], true) -%}
+            {%- set today = now().strftime('%Y-%m-%d') -%}
+            {%- set ns = namespace(temps=[], rain_times=[], conditions=[]) -%}
+            {%- if dt and temp and cond and dt is iterable -%}
+              {%- for i in range(dt | length) -%}
+                {%- if dt[i][:10] == today -%}
+                  {%- set ns.temps = ns.temps + [temp[i] | float(0)] -%}
+                  {%- if precip[i] | float(0) >= 0.2 -%}
+                    {%- set ns.rain_times = ns.rain_times + [dt[i][11:13] ~ ' Uhr'] -%}
+                  {%- endif -%}
+                  {%- set c_name = cond_map.get(cond[i], cond[i]) -%}
+                  {%- if c_name not in ns.conditions -%}
+                    {%- set ns.conditions = ns.conditions + [c_name] -%}
+                  {%- endif -%}
+                {%- endif -%}
+              {%- endfor -%}
+            {%- endif -%}
+            {%- set cal_items = namespace(list=[]) -%}
+            {%- if calendar_events is defined and calendar_events -%}
+              {%- for cal_id, cal_data in calendar_events.items() -%}
+                {%- if cal_data.events | length > 0 -%}
+                  {%- for event in cal_data.events -%}
+                    {%- set time_str = '' -%}
+                    {%- if event.start is defined -%}
+                      {%- if 'T' in event.start -%}
+                        {%- set time_str = ' um ' ~ event.start[11:16] ~ ' Uhr' -%}
+                      {%- else -%}
+                        {%- set time_str = ' (ganztägig)' -%}
+                      {%- endif -%}
+                    {%- endif -%}
+                    {%- set cal_items.list = cal_items.list + [event.summary ~ time_str] -%}
+                  {%- endfor -%}
+                {%- endif -%}
+              {%- endfor -%}
+            {%- endif -%}
+            {%- set todo_items_list = namespace(list=[]) -%}
+            {%- if todo_items is defined and todo_items and 'todo.julian_google_tasks' in todo_items -%}
+              {%- set raw_todos = todo_items['todo.julian_google_tasks']['items'] | default([]) -%}
+              {%- for item in raw_todos -%}
+                {%- set due_str = '' -%}
+                {%- if item.due is defined and item.due -%}
+                  {%- if item.due[:10] == today -%}
+                    {%- set due_str = ' (heute fällig)' -%}
+                  {%- else -%}
+                    {%- set due_str = ' (demnächst fällig)' -%}
+                  {%- endif -%}
+                {%- endif -%}
+                {%- set todo_items_list.list = todo_items_list.list + [item.summary ~ due_str] -%}
+              {%- endfor -%}
+            {%- endif -%}
+            Du sprichst als guter, aufmerksamer Freund von Julian, der morgens kurz mit ihm im Badezimmer plaudert.
+            Sprich vollkommen natürlich, warmherzig und ungezwungen – wie ein echter Mensch von Angesicht zu Angesicht, niemals wie ein Roboter, Sprachassistent oder Nachrichtensprecher.
+
+            Ziel: Ein kurzer, lebendiger Morgengruß für die Sprachausgabe (TTS), der Julian sympathisch auf den Tag einstimmt (Dauer: ca. 30 bis 45 Sekunden, maximal 4 bis 6 kurze Sätze).
+
+            === HINTERGRUND-INFOS FÜR HEUTE ===
+            Wochentag: {{ ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'][now().weekday()] }}
+
+            Wetter:
+            - Aktuell: {{ cur_temp }} Grad, {{ cur_cond }}
+            {%- if ns.temps %}
+            - Höchstwert heute: ca. {{ ns.temps | max | round(0) | int }} Grad (Tiefstwert: {{ ns.temps | min | round(0) | int }} Grad)
+            - Verlauf: {{ ns.conditions | join(', ') }}
+            - Regen: {{ ('Möglich um ' ~ ns.rain_times | join(', ')) if ns.rain_times else 'Kein Regen in Sicht' }}
+            {%- endif %}
+
+            Kalender heute:
+            {%- if cal_items.list | length > 0 %}
+            {%- for ev in cal_items.list %}
+            - {{ ev }}
+            {%- endfor %}
+            {%- else %}
+            Keine Termine eingetragen (Tag ist komplett frei).
+            {%- endif %}
+
+            Aufgabenliste:
+            {%- if todo_items_list.list | length > 0 %}
+            {%- for td in todo_items_list.list %}
+            - {{ td }}
+            {%- endfor %}
+            {%- else %}
+            Keine offenen Aufgaben.
+            {%- endif %}
+            {%- if now().weekday() >= 5 %}
+            {%- set keno_age = ((now().date() - strptime('2023-04-15', '%Y-%m-%d').date()).days / 365.25) | round(1) %}
+            {%- set leo_months = ((now().date() - strptime('2025-11-15', '%Y-%m-%d').date()).days / 30.44) | round(0) | int %}
+
+            Wochenend-Idee für die Familie:
+            Julian verbringt das Wochenende mit seiner Frau Xingyang und den beiden Jungs Keno (ca. {{ keno_age }} Jahre) und Leo (ca. {{ leo_months }} Monate, Kinderwagen).
+            Schlage ganz locker und charmant eine passende Ausflugsidee in oder um Augsburg vor (z.B. Siebentischwald, Zoo, Kuhsee oder bei schlechtem Wetter ein passendes Ziel).
+            {%- endif %}
+
+            === REGELN FÜR DIE SPRACHAUSGABE (TTS) ===
+            1. Natürlicher Redefluss statt Aufzählung:
+               - Keine steifen Überleitungen wie "Kommen wir zum Wetter", "Werfen wir einen Blick auf die Termine", "Zu deinen Aufgaben" oder "Zusammenfassend".
+               - Webe Wetter, Termine und Aufgaben organisch ineinander, genau wie man morgens beim Kaffee spricht.
+               - Keine Datumsansagen ("Heute ist Montag, der 28. September"). Julian weiß, welcher Tag ist. Sag einfach "Guten Morgen Julian, guten Start in die Woche!" oder passend zum Tag.
+            2. Leere Listen:
+               - Wenn keine Termine eingetragen sind: Freu dich kurz mit ihm über den freien Tag ("Im Kalender hast du heute komplett deine Ruhe").
+               - Wenn keine Aufgaben vorliegen: Erwähne das Thema Aufgaben mit KEINER Silbe (sag niemals "Aufgaben hast du keine").
+            3. Perfekt für Google Cloud TTS formuliert:
+               - Reiner Fließtext: KEINE Markdown-Zeichen (keine **, keine #, keine Aufzählungsstriche -).
+               - KEINE Emojis.
+               - Satzzeichen: Verwende NUR Punkte und Kommas für natürliche Sprechpausen. KEINE Doppelpunkte (:), keine Klammern, keine Schrägstriche.
+               - Schreibe Uhrzeiten und Zahlen umgangssprachlich aus (z.B. "um zehn", "um halb drei", "ab vierzehn Uhr", "zwanzig Grad"). NIEMALS "14:30 Uhr" mit Doppelpunkt schreiben, da die Sprachausgabe sonst "Doppelpunkt" oder "null null" vorliest!
+            4. Abschluss:
+               - Herzlicher, kurzer Abschluss (z.B. "Komm gut in den Tag und genieß deinen Kaffee!"). Keine Assistenten-Floskeln wie "Lass mich wissen, falls du Hilfe brauchst".
+
+            === BEISPIEL FÜR DEN GEWÜNSCHTEN TONFALL ===
+            "Guten Morgen Julian! Guten Start in die neue Woche. Draußen ist es mit zwölf Grad noch ganz schön frisch, aber später wird es richtig sonnig und bis zu einundzwanzig Grad mild. Gegen Mittag könnte es kurz tröpfeln, nimm dir also zur Sicherheit die Regenjacke mit. Im Kalender hast du heute ansonsten herrlich viel Ruhe, nur um halb drei steht der Zahnarzt an. Komm gut durch den Tag und genieß deinen ersten Kaffee!"
+
+            Gib NUR den reinen Fließtext zum Vorlesen aus, ohne Einleitung oder Formatierung.

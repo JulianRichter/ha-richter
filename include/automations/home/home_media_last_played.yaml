@@ -1,0 +1,112 @@
+automation:
+  # ====================================================================
+  # Home - Track Last Played Media
+  # - Records active Spotify or Music Assistant track/playlist metadata, cover art, and speaker
+  # - Updates input_text helpers for 1-click resume via Music Assistant
+  # ====================================================================
+
+  - id: "home_track_last_played_media"
+    alias: "Home - Track Last Played Media"
+    mode: restart
+
+    trigger:
+      # Spotify or Music Assistant player changes to playing
+      - trigger: state
+        entity_id:
+          - media_player.spotify_julian
+          - media_player.living_room
+          - media_player.kitchen
+          - media_player.bedroom
+          - media_player.bathroom
+          - media_player.baby_room
+        to: "playing"
+
+      # Track changes while playing
+      - trigger: state
+        entity_id:
+          - media_player.spotify_julian
+          - media_player.living_room
+          - media_player.kitchen
+          - media_player.bedroom
+          - media_player.bathroom
+          - media_player.baby_room
+        attribute: media_title
+
+    condition:
+      # Verify title or content ID is present on triggering entity
+      - condition: template
+        value_template: >-
+          {{ (state_attr(trigger.entity_id, 'media_title') is not none and state_attr(trigger.entity_id, 'media_title') != '') or
+             (state_attr(trigger.entity_id, 'media_playlist') is not none and state_attr(trigger.entity_id, 'media_playlist') != '') or
+             (state_attr(trigger.entity_id, 'media_content_id') is not none and state_attr(trigger.entity_id, 'media_content_id') != '') }}
+
+    action:
+      - variables:
+          ent: "{{ trigger.entity_id }}"
+          is_spotify: "{{ ent == 'media_player.spotify_julian' }}"
+          playlist: "{{ state_attr('media_player.spotify_julian', 'media_playlist') | default('', true) if is_spotify else '' }}"
+          track_id: "{{ state_attr(ent, 'media_content_id') | default('', true) }}"
+          title: "{{ state_attr(ent, 'media_title') | default('', true) }}"
+          artist: "{{ state_attr(ent, 'media_artist') | default('', true) }}"
+          pic: "{{ state_attr(ent, 'entity_picture') | default('', true) }}"
+          source: "{{ state_attr(ent, 'source') | default('Wohnzimmer', true) }}"
+          speaker_map:
+            Wohnzimmer: "media_player.living_room"
+            "Living Room": "media_player.living_room"
+            "Küche": "media_player.kitchen"
+            Kueche: "media_player.kitchen"
+            Badezimmer: "media_player.bathroom"
+            Bad: "media_player.bathroom"
+            Schlafzimmer: "media_player.bedroom"
+            Kinderzimmer: "media_player.baby_room"
+            Minis: "media_player.minis"
+            "Wohnzimmer Küche": "media_player.wohnzimmer_kuche_2"
+          speaker: >-
+            {% if is_spotify %}
+              {{ speaker_map.get(source, 'media_player.living_room') }}
+            {% else %}
+              {{ ent }}
+            {% endif %}
+
+      # Save media ID (prefer playlist URI if present, otherwise track URI)
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.last_played_media_id
+        data:
+          value: "{{ (playlist if playlist != '' else track_id)[:255] }}"
+
+      # Save media type
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.last_played_media_type
+        data:
+          value: "{{ 'playlist' if playlist != '' else 'track' }}"
+
+      # Save track title
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.last_played_media_title
+        data:
+          value: "{{ title[:255] }}"
+
+      # Save artist name
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.last_played_media_artist
+        data:
+          value: "{{ artist[:255] }}"
+
+      # Save cover art picture URI
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.last_played_media_picture
+        data:
+          value: "{{ pic[:255] }}"
+
+      # Save target speaker
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.last_played_speaker
+        data:
+          value: "{{ speaker }}"
+

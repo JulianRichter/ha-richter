@@ -1,0 +1,62 @@
+automation:
+  # ====================================================================
+  # Living Room - Window Sensor
+  # - Controls living room thermostat based on window contact state
+  # - Turns off thermostat and announces caring TTS with humidity when opened
+  # - Restores thermostat and announces caring TTS with humidity when closed
+  # - Announces in German and optionally in Chinese via play_media_tts_window scripts
+  # ====================================================================
+
+  - id: "living_room_window_sensor"
+    alias: "Living Room - Window Sensor"
+    mode: restart
+    trigger:
+      # Window opened
+      - trigger: state
+        entity_id: binary_sensor.living_room_window_contact
+        from: "off"
+        to: "on"
+        id: window_opened
+
+      # Window closed
+      - trigger: state
+        entity_id: binary_sensor.living_room_window_contact
+        from: "on"
+        to: "off"
+        id: window_closed
+
+    condition: []
+
+    action:
+      - choose:
+          # Window opened: turn off heating and announce
+          - conditions:
+              - condition: trigger
+                id: window_opened
+            sequence:
+              # Turn off living room thermostat
+              - action: climate.turn_off
+                target:
+                  entity_id: climate.living_room_thermostat
+
+              # Announce window opened via caring TTS
+              - action: script.play_media_tts_window_opened
+                data:
+                  entity_id: media_player.living_room
+                  humidity_sensor: sensor.living_room_multi_sensor_humidity
+
+          # Window closed: turn on heating and announce
+          - conditions:
+              - condition: trigger
+                id: window_closed
+            sequence:
+              # Turn on living room thermostat
+              - action: climate.turn_on
+                target:
+                  entity_id: climate.living_room_thermostat
+
+              # Announce window closed via caring TTS
+              - action: script.play_media_tts_window_closed
+                data:
+                  entity_id: media_player.living_room
+                  humidity_sensor: sensor.living_room_multi_sensor_humidity

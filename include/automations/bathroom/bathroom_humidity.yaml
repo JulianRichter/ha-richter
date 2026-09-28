@@ -1,0 +1,72 @@
+automation:
+  # ====================================================================
+  # Bathroom - Humidity Warning
+  # - Warns via TTS when humidity rises above 80% once someone enters
+  # - Notifies via TTS when humidity falls back below 60%
+  # - Uses input_boolean.bathroom_humidity_warning_active to prevent repeats
+  # - Announces in German and optionally in Chinese via play_media_tts_shower_warning
+  # ====================================================================
+
+  - id: "bathroom_humidity_warning"
+    alias: "Bathroom - Humidity Warning"
+    mode: single
+    trigger:
+      # Humidity rises above 80% while warning is not yet active
+      - trigger: numeric_state
+        entity_id: sensor.bathroom_multi_sensor_humidity
+        above: 80
+        id: humidity_high
+
+      # Humidity drops below 60% while warning is active
+      - trigger: numeric_state
+        entity_id: sensor.bathroom_multi_sensor_humidity
+        below: 60
+        id: humidity_low
+
+    condition: []
+
+    action:
+      - choose:
+          # High humidity alert when entered
+          - conditions:
+              - condition: trigger
+                id: humidity_high
+              - condition: state
+                entity_id: input_boolean.bathroom_humidity_warning_active
+                state: "off"
+            sequence:
+              # Wait for someone to enter the bathroom
+              - wait_template: "{{ is_state('binary_sensor.bathroom_motion_sensor_occupancy', 'on') }}"
+                timeout: "00:10:00"
+
+              # Announce caring shower humidity warning via TTS
+              - action: script.play_media_tts_shower_warning
+                data:
+                  entity_id: media_player.bathroom
+                  status: high
+                  humidity_sensor: sensor.bathroom_multi_sensor_humidity
+
+              # Mark warning active
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.bathroom_humidity_warning_active
+
+          # Low humidity notification to close window
+          - conditions:
+              - condition: trigger
+                id: humidity_low
+              - condition: state
+                entity_id: input_boolean.bathroom_humidity_warning_active
+                state: "on"
+            sequence:
+              # Announce humidity back to normal via TTS
+              - action: script.play_media_tts_shower_warning
+                data:
+                  entity_id: media_player.bathroom
+                  status: low
+                  humidity_sensor: sensor.bathroom_multi_sensor_humidity
+
+              # Reset warning state
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.bathroom_humidity_warning_active

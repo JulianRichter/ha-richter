@@ -1,0 +1,16 @@
+utility_meter:
+  # ====================================================================
+  # Total Power Utility Meter
+  # ====================================================================
+
+  # Daily power consumption of all devices
+  total_power_kwh_daily:
+    name: Total Power
+    source: sensor.total_power_kwh
+    cycle: daily
+
+  # Monthly power consumption of all devices
+  total_power_kwh_monthly:
+    name: Total Power
+    source: sensor.total_power_kwh
+    cycle: monthly

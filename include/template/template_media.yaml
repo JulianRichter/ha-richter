@@ -1,0 +1,64 @@
+template:
+  # ====================================================================
+  # Media - Last Played Status
+  # - Consolidated sensor reflecting last played Spotify playlist/track
+  # - Provides rich attributes (title, artist, picture, speaker, can_resume)
+  # - Resilient fallback to active Spotify or Music Assistant players
+  # ====================================================================
+
+  - sensor:
+      - name: "Last Played Media Info"
+        unique_id: last_played_media_info
+        icon: mdi:music
+        picture: >-
+          {% set p = states('input_text.last_played_media_picture') %}
+          {% if p not in ['', 'unknown', 'unavailable', none] %}
+            {{ p }}
+          {% else %}
+            {{ state_attr('media_player.spotify_julian', 'entity_picture') or state_attr('media_player.living_room', 'entity_picture') or none }}
+          {% endif %}
+        state: >-
+          {% set title = states('input_text.last_played_media_title') %}
+          {% set artist = states('input_text.last_played_media_artist') %}
+          {% if title not in ['', 'unknown', 'unavailable', none] %}
+            {{ title }}{% if artist not in ['', 'unknown', 'unavailable', none] %} – {{ artist }}{% endif %}
+          {% elif state_attr('media_player.spotify_julian', 'media_title') not in ['', none] %}
+            {{ state_attr('media_player.spotify_julian', 'media_title') }}{% if state_attr('media_player.spotify_julian', 'media_artist') not in ['', none] %} – {{ state_attr('media_player.spotify_julian', 'media_artist') }}{% endif %}
+          {% elif state_attr('media_player.living_room', 'media_title') not in ['', none] %}
+            {{ state_attr('media_player.living_room', 'media_title') }}{% if state_attr('media_player.living_room', 'media_artist') not in ['', none] %} – {{ state_attr('media_player.living_room', 'media_artist') }}{% endif %}
+          {% else %}
+            Wiedergabe fortsetzen
+          {% endif %}
+
+        attributes:
+          media_id: >-
+            {% set mid = states('input_text.last_played_media_id') %}
+            {% if mid not in ['', 'unknown', 'unavailable', none] %}
+              {{ mid }}
+            {% else %}
+              {{ state_attr('media_player.spotify_julian', 'media_playlist') or state_attr('media_player.spotify_julian', 'media_content_id') or '' }}
+            {% endif %}
+          media_type: "{{ states('input_text.last_played_media_type') | default('playlist', true) }}"
+          media_title: >-
+            {% set t = states('input_text.last_played_media_title') %}
+            {% if t not in ['', 'unknown', 'unavailable', none] %}
+              {{ t }}
+            {% else %}
+              {{ state_attr('media_player.spotify_julian', 'media_title') or state_attr('media_player.living_room', 'media_title') or '' }}
+            {% endif %}
+          media_artist: >-
+            {% set a = states('input_text.last_played_media_artist') %}
+            {% if a not in ['', 'unknown', 'unavailable', none] %}
+              {{ a }}
+            {% else %}
+              {{ state_attr('media_player.spotify_julian', 'media_artist') or state_attr('media_player.living_room', 'media_artist') or '' }}
+            {% endif %}
+          media_picture: >-
+            {% set p = states('input_text.last_played_media_picture') %}
+            {% if p not in ['', 'unknown', 'unavailable', none] %}
+              {{ p }}
+            {% else %}
+              {{ state_attr('media_player.spotify_julian', 'entity_picture') or state_attr('media_player.living_room', 'entity_picture') or '' }}
+            {% endif %}
+          target_speaker: "{{ states('input_text.last_played_speaker') | default('media_player.living_room', true) }}"
+          can_resume: true

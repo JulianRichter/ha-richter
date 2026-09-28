@@ -1,0 +1,22 @@
+# ===============================================
+# energy base and usage price as convenient input numbers
+# ===============================================
+
+input_number:
+  home_energy_base_price:
+    name: Home - Energy Base Price
+    min: 0
+    max: 500
+    step: 0.001
+    unit_of_measurement: "EUR/kWh"
+    mode: box
+    initial: 75.624
+
+  home_energy_price:
+    name: Home - Energy Price
+    min: 0
+    max: 1
+    step: 0.0001
+    unit_of_measurement: "EUR/kWh"
+    mode: box
+    initial: 0.23168

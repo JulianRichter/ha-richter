@@ -1,0 +1,84 @@
+automation:
+  # ====================================================================
+  # Baby Room - Morning Routine
+  # - Starts 15 min before alarm (once/day when alarm enabled and residents home)
+  # - Starts 10m sunrise light effect, opens blinds, plays TTS at alarm time, turns off light 15m later
+  # ====================================================================
+
+  - id: "baby_room_morning_routine"
+    alias: "Baby Room - Morning Routine"
+    mode: single
+
+    variables:
+      start_offset: 900 # 15 minutes before alarm time (in seconds)
+      sunrise_time: 600 # 10 minutes duration for sunrise light effect (in seconds)
+
+    trigger:
+      # Google Home alarm: trigger 15 minutes before the next scheduled alarm
+      - trigger: template
+        value_template: >
+          {% set alarm = states('sensor.baby_room_alarms') %}
+          {% if alarm not in ['unknown', 'unavailable', 'none', ''] %}
+            {{ (now() + timedelta(seconds=start_offset)).strftime('%H:%M') == (alarm | as_datetime).strftime('%H:%M') }}
+          {% else %}
+            false
+          {% endif %}
+
+      # Manual alarm: trigger 15 minutes before scheduled alarm time
+      - trigger: template
+        value_template: >
+          {% set alarm = states('input_datetime.baby_room_alarm_time') %}
+          {% if alarm not in ['unknown', 'unavailable', 'none', ''] %}
+            {{ (now() + timedelta(seconds=start_offset)).strftime('%H:%M') == alarm[:5] }}
+          {% else %}
+            false
+          {% endif %}
+
+    condition:
+      # Ensure baby room morning alarm is not disabled
+      - condition: state
+        entity_id: input_boolean.baby_room_alarm_disabled
+        state: "off"
+
+      # Only run once per calendar day
+      - condition: template
+        value_template: >
+          {% set last_run = state_attr('automation.baby_room_morning_routine', 'last_triggered') %}
+          {{ last_run is none or (last_run | as_datetime).date() != now().date() }}
+
+      # Only continue baby room wake-up sequence if someone is at home
+      - condition: state
+        entity_id: group.residents
+        state: "home"
+
+    action:
+      # Start 10-minute sunrise light ramp on baby room light
+      - action: script.light_sunrise
+        data:
+          entity_id: light.baby_room_light
+          seconds: "{{ sunrise_time }}"
+
+      # Wait until wake-up time (15 minutes after routine start)
+      - delay:
+          seconds: "{{ start_offset }}"
+
+      # Open baby room roller blinds
+      - action: cover.open_cover
+        target:
+          entity_id: cover.baby_room_roller_blinds
+
+      # Play TTS "Guten Morgen" on baby room speaker
+      - action: script.play_media_tts_message
+        data:
+          entity_id: media_player.baby_room
+          message: Guten Morgen
+
+      # Keep light on for another 15 minutes before turning off
+      - delay:
+          seconds: "{{ start_offset }}"
+
+      # Smoothly turn off baby room light
+      - action: script.light_low_before_off
+        data:
+          entity_id: light.baby_room_light
+

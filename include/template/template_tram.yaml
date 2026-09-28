@@ -1,0 +1,112 @@
+template:
+  # ====================================================================
+  # Tram 1 Augsburg (Curtiusstraße Stop) Template Sensors
+  # - Calculates walking departure recommendations (4 min walk to stop)
+  # - Provides rich attributes (next departure, second departure, delays)
+  # - Hardened with availability guards and fallback attribute parsing
+  # ====================================================================
+
+  - sensor:
+      # ================================================================
+      # Direction 1: Königsplatz / Göggingen (Southbound / Inbound)
+      # ================================================================
+      - name: "Tram 1 Königsplatz Walk Status"
+        unique_id: tram_1_koenigsplatz_walk_status
+        icon: mdi:tram
+        availability: >-
+          {{ states('sensor.augsburg_curtiusstrasse_koenigsplatz') not in ['unavailable', 'unknown', ''] }}
+        state: >-
+          {% set walk_time = 4 %}
+          {% set mins = state_attr('sensor.augsburg_curtiusstrasse_koenigsplatz', 'next_departure_minutes') %}
+          {% if mins is none or mins == '' %}
+            {% set deps = state_attr('sensor.augsburg_curtiusstrasse_koenigsplatz', 'departures') %}
+            {% if deps and deps | length > 0 %}
+              {% set mins = deps[0].minutes_until_departure %}
+            {% endif %}
+          {% endif %}
+          {% if mins is none or mins == '' %}
+            Keine Daten
+          {% elif (mins | int(0)) < walk_time %}
+            Verpasst (nächste nehmen)
+          {% elif (mins | int(0)) <= (walk_time + 2) %}
+            Jetzt losgehen!
+          {% else %}
+            {% set m = mins | int(0) %}
+            {% if m >= 60 %}
+              In {{ m // 60 }}h
+            {% else %}
+              In {{ m }} min
+            {% endif %}
+          {% endif %}
+        attributes:
+          destination: "Göggingen via Königsplatz"
+          next_departure: "{{ states('sensor.augsburg_curtiusstrasse_koenigsplatz') }}"
+          minutes_to_next: >-
+            {% set mins = state_attr('sensor.augsburg_curtiusstrasse_koenigsplatz', 'next_departure_minutes') %}
+            {% if mins is none or mins == '' %}
+              {% set deps = state_attr('sensor.augsburg_curtiusstrasse_koenigsplatz', 'departures') %}
+              {{ deps[0].minutes_until_departure if deps and deps | length > 0 else 0 }}
+            {% else %}
+              {{ mins | int(0) }}
+            {% endif %}
+          second_departure: >-
+            {% set deps = state_attr('sensor.augsburg_curtiusstrasse_koenigsplatz', 'departures') %}
+            {{ deps[1].departure_time if deps and deps | length > 1 else 'k.A.' }}
+          minutes_to_second: >-
+            {% set deps = state_attr('sensor.augsburg_curtiusstrasse_koenigsplatz', 'departures') %}
+            {{ deps[1].minutes_until_departure if deps and deps | length > 1 else 0 }}
+          delay_minutes: >-
+            {% set deps = state_attr('sensor.augsburg_curtiusstrasse_koenigsplatz', 'departures') %}
+            {{ deps[0].delay if deps and deps | length > 0 else 0 }}
+
+      # ================================================================
+      # Direction 2: Lechhausen Neuer Ostfriedhof (Northbound / Outbound)
+      # ================================================================
+      - name: "Tram 1 Lechhausen Walk Status"
+        unique_id: tram_1_lechhausen_walk_status
+        icon: mdi:tram
+        availability: >-
+          {{ states('sensor.augsburg_curtiusstrasse_lechh_n_ostfriedh') not in ['unavailable', 'unknown', ''] }}
+        state: >-
+          {% set walk_time = 4 %}
+          {% set mins = state_attr('sensor.augsburg_curtiusstrasse_lechh_n_ostfriedh', 'next_departure_minutes') %}
+          {% if mins is none or mins == '' %}
+            {% set deps = state_attr('sensor.augsburg_curtiusstrasse_lechh_n_ostfriedh', 'departures') %}
+            {% if deps and deps | length > 0 %}
+              {% set mins = deps[0].minutes_until_departure %}
+            {% endif %}
+          {% endif %}
+          {% if mins is none or mins == '' %}
+            Keine Daten
+          {% elif (mins | int(0)) < walk_time %}
+            Verpasst (nächste nehmen)
+          {% elif (mins | int(0)) <= (walk_time + 2) %}
+            Jetzt losgehen!
+          {% else %}
+            {% set m = mins | int(0) %}
+            {% if m >= 60 %}
+              In {{ m // 60 }}h
+            {% else %}
+              In {{ m }} min
+            {% endif %}
+          {% endif %}
+        attributes:
+          destination: "Lechhausen Neuer Ostfriedhof"
+          next_departure: "{{ states('sensor.augsburg_curtiusstrasse_lechh_n_ostfriedh') }}"
+          minutes_to_next: >-
+            {% set mins = state_attr('sensor.augsburg_curtiusstrasse_lechh_n_ostfriedh', 'next_departure_minutes') %}
+            {% if mins is none or mins == '' %}
+              {% set deps = state_attr('sensor.augsburg_curtiusstrasse_lechh_n_ostfriedh', 'departures') %}
+              {{ deps[0].minutes_until_departure if deps and deps | length > 0 else 0 }}
+            {% else %}
+              {{ mins | int(0) }}
+            {% endif %}
+          second_departure: >-
+            {% set deps = state_attr('sensor.augsburg_curtiusstrasse_lechh_n_ostfriedh', 'departures') %}
+            {{ deps[1].departure_time if deps and deps | length > 1 else 'k.A.' }}
+          minutes_to_second: >-
+            {% set deps = state_attr('sensor.augsburg_curtiusstrasse_lechh_n_ostfriedh', 'departures') %}
+            {{ deps[1].minutes_until_departure if deps and deps | length > 1 else 0 }}
+          delay_minutes: >-
+            {% set deps = state_attr('sensor.augsburg_curtiusstrasse_lechh_n_ostfriedh', 'departures') %}
+            {{ deps[0].delay if deps and deps | length > 0 else 0 }}

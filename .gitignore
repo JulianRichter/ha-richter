@@ -1,0 +1,48 @@
+# ====================================================================
+# Home Assistant Core Git Exclusion Rules
+# Strictly isolates secrets, tokens, runtime caches, and binary databases.
+# ====================================================================
+
+# 1. Credentials, API Keys & Secrets
+secrets.yaml
+*.json
+.google.token*
+ip_bans.yaml
+
+# 2. Home Assistant Internal Storage (Contains Auth Tokens & Integrations Data)
+.storage/
+.cloud/
+
+# 3. Databases & State Histories
+*.db
+*.db-shm
+*.db-wal
+zigbee.db
+home-assistant_v2.db*
+zigbee2mqtt/
+
+# 4. Logs & Diagnostic Traces
+*.log*
+home-assistant.log*
+.ha_run.lock
+
+# 5. Media, Dependencies & Caches
+tts/
+image/
+deps/
+.cache/
+__pycache__/
+*.py[cod]
+
+# HACS Community Integrations & Frontend Plugins (Managed by HACS)
+custom_components/
+www/community/
+
+# 6. Local Backups & Temporary Scratchpads
+.backups/
+*.tmp
+popup-card-tmp.yaml
+
+# 7. OS & Editor Artifacts
+.DS_Store
+Thumbs.db

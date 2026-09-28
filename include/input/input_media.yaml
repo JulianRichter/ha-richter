@@ -1,0 +1,44 @@
+# ====================================================================
+# Input Helpers - Media & Music Assistant
+# - Stores last played Spotify URI, title, artist, cover art, and type
+# - Enables 1-click resume through Music Assistant
+# ====================================================================
+
+input_text:
+  # Last played Spotify URI or track ID
+  last_played_media_id:
+    name: "Last Played - Media ID"
+    icon: mdi:music-box
+    max: 255
+
+  # Last played media type (playlist, track, album, radio)
+  last_played_media_type:
+    name: "Last Played - Media Type"
+    icon: mdi:shape
+    max: 50
+
+  # Last played track or playlist title
+  last_played_media_title:
+    name: "Last Played - Title"
+    icon: mdi:music
+    max: 255
+
+  # Last played artist name
+  last_played_media_artist:
+    name: "Last Played - Artist"
+    icon: mdi:account-music
+    max: 255
+
+  # Last played cover art URL
+  last_played_media_picture:
+    name: "Last Played - Cover Picture"
+    icon: mdi:image
+    max: 255
+
+  # Last targeted Music Assistant player
+  last_played_speaker:
+    name: "Last Played - Target Speaker"
+    icon: mdi:speaker
+    max: 100
+
+

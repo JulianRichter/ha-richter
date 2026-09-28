@@ -1,0 +1,93 @@
+automation:
+  # ====================================================================
+  # Living Room - Motion Sensor
+  # - Controls living room light group and tablet screen based on motion
+  # - Turns on full/warm light after dark if home (awake)
+  # - Turns on dim red light after dark if away (sleeping)
+  # - Smoothly turns off lights when motion clears
+  # ====================================================================
+
+  - id: "living_room_motion_sensor"
+    alias: "Living Room - Motion Sensor"
+    mode: single
+    variables:
+      brightness_sleep: 5
+      brightness_awake: 126
+      color_sleep: [255, 0, 0]
+      color_awake: [255, 166, 87]
+    trigger:
+      # Motion state changes
+      - trigger: state
+        entity_id: binary_sensor.living_room_motion_sensor_occupancy
+        to:
+          - "on"
+          - "off"
+
+    condition:
+      # Light is low, off, or in awake ambient state
+      - condition: template
+        value_template: >
+          {% set brightness = state_attr('light.living_room_light_group', 'brightness') %}
+          {{ brightness is none or brightness | int <= brightness_sleep or brightness | int == brightness_awake }}
+
+    action:
+      - choose:
+          # Motion detected (not sleeping, below horizon)
+          - conditions:
+              - condition: state
+                entity_id: binary_sensor.living_room_motion_sensor_occupancy
+                state: "on"
+              - condition: state
+                entity_id: sun.sun
+                state: "below_horizon"
+              - condition: state
+                entity_id: input_boolean.presence_home
+                state: "on"
+            sequence:
+              # Wake tablet screen
+              - action: switch.turn_on
+                target:
+                  entity_id: switch.living_room_tablet_screen
+
+              # Turn on warm ambient light
+              - action: light.turn_on
+                target:
+                  entity_id: light.living_room_light_group
+                data:
+                  brightness: "{{ brightness_awake }}"
+                  rgb_color: "{{ color_awake }}"
+
+          # Motion detected (sleeping, below horizon)
+          - conditions:
+              - condition: state
+                entity_id: binary_sensor.living_room_motion_sensor_occupancy
+                state: "on"
+              - condition: state
+                entity_id: sun.sun
+                state: "below_horizon"
+              - condition: state
+                entity_id: input_boolean.presence_home
+                state: "off"
+            sequence:
+              # Wake tablet screen
+              - action: switch.turn_on
+                target:
+                  entity_id: switch.living_room_tablet_screen
+
+              # Turn on night red light
+              - action: light.turn_on
+                target:
+                  entity_id: light.living_room_light_group
+                data:
+                  brightness: "{{ brightness_sleep }}"
+                  rgb_color: "{{ color_sleep }}"
+
+          # Motion cleared: turn off light smoothly
+          - conditions:
+              - condition: state
+                entity_id: binary_sensor.living_room_motion_sensor_occupancy
+                state: "off"
+            sequence:
+              - action: script.light_low_before_off
+                data:
+                  entity_id: light.living_room_light_group

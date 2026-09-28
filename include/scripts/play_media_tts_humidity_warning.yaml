@@ -1,0 +1,144 @@
+script:
+  # ====================================================================
+  # Play Media - TTS Humidity Warning
+  # - Plays a natural, caring TTS announcement for room humidity changes
+  # - Notifies when humidity is high (prompting to open window) or stabilized (prompting to close)
+  # - Randomly selects from 4 friendly variations to avoid repetitive phrasing
+  # - Announces in German and optionally in Chinese via play_media_tts_message
+  # ====================================================================
+
+  play_media_tts_humidity_warning:
+    alias: "Play Media - TTS Humidity Warning"
+    mode: queued
+    max: 10
+    icon: mdi:water-alert-outline
+
+    fields:
+      entity_id:
+        name: Speaker
+        description: "Entity ID of the media player to announce on."
+        example: media_player.living_room
+        required: false
+        selector:
+          entity:
+            domain: media_player
+
+      media_player:
+        name: Speaker (Alternative)
+        description: "Alternative entity ID of the media player to announce on."
+        example: media_player.living_room
+        required: false
+        selector:
+          entity:
+            domain: media_player
+
+      room:
+        name: Room
+        description: "Room identifier (e.g., bedroom, living_room, kitchen, baby_room, bathroom)."
+        example: "bedroom"
+        required: true
+        selector:
+          select:
+            options:
+              - "bedroom"
+              - "living_room"
+              - "kitchen"
+              - "baby_room"
+              - "bathroom"
+
+      status:
+        name: Status
+        description: "Humidity status: high or converged (stabilized)."
+        example: "high"
+        required: true
+        selector:
+          select:
+            options:
+              - "high"
+              - "converged"
+
+      humidity_sensor:
+        name: Humidity Sensor
+        description: "Optional entity ID of the room's humidity sensor."
+        example: sensor.bedroom_multi_sensor_humidity
+        required: false
+        selector:
+          entity:
+            domain: sensor
+            device_class: humidity
+
+    sequence:
+      # Prepare TTS text variables with random variation, room names, and humidity
+      - variables:
+          target_player: "{{ media_player | default(entity_id, true) }}"
+          h_sensor: "{{ humidity_sensor | default('', true) }}"
+          has_humidity: "{{ h_sensor != '' and states(h_sensor) not in ['unavailable', 'unknown', ''] }}"
+          humidity: "{{ states(h_sensor) | float(0) | round if h_sensor != '' else 0 }}"
+          variant: "{{ [1, 2, 3, 4] | random }}"
+          is_high: "{{ status in ['high', 'warning', 'too_high'] }}"
+          room_de_map:
+            bedroom: "im Schlafzimmer"
+            living_room: "im Wohnzimmer"
+            kitchen: "in der Küche"
+            baby_room: "im Kinderzimmer"
+            bathroom: "im Badezimmer"
+          room_zh_map:
+            bedroom: "卧室"
+            living_room: "客厅"
+            kitchen: "厨房"
+            baby_room: "儿童房"
+            bathroom: "浴室"
+          r_key: "{{ room | default('living_room') }}"
+          room_de: "{{ room_de_map.get(r_key, r_key) }}"
+          room_zh: "{{ room_zh_map.get(r_key, r_key) }}"
+          message_de: >-
+            {% if is_high %}
+              {% if variant == 1 %}
+                Die Luft {{ room_de }} ist etwas feucht geworden{% if has_humidity %} – wir liegen bei {{ humidity }} %{% endif %}. Ein kurzes Stoßlüften würde jetzt richtig guttun!
+              {% elif variant == 2 %}
+                Kleine Erinnerung: {{ room_de | capitalize }} ist die Luftfeuchtigkeit{% if has_humidity %} mit {{ humidity }} %{% endif %} etwas hoch. Öffnet am besten kurz das Fenster für frische Luft.
+              {% elif variant == 3 %}
+                Zeit zum Durchatmen! {{ room_de | capitalize }} ist es gerade recht feucht. Wenn ihr kurz das Fenster aufmacht, bleibt das Raumklima angenehm.
+              {% else %}
+                Für ein gesundes Raumklima: Die Feuchtigkeit {{ room_de }} ist etwas gestiegen. Wärt ihr so lieb und öffnet kurz das Fenster?
+              {% endif %}
+            {% else %}
+              {% if variant == 1 %}
+                Super gelüftet! Die Luftfeuchtigkeit {{ room_de }} ist wieder im optimalen Bereich. Das Fenster kann gerne wieder geschlossen werden.
+              {% elif variant == 2 %}
+                Wunderbar, die Luft {{ room_de }} ist wieder herrlich frisch und ausgeglichen. Das Fenster kann wieder zu.
+              {% elif variant == 3 %}
+                Perfektes Raumklima {{ room_de }}! Die Feuchtigkeit hat sich stabilisiert, ihr könnt das Fenster jetzt wieder zumachen.
+              {% else %}
+                Vielen Dank fürs Lüften! {{ room_de | capitalize }} ist alles wieder im grünen Bereich, das Fenster kann wieder geschlossen werden.
+              {% endif %}
+            {% endif %}
+          message_zh: >-
+            {% if is_high %}
+              {% if variant == 1 %}
+                {{ room_zh }}的空气有点潮湿啦{% if has_humidity %}，现在是 {{ humidity }}%{% endif %}。开窗透透气会舒服很多哦！
+              {% elif variant == 2 %}
+                温馨提醒：{{ room_zh }}的湿度{% if has_humidity %}已经有 {{ humidity }}% 了{% endif %}，稍微偏高。建议开窗换换新鲜空气哦。
+              {% elif variant == 3 %}
+                是时候给{{ room_zh }}换换气啦！现在屋里湿度偏高，开一下窗户，保持空气清新吧。
+              {% else %}
+                为了保持健康舒适的环境，{{ room_zh }}湿度有点高了，能麻烦开窗通风一下吗？
+              {% endif %}
+            {% else %}
+              {% if variant == 1 %}
+                通风效果非常好！{{ room_zh }}的湿度已经回到舒适范围，可以把窗户关上啦。
+              {% elif variant == 2 %}
+                太棒啦，{{ room_zh }}的空气现在清新又干爽，窗户随时可以关好咯。
+              {% elif variant == 3 %}
+                {{ room_zh }}的室内环境已经很舒适啦！湿度已经稳定下来，可以把窗户关上了哦。
+              {% else %}
+                辛苦通风啦！{{ room_zh }}的湿度恢复正常，可以把窗户关起来保暖了。
+              {% endif %}
+            {% endif %}
+
+      # Announce TTS message (German and optional Chinese)
+      - action: script.play_media_tts_message
+        data:
+          entity_id: "{{ target_player }}"
+          message: "{{ message_de }}"
+          message_chinese: "{{ message_zh }}"

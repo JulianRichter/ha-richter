@@ -1,0 +1,28 @@
+automation:
+  # ====================================================================
+  # Home - Vacuum Cleaning
+  # - Scheduled time: Starts automated vacuum cleaning once per calendar day
+  # - Dispatches vacuum_start script using configured cleaning parameters
+  # ====================================================================
+
+  # Home vacuum cleaning routine
+  - id: "home_vacuum_cleaning"
+    alias: Home - Vacuum Cleaning
+    mode: single
+
+    trigger:
+      # Scheduled vacuum cleaning time
+      - trigger: time
+        at: input_datetime.vacuum_cleaning_time
+
+    condition:
+      # Only run once per calendar day
+      - condition: template
+        value_template: >
+          {% set last_run = state_attr('automation.home_vacuum_cleaning', 'last_triggered') %}
+          {{ last_run is none or (last_run | as_datetime).date() != now().date() }}
+
+    action:
+      # Start automated vacuum cleaning
+      - action: script.vacuum_start
+

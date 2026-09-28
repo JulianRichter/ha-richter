@@ -1,0 +1,162 @@
+automation:
+  # ====================================================================
+  # Home - Person Zone Info
+  # - Plays natural TTS announcements when Julian or Xingyang depart, return, or reach zones
+  # - Enables/disables high accuracy GPS tracking on mobile devices accordingly
+  # ====================================================================
+
+  - id: "home_person_zone_info"
+    alias: "Home - Person Zone Info"
+    mode: queued
+    max: 10
+
+    # ------------------------------------------------------------------
+    # Triggers: departure, arrival home, and zone arrivals
+    # ------------------------------------------------------------------
+    trigger:
+      # Julian departed home/work
+      - id: julian_left_home
+        trigger: state
+        entity_id: person.julian
+        from:
+          - home
+          - Kuka
+        to: "not_home"
+
+      # Xingyang departed home
+      - id: xingyang_left_home
+        trigger: state
+        entity_id: person.xingyang
+        from: "home"
+        to: "not_home"
+
+      # Julian returned home
+      - id: julian_returns_home
+        trigger: state
+        entity_id: person.julian
+        from: "not_home"
+        to: "home"
+
+      # Xingyang returned home
+      - id: xingyang_returns_home
+        trigger: state
+        entity_id: person.xingyang
+        from: "not_home"
+        to: "home"
+
+      # Julian reached another zone
+      - id: julian_reaches_zone
+        trigger: state
+        entity_id: person.julian
+        from: "not_home"
+        not_to:
+          - "home"
+          - "not_home"
+          - "unavailable"
+          - "unknown"
+
+      # Xingyang reached another zone
+      - id: xingyang_reaches_zone
+        trigger: state
+        entity_id: person.xingyang
+        from: "not_home"
+        not_to:
+          - "home"
+          - "not_home"
+          - "unavailable"
+          - "unknown"
+
+    condition: []
+
+    # ------------------------------------------------------------------
+    # Actions: announce events and toggle device high accuracy tracking
+    # ------------------------------------------------------------------
+    action:
+      - choose:
+          # Julian left home: announce & enable high accuracy GPS
+          - conditions:
+              - condition: trigger
+                id: julian_left_home
+            sequence:
+              - action: script.play_media_tts_person_zone
+                data:
+                  person: "Julian"
+                  event: "left_home"
+                  entity_id: media_player.living_room
+              - action: notify.mobile_app_julian
+                data:
+                  message: command_high_accuracy_mode
+                  data:
+                    command: turn_on
+
+          # Xingyang left home: announce & enable high accuracy GPS
+          - conditions:
+              - condition: trigger
+                id: xingyang_left_home
+            sequence:
+              - action: script.play_media_tts_person_zone
+                data:
+                  person: "Xingyang"
+                  event: "left_home"
+                  entity_id: media_player.living_room
+              - action: notify.mobile_app_xingyang
+                data:
+                  message: command_high_accuracy_mode
+                  data:
+                    command: turn_on
+
+          # Julian returns home: announce & turn off high accuracy GPS
+          - conditions:
+              - condition: trigger
+                id: julian_returns_home
+            sequence:
+              - action: script.play_media_tts_person_zone
+                data:
+                  person: "Julian"
+                  event: "returns_home"
+                  entity_id: media_player.living_room
+              - action: notify.mobile_app_julian
+                data:
+                  message: command_high_accuracy_mode
+                  data:
+                    command: turn_off
+
+          # Xingyang returns home: announce & turn off high accuracy GPS
+          - conditions:
+              - condition: trigger
+                id: xingyang_returns_home
+            sequence:
+              - action: script.play_media_tts_person_zone
+                data:
+                  person: "Xingyang"
+                  event: "returns_home"
+                  entity_id: media_player.living_room
+              - action: notify.mobile_app_xingyang
+                data:
+                  message: command_high_accuracy_mode
+                  data:
+                    command: turn_off
+
+          # Julian reached specific zone: announce location
+          - conditions:
+              - condition: trigger
+                id: julian_reaches_zone
+            sequence:
+              - action: script.play_media_tts_person_zone
+                data:
+                  person: "Julian"
+                  event: "reaches_zone"
+                  zone: "{{ trigger.to_state.state }}"
+                  entity_id: media_player.living_room
+
+          # Xingyang reached specific zone: announce location
+          - conditions:
+              - condition: trigger
+                id: xingyang_reaches_zone
+            sequence:
+              - action: script.play_media_tts_person_zone
+                data:
+                  person: "Xingyang"
+                  event: "reaches_zone"
+                  zone: "{{ trigger.to_state.state }}"
+                  entity_id: media_player.living_room

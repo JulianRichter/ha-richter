@@ -1,0 +1,25 @@
+input_number:
+  ######################################################################
+  # Dashboard humidity threshold
+  ######################################################################
+
+  dashboard_humidity_threshold_low:
+    name: Dashboard - Humidity Threshold (Low)
+    min: 0
+    max: 100
+    step: 1
+    initial: 30
+
+  dashboard_humidity_threshold_medium:
+    name: Dashboard - Humidity Threshold (Medium)
+    min: 0
+    max: 100
+    step: 1
+    initial: 60
+
+  dashboard_humidity_threshold_high:
+    name: Dashboard - Humidity Threshold (High)
+    min: 0
+    max: 100
+    step: 1
+    initial: 100

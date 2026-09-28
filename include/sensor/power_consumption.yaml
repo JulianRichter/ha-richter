@@ -1,0 +1,67 @@
+sensor:
+  # =============================================
+  # Compute power consumption from power usage sensors (W -> kWh)
+  # MQTT devices typically already expose this by default
+  # =============================================
+
+  # kitchen
+  - platform: integration
+    name: Kitchen - Fridge Energy
+    unique_id: kitchen_fridge_energy
+    source: sensor.kitchen_fridge_power
+    unit_prefix: k
+    unit_time: h
+    method: left
+    round: 2
+
+  - platform: integration
+    name: Kitchen - Microwave Energy
+    unique_id: kitchen_microwave_energy
+    source: sensor.kitchen_microwave_power
+    unit_prefix: k
+    unit_time: h
+    method: left
+    round: 2
+
+  # living room
+  - platform: integration
+    name: Living Room - Desktop Energy
+    unique_id: living_room_desktop_energy
+    source: sensor.living_room_desktop_power
+    unit_prefix: k
+    unit_time: h
+    method: left
+    round: 2
+
+  - platform: integration
+    name: Living Room - TV Energy
+    unique_id: living_room_tv_energy
+    source: sensor.living_room_tv_power
+    unit_prefix: k
+    unit_time: h
+    method: left
+    round: 2
+
+  # bathroom
+  - platform: integration
+    name: Bathroom - Washer Energy
+    unique_id: bathroom_washer_energy
+    source: sensor.bathroom_washer_power
+    unit_prefix: k
+    unit_time: h
+    method: left
+    round: 2
+
+  # ==============================================
+  # Total Power consumption from power usage sensors (W -> kWh)
+  # ==============================================
+
+  # total energy from manually aggregated power
+  - platform: integration
+    name: Home - Total Energy
+    unique_id: home_total_energy
+    source: sensor.home_total_power
+    unit_prefix: k
+    unit_time: h
+    method: left
+    round: 2

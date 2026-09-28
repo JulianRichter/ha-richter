@@ -1,0 +1,35 @@
+automation:
+  # ====================================================================
+  # Home - Package Delivery
+  # - Plays a TTS announcement when incoming delivery count increases
+  # - Monitors Gmail sensors for Amazon and DHL packages
+  # ====================================================================
+
+  - id: "home_package_delivery"
+    alias: "Home - Package Delivery"
+    mode: single
+    trigger:
+      # Package count update from Amazon
+      - trigger: state
+        entity_id: sensor.gmail_package_amazon
+        id: amazon
+
+      # Package count update from DHL
+      - trigger: state
+        entity_id: sensor.gmail_package_dhl
+        id: dhl
+
+    condition:
+      # Trigger only when package count increases
+      - condition: template
+        value_template: "{{ trigger.to_state.state | int(0) > trigger.from_state.state | int(0) }}"
+
+    action:
+      # Play delivery announcement on mini speakers
+      - action: script.play_media_tts_message
+        data:
+          entity_id: media_player.minis
+          message: >
+            Hey.
+            Kurze Info, dass ein Paket gerade in den Lieferwagen geladen wurde
+            und heute geliefert wird.

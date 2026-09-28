@@ -1,0 +1,86 @@
+script:
+  # ====================================================================
+  # Media - Resume Last Played
+  # - Resumes the last recorded Spotify playlist or track via Music Assistant
+  # - Plays on last targeted speaker or optional target_player argument
+  # - Gracefully falls back to active Spotify URI or unpausing target player
+  # ====================================================================
+
+  media_resume_last_played:
+    alias: "Media - Resume Last Played"
+    mode: single
+    icon: mdi:play-circle
+    description: >
+      Resumes playback of the last played Spotify playlist or track on Music Assistant.
+
+    fields:
+      target_player:
+        name: Target Player
+        description: "Optional Music Assistant player entity ID. Defaults to last played speaker."
+        required: false
+        example: "media_player.living_room"
+        selector:
+          entity:
+            domain: media_player
+
+    sequence:
+      - variables:
+          raw_media_id: "{{ states('input_text.last_played_media_id') }}"
+          spotify_pl: "{{ state_attr('media_player.spotify_julian', 'media_playlist') }}"
+          spotify_trk: "{{ state_attr('media_player.spotify_julian', 'media_content_id') }}"
+          media_id: >-
+            {% if raw_media_id not in ['', 'unknown', 'unavailable', none] %}
+              {{ raw_media_id }}
+            {% elif spotify_pl not in ['', none] %}
+              {{ spotify_pl }}
+            {% elif spotify_trk not in ['', none] %}
+              {{ spotify_trk }}
+            {% else %}
+              {{ '' }}
+            {% endif %}
+          raw_media_type: "{{ states('input_text.last_played_media_type') }}"
+          media_type: >-
+            {% if raw_media_type not in ['', 'unknown', 'unavailable', none] %}
+              {{ raw_media_type }}
+            {% elif spotify_pl not in ['', none] %}
+              playlist
+            {% else %}
+              track
+            {% endif %}
+          player: >-
+            {% if target_player is defined and target_player not in ['', none, 'None'] %}
+              {{ target_player }}
+            {% else %}
+              {% set spk = states('input_text.last_played_speaker') %}
+              {{ spk if spk not in ['', 'unknown', 'unavailable', none] else 'media_player.living_room' }}
+            {% endif %}
+
+      # Dispatch to Music Assistant or unpause player
+      - choose:
+          # Case 1: Specific media URI found -> play via Music Assistant
+          - conditions:
+              - condition: template
+                value_template: "{{ media_id != '' }}"
+            sequence:
+              - action: music_assistant.play_media
+                target:
+                  entity_id: "{{ player }}"
+                data:
+                  media_id: "{{ media_id }}"
+                  media_type: "{{ media_type }}"
+                  radio_mode: "{{ media_type == 'track' }}"
+                  enqueue: replace
+          # Case 2: No specific URI recorded -> unpause target player / Spotify
+          - conditions: []
+            sequence:
+              - action: media_player.media_play
+                target:
+                  entity_id: "{{ player }}"
+              - if:
+                  - condition: template
+                    value_template: "{{ states('media_player.spotify_julian') in ['paused', 'idle'] }}"
+                then:
+                  - action: media_player.media_play
+                    target:
+                      entity_id: media_player.spotify_julian
+

@@ -1,0 +1,130 @@
+script:
+  # ====================================================================
+  # Play Media - TTS Window Closed
+  # - Plays a natural, caring TTS announcement when a window is closed
+  # - Compares humidity against input_number.dashboard_humidity_threshold_medium
+  # - Uses adapted friendly phrasing if humidity remains above the target
+  # - Randomly selects from 4 friendly variations to avoid repetitive phrasing
+  # - Announces in German and optionally in Chinese via play_media_tts_message
+  # ====================================================================
+
+  play_media_tts_window_closed:
+    alias: "Play Media - TTS Window Closed"
+    mode: queued
+    max: 10
+    icon: mdi:window-closed-variant
+
+    fields:
+      entity_id:
+        name: Speaker
+        description: "Entity ID of the media player to announce on."
+        example: media_player.bedroom
+        required: false
+        selector:
+          entity:
+            domain: media_player
+
+      media_player:
+        name: Speaker (Alternative)
+        description: "Alternative entity ID of the media player to announce on."
+        example: media_player.bedroom
+        required: false
+        selector:
+          entity:
+            domain: media_player
+
+      humidity_sensor:
+        name: Humidity Sensor
+        description: "Entity ID of the humidity sensor to report."
+        example: sensor.bedroom_multi_sensor_humidity
+        required: false
+        selector:
+          entity:
+            domain: sensor
+            device_class: humidity
+
+    sequence:
+      # Prepare TTS text variables with random variation, threshold comparison, and formatting
+      - variables:
+          target_player: "{{ media_player | default(entity_id, true) }}"
+          h_sensor: "{{ humidity_sensor | default('', true) }}"
+          has_humidity: "{{ h_sensor != '' and states(h_sensor) not in ['unavailable', 'unknown', ''] }}"
+          humidity: "{{ states(h_sensor) | float(0) | round if h_sensor != '' else 0 }}"
+          threshold: "{{ states('input_number.dashboard_humidity_threshold_medium') | float(60) | round }}"
+          is_high: "{{ has_humidity and humidity > threshold }}"
+          variant: "{{ [1, 2, 3, 4] | random }}"
+          message_de: >-
+            {% if has_humidity %}
+              {% if is_high %}
+                {% if variant == 1 %}
+                  Fenster ist wieder zu. Die Luftfeuchtigkeit liegt noch bei {{ humidity }} %, ich mache die Heizung aber schon mal wieder an.
+                {% elif variant == 2 %}
+                  Fenster ist wieder zu! Mit {{ humidity }} % ist die Luftfeuchtigkeit zwar noch etwas hoch, aber ich schalte die Heizung wieder an.
+                {% elif variant == 3 %}
+                  Fenster geschlossen. Die Luftfeuchtigkeit liegt noch bei {{ humidity }} %, ich heize trotzdem schon mal wieder für euch auf.
+                {% else %}
+                  Frische Luft ist drin! Die Luftfeuchtigkeit ist noch bei {{ humidity }} %, ich mache die Heizung wieder an.
+                {% endif %}
+              {% else %}
+                {% if variant == 1 %}
+                  Schön durchgelüftet! Die Luftfeuchtigkeit liegt jetzt bei {{ humidity }} %, ich mache die Heizung wieder an.
+                {% elif variant == 2 %}
+                  Fenster ist wieder zu! Bei {{ humidity }} % Luftfeuchtigkeit heize ich direkt wieder an.
+                {% elif variant == 3 %}
+                  Frische Luft ist drin! Wir sind jetzt bei {{ humidity }} % Luftfeuchtigkeit, ich schalte die Heizung wieder an.
+                {% else %}
+                  Wunderbar gelüftet! Die Luftfeuchtigkeit ist jetzt bei {{ humidity }} %, ich mache es wieder warm.
+                {% endif %}
+              {% endif %}
+            {% else %}
+              {% if variant == 1 %}
+                Schön durchgelüftet! Ich mache die Heizung wieder an.
+              {% elif variant == 2 %}
+                Fenster ist wieder zu! Ich heize direkt wieder an.
+              {% elif variant == 3 %}
+                Frische Luft ist drin! Ich schalte die Heizung wieder an.
+              {% else %}
+                Wunderbar gelüftet! Ich mache es wieder warm.
+              {% endif %}
+            {% endif %}
+          message_zh: >-
+            {% if has_humidity %}
+              {% if is_high %}
+                {% if variant == 1 %}
+                  窗户关好啦！现在的湿度还有 {{ humidity }}%，稍微偏高一点，我先帮你们把暖气开起来。
+                {% elif variant == 2 %}
+                  换好新鲜空气啦！目前湿度还在 {{ humidity }}%，我先把暖气重新打开。
+                {% elif variant == 3 %}
+                  窗户已经关好。当前湿度是 {{ humidity }}%，虽然还没完全降下来，我先恢复暖气。
+                {% else %}
+                  窗户关好啦！湿度还有 {{ humidity }}%，我先开暖气让屋里暖和起来。
+                {% endif %}
+              {% else %}
+                {% if variant == 1 %}
+                  换好新鲜空气啦！现在湿度降到了 {{ humidity }}%，这就帮你们把暖气开起来。
+                {% elif variant == 2 %}
+                  窗户关好啦！当前湿度是 {{ humidity }}%，马上为你们重新开暖气。
+                {% elif variant == 3 %}
+                  屋里空气真清新！现在湿度是 {{ humidity }}%，暖气已经重新打开啦。
+                {% else %}
+                  通风完成！目前湿度是 {{ humidity }}%，我这就把暖气开起来。
+                {% endif %}
+              {% endif %}
+            {% else %}
+              {% if variant == 1 %}
+                换好新鲜空气啦！这就帮你们把暖气开起来。
+              {% elif variant == 2 %}
+                窗户关好啦！马上为你们重新开暖气。
+              {% elif variant == 3 %}
+                屋里空气真清新！这就把暖气重新打开。
+              {% else %}
+                通风完成！我这就把暖气开起来。
+              {% endif %}
+            {% endif %}
+
+      # Announce TTS message (German and optional Chinese)
+      - action: script.play_media_tts_message
+        data:
+          entity_id: "{{ target_player }}"
+          message: "{{ message_de }}"
+          message_chinese: "{{ message_zh }}"

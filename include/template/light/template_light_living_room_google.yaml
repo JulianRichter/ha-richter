@@ -1,0 +1,74 @@
+template:
+  # ====================================================================
+  # Living Room Light Group - Google Assistant Wrapper
+  # ====================================================================
+  # Findings & Implementation Notes:
+  # - Virtual light wrapper for Google Assistant voice commands and script execution.
+  # - HA Template Light expects `temperature`, `min_mireds`, and `max_mireds` in MIREDS.
+  # - HA validates `temperature` strictly against the range [min_mireds, max_mireds].
+  # - `min_mireds` and `max_mireds` convert source Kelvin attributes (>1000K) to mireds (10^6 / K).
+  # - `temperature` is clamped to [min_mireds, max_mireds] to prevent startup/offline validator errors.
+  # - Actions (`turn_on`, `set_temperature`) send modern `color_temp_kelvin` to physical lights.
+  # --------------------------------------------------------------------
+
+  # Virtual light for script execution via google assistant commands
+  - light:
+      - unique_id: living_room_light_google
+        name: "Wohnzimmer Licht (Google)"
+        state: "{{ is_state('light.living_room_light_group', 'on') }}"
+        level: "{{ state_attr('light.living_room_light_group', 'brightness') | default(0, true) | int(0) }}"
+        # Color and temperature templates (mireds: 153=cool/6500K, 500=warm/2000K)
+        temperature: >
+          {% set k = state_attr('light.living_room_light_group', 'color_temp_kelvin') %}
+          {% set m = state_attr('light.living_room_light_group', 'color_temp') %}
+          {% set max_k = state_attr('light.living_room_light_group', 'max_color_temp_kelvin') %}
+          {% set min_k = state_attr('light.living_room_light_group', 'min_color_temp_kelvin') %}
+          {% set min_m = (1000000 / max_k) | int if (max_k and max_k > 1000) else (state_attr('light.living_room_light_group', 'min_mireds') | default(153, true) | int(153)) %}
+          {% set max_m = (1000000 / min_k) | int if (min_k and min_k > 1000) else (state_attr('light.living_room_light_group', 'max_mireds') | default(500, true) | int(500)) %}
+          {% set temp = (1000000 / k) | int if (k and k > 1000) else (m | int if m else 370) %}
+          {{ [min_m, [temp, max_m] | min] | max }}
+        hs: "{{ state_attr('light.living_room_light_group', 'hs_color') }}"
+        min_mireds: >
+          {% set max_k = state_attr('light.living_room_light_group', 'max_color_temp_kelvin') %}
+          {% set min_m = state_attr('light.living_room_light_group', 'min_mireds') %}
+          {{ (1000000 / max_k) | int if (max_k and max_k > 1000) else (min_m | default(153, true) | int(153)) }}
+        max_mireds: >
+          {% set min_k = state_attr('light.living_room_light_group', 'min_color_temp_kelvin') %}
+          {% set max_m = state_attr('light.living_room_light_group', 'max_mireds') %}
+          {{ (1000000 / min_k) | int if (min_k and min_k > 1000) else (max_m | default(500, true) | int(500)) }}
+        supports_transition: "{{ true }}"
+        turn_on:
+          action: light.turn_on
+          target:
+            entity_id:
+              - light.living_room_light_group
+          data:
+            brightness: 255
+            color_temp_kelvin: 2700
+        turn_off:
+          action: script.light_low_before_off
+          data:
+            entity_id:
+              - light.living_room_light_group
+        set_level:
+          action: light.turn_on
+          target:
+            entity_id:
+              - light.living_room_light_group
+          data:
+            brightness: "{{ brightness }}"
+        set_temperature:
+          action: light.turn_on
+          target:
+            entity_id:
+              - light.living_room_light_group
+          data:
+            color_temp_kelvin: "{{ color_temp_kelvin }}"
+        set_hs:
+          action: light.turn_on
+          target:
+            entity_id: light.living_room_light_group
+          data:
+            hs_color:
+              - "{{ h }}"
+              - "{{ s }}"

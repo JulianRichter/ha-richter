@@ -1,0 +1,75 @@
+automation:
+  # ====================================================================
+  # Living Room - Light Switch
+  # - Controls living room light group and sphere light via wall switch
+  # - Up single click toggles full brightness / warm ambient scene
+  # - Down single click turns off lights with smooth dimming
+  # - Up/Down hold controls spot light switches
+  # ====================================================================
+
+  - id: "living_room_light_switch"
+    alias: "Living Room - Light Switch"
+    mode: single
+    trigger:
+      # Button action event from living room switch
+      - trigger: state
+        entity_id: event.living_room_light_switch_action
+        not_from: unavailable
+        not_to: unavailable
+
+    condition: []
+
+    action:
+      - choose:
+          # Up single press: toggle between bright daylight and warm ambient
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.attributes.event_type == 'on' }}"
+            sequence:
+              - choose:
+                  # If not currently full brightness, turn on full brightness
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ state_attr('light.living_room_light_group', 'brightness') | default(0, true) | int(0) != 255 }}"
+                    sequence:
+                      - action: light.turn_on
+                        target:
+                          entity_id: light.living_room_light_group
+                        data:
+                          brightness: 255
+                          color_temp_kelvin: 2700
+                # If already at full brightness, switch to warm ambient
+                default:
+                  - action: light.turn_on
+                    target:
+                      entity_id: light.living_room_light_group
+                    data:
+                      brightness: 127
+                      rgb_color: [255, 166, 87]
+
+          # Down single press: turn off lights smoothly
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.attributes.event_type == 'off' }}"
+            sequence:
+              - action: script.light_low_before_off
+                data:
+                  entity_id: light.living_room_light_group
+
+          # Up hold: turn on spot lights
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.attributes.event_type == 'brightness_move_up' }}"
+            sequence:
+              - action: switch.turn_on
+                target:
+                  entity_id: switch.living_room_spot_lights
+
+          # Down hold: turn off spot lights
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.to_state.attributes.event_type == 'brightness_move_down' }}"
+            sequence:
+              - action: switch.turn_off
+                target:
+                  entity_id: switch.living_room_spot_lights

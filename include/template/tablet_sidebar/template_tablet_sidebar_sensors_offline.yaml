@@ -1,0 +1,59 @@
+template:
+  # ====================================================================
+  # Tablet Sidebar - Sensors Offline
+  # ====================================================================
+
+  # Monitor offline sensors for tablet dashboard sidebar
+  - binary_sensor:
+      - unique_id: tablet_sidebar_sensors_offline
+        variables:
+          entities:
+            - binary_sensor.kitchen_window_contact
+            - binary_sensor.living_room_window_contact
+            - binary_sensor.bedroom_window_contact
+            - binary_sensor.baby_room_window_contact
+            - sensor.kitchen_multi_sensor_temperature
+            - sensor.living_room_multi_sensor_temperature
+            - sensor.bedroom_multi_sensor_temperature
+            - sensor.baby_room_multi_sensor_temperature
+            - sensor.bathroom_multi_sensor_temperature
+            - sensor.garden_multi_sensor_temperature
+            - binary_sensor.kitchen_motion_sensor_occupancy
+            - binary_sensor.living_room_motion_sensor_occupancy
+            - binary_sensor.bedroom_motion_sensor_left_occupancy
+            - binary_sensor.bedroom_motion_sensor_right_occupancy
+            - binary_sensor.baby_room_motion_sensor_occupancy
+            - binary_sensor.bathroom_motion_sensor_occupancy
+            - binary_sensor.bathroom_shower_motion_sensor_occupancy
+        state: >
+          {{ 'on' if entities | select('is_state', 'unavailable') | list | count > 0 else 'off' }}
+        attributes:
+          count: >-
+            {{ entities | select('is_state', 'unavailable') | list | count }}
+          sidebar_html_text: >-
+            {%- set offline = entities | select('is_state', 'unavailable') | list -%}
+
+            {# Only show block if at least one sensor is offline #}
+            {%- if offline | count > 0 -%}
+            <p>Sensor offline:
+            {%- for sensor in offline -%}
+
+              {# Compute time since last update #}
+              {%- set time_now     = as_timestamp(now()) -%}
+              {%- set time_changed = as_timestamp(states[sensor].last_updated) -%}
+              {%- set time_diff    = time_now - time_changed -%}
+              {%- set time_min     = (time_diff / 60) | int -%}
+
+              {# Sensor name #}
+              <br>- {{ state_attr(sensor, 'friendly_name') }}<br>
+              {%- if time_min < 60 -%}
+                &nbsp {{ '{:02}'.format(time_min) }}:{{ '{:02}'.format((time_diff % 60) | int) }} min
+              {%- else -%}
+                {%- set time_hour = (time_min / 60) | int -%}
+                {%- set time_min  = (time_min - 60 * time_hour) | int -%}
+                &nbsp {{ '{:02}'.format(time_hour) }}:{{ '{:02}'.format(time_min) }} h
+              {%- endif -%}
+
+            {%- endfor -%}
+            </p>
+            {%- endif -%}

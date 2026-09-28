@@ -1,0 +1,95 @@
+google_assistant:
+  project_id: !secret google_assistant_project_id
+  service_account: !include google_assistant_service_account.json
+  report_state: true
+  expose_by_default: false
+  # Config entities. https://www.home-assistant.io/integrations/google_assistant/
+  entity_config:
+    # Covers.
+    cover.home_assistant_controller_google:
+      name: Home Assistant
+      expose: true
+    cover.bedroom_roller_blinds:
+      name: Schlafzimmer Rollo
+      expose: true
+    # Fans.
+    fan.living_room_air_purifier:
+      name: Luftreiniger
+      expose: true
+    # Inputs.
+    input_boolean.bedroom_alarm_disabled:
+      name: Ausschlafen
+      expose: true
+    input_boolean.presence_home:
+      name: Home Mode
+      expose: true
+
+    # Lights.
+    light.bathroom_light:
+      name: Badezimmer Licht
+      expose: true
+    light.bedroom_light_google:
+      name: Schlafzimmer Licht
+      expose: true
+    light.bedroom_light_sphere_google:
+      name: Kugel Licht
+      expose: true
+    light.kitchen_light:
+      name: Küchenlicht
+      expose: true
+    light.living_room_light_google:
+      name: Wohnzimmer Licht
+      expose: true
+    light.baby_room_light_google:
+      name: Kinderzimmer Licht
+      expose: true
+    # Sensors.
+    sensor.bathroom_multi_sensor_temperature:
+      name: Badezimmer Temperatur
+      expose: true
+    sensor.bathroom_multi_sensor_humidity:
+      name: Badezimmer Luftfeuchtigkeit
+      expose: true
+    sensor.bedroom_multi_sensor_temperature:
+      name: Schlafzimmer Temperatur
+      expose: true
+    sensor.bedroom_multi_sensor_humidity:
+      name: Schlafzimmer Luftfeuchtigkeit
+      expose: true
+    sensor.kitchen_multi_sensor_temperature:
+      name: Küche Temperatur
+      expose: true
+    sensor.kitchen_multi_sensor_humidity:
+      name: Küche Luftfeuchtigkeit
+      expose: true
+    sensor.living_room_multi_sensor_temperature:
+      name: Wohnzimmer Temperatur
+      expose: true
+    sensor.living_room_multi_sensor_humidity:
+      name: Wohnzimmer Luftfeuchtigkeit
+      expose: true
+    sensor.baby_room_multi_sensor_temperature:
+      name: Kinderzimmer Temperatur
+      expose: true
+    sensor.baby_room_multi_sensor_humidity:
+      name: Kinderzimmer Luftfeuchtigkeit
+      expose: true
+    sensor.garden_multi_sensor_temperature:
+      name: Garten Temperatur
+      expose: true
+    sensor.garden_multi_sensor_humidity:
+      name: Garten Luftfeuchtigkeit
+      expose: true
+    # Switches.
+    switch.baby_room_heater:
+      name: Wärmekissen
+      expose: true
+    switch.living_room_tv:
+      name: Bildschirm
+      expose: true
+    switch.living_room_laptop:
+      name: Laptop
+      expose: true
+    switch.living_room_spot_lights:
+      name: Eckstrahler
+      expose: true

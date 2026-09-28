@@ -1,0 +1,257 @@
+# ==============================================================================
+# Weather Integration & Resilient Caching Layer
+# - Queries Open-Meteo hourly forecasts and current weather states
+# - Caches condition, temperature, wind speed, and precipitation
+# - Automatically retains last-known-good values during API dropouts/timeouts
+# - Supplies hourly forecasts for ApexCharts and a daily mock for Clock Card
+# ==============================================================================
+
+template:
+  # ----------------------------------------------------------------------------
+  # Current Weather Conditions (Cached with fallback to previous state)
+  # ----------------------------------------------------------------------------
+  - sensor:
+      - name: Weather Home - Current Condition
+        unique_id: weather_home_current_condition
+        icon: mdi:weather-partly-cloudy
+        state: >
+          {% set cur = states('weather.home_open_meteo') %}
+          {% if cur not in ['unavailable', 'unknown', ''] %}
+            {{ cur }}
+          {% elif this is defined and this.state not in ['unavailable', 'unknown', ''] %}
+            {{ this.state }}
+          {% else %}
+            cloudy
+          {% endif %}
+
+      - name: Weather Home - Current Temperature
+        unique_id: weather_home_current_temperature
+        unit_of_measurement: "°C"
+        device_class: temperature
+        state: >
+          {% set cur = state_attr('weather.home_open_meteo', 'temperature') %}
+          {% if cur is not none and cur not in ['unavailable', 'unknown', ''] %}
+            {{ cur | float(0) }}
+          {% elif this is defined and this.state not in ['unavailable', 'unknown', ''] %}
+            {{ this.state | float(0) }}
+          {% else %}
+            0.0
+          {% endif %}
+
+      - name: Weather Home - Current Wind Speed
+        unique_id: weather_home_current_wind_speed
+        unit_of_measurement: "km/h"
+        device_class: wind_speed
+        state: >
+          {% set cur = state_attr('weather.home_open_meteo', 'wind_speed') %}
+          {% if cur is not none and cur not in ['unavailable', 'unknown', ''] %}
+            {{ cur | float(0) }}
+          {% elif this is defined and this.state not in ['unavailable', 'unknown', ''] %}
+            {{ this.state | float(0) }}
+          {% else %}
+            0.0
+          {% endif %}
+
+  # ----------------------------------------------------------------------------
+  # Hourly Forecast & Precipitation (Periodic query with cache fallback)
+  # ----------------------------------------------------------------------------
+  - trigger:
+      - trigger: homeassistant
+        event: start
+      - trigger: time_pattern
+        minutes: /30
+    action:
+      - action: weather.get_forecasts
+        continue_on_error: true
+        data:
+          type: hourly
+        target:
+          entity_id: weather.home_open_meteo
+        response_variable: hourly
+    sensor:
+      - name: Weather Home - Current Precipitation
+        unique_id: weather_home_current_precipitation
+        unit_of_measurement: "%"
+        state: >
+          {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
+          {% if f and f|length > 0 and f[0].precipitation is defined %}
+            {{ f[0].precipitation | float(0) }}
+          {% elif this is defined and this.state not in ['unavailable', 'unknown', ''] %}
+            {{ this.state | float(0) }}
+          {% else %}
+            0.0
+          {% endif %}
+
+      - name: Weather Home - Forecast
+        unique_id: weather_home_forecast
+        state: "{{ now() }}"
+        attributes:
+          datetime: >
+            {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
+            {% if f and f|length > 0 %}
+              [
+              {% for h in f %}
+                "{{ h.datetime }}"
+                {% if not loop.last %},{% endif %}
+              {% endfor %}
+              ]
+            {% elif this is defined and 'datetime' in this.attributes and this.attributes.datetime %}
+              {{ this.attributes.datetime }}
+            {% else %}[]{% endif %}
+
+          temperature: >
+            {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
+            {% if f and f|length > 0 %}
+              [
+              {% for h in f %}
+                {{ h.temperature | float(0) }}
+                {% if not loop.last %},{% endif %}
+              {% endfor %}
+              ]
+            {% elif this is defined and 'temperature' in this.attributes and this.attributes.temperature %}
+              {{ this.attributes.temperature }}
+            {% else %}[]{% endif %}
+
+          precipitation: >
+            {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
+            {% if f and f|length > 0 %}
+              [
+              {% for h in f %}
+                {{ h.precipitation | float(0) }}
+                {% if not loop.last %},{% endif %}
+              {% endfor %}
+              ]
+            {% elif this is defined and 'precipitation' in this.attributes and this.attributes.precipitation %}
+              {{ this.attributes.precipitation }}
+            {% else %}[]{% endif %}
+
+          condition: >
+            {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
+            {% if f and f|length > 0 %}
+              [
+              {% for h in f %}
+                "{{ h.condition }}"
+                {% if not loop.last %},{% endif %}
+              {% endfor %}
+              ]
+            {% elif this is defined and 'condition' in this.attributes and this.attributes.condition %}
+              {{ this.attributes.condition }}
+            {% else %}[]{% endif %}
+
+  # ----------------------------------------------------------------------------
+  # Midnight Forecast (Daily snapshot with fallback and startup recovery)
+  # ----------------------------------------------------------------------------
+  - trigger:
+      - trigger: time
+        at: "00:00:00"
+      - trigger: homeassistant
+        event: start
+    action:
+      - action: weather.get_forecasts
+        continue_on_error: true
+        data:
+          type: hourly
+        target:
+          entity_id: weather.home_open_meteo
+        response_variable: hourly
+    sensor:
+      - name: Weather Home - Forecast at Midnight
+        unique_id: weather_home_forecast_at_midnight
+        state: "{{ now() }}"
+        attributes:
+          datetime: >
+            {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
+            {% set has_cache = this is defined and 'datetime' in this.attributes and this.attributes.datetime and this.attributes.datetime != '[]' %}
+            {% if trigger.platform == 'homeassistant' and has_cache %}
+              {{ this.attributes.datetime }}
+            {% elif f and f|length > 0 %}
+              [
+              {% for h in f %}
+                "{{ h.datetime }}"
+                {% if not loop.last %},{% endif %}
+              {% endfor %}
+              ]
+            {% elif has_cache %}
+              {{ this.attributes.datetime }}
+            {% else %}[]{% endif %}
+
+          temperature: >
+            {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
+            {% set has_cache = this is defined and 'temperature' in this.attributes and this.attributes.temperature and this.attributes.temperature != '[]' %}
+            {% if trigger.platform == 'homeassistant' and has_cache %}
+              {{ this.attributes.temperature }}
+            {% elif f and f|length > 0 %}
+              [
+              {% for h in f %}
+                {{ h.temperature | float(0) }}
+                {% if not loop.last %},{% endif %}
+              {% endfor %}
+              ]
+            {% elif has_cache %}
+              {{ this.attributes.temperature }}
+            {% else %}[]{% endif %}
+
+          precipitation: >
+            {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
+            {% set has_cache = this is defined and 'precipitation' in this.attributes and this.attributes.precipitation and this.attributes.precipitation != '[]' %}
+            {% if trigger.platform == 'homeassistant' and has_cache %}
+              {{ this.attributes.precipitation }}
+            {% elif f and f|length > 0 %}
+              [
+              {% for h in f %}
+                {{ h.precipitation | float(0) }}
+                {% if not loop.last %},{% endif %}
+              {% endfor %}
+              ]
+            {% elif has_cache %}
+              {{ this.attributes.precipitation }}
+            {% else %}[]{% endif %}
+
+          condition: >
+            {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
+            {% set has_cache = this is defined and 'condition' in this.attributes and this.attributes.condition and this.attributes.condition != '[]' %}
+            {% if trigger.platform == 'homeassistant' and has_cache %}
+              {{ this.attributes.condition }}
+            {% elif f and f|length > 0 %}
+              [
+              {% for h in f %}
+                "{{ h.condition }}"
+                {% if not loop.last %},{% endif %}
+              {% endfor %}
+              ]
+            {% elif has_cache %}
+              {{ this.attributes.condition }}
+            {% else %}[]{% endif %}
+
+  # ----------------------------------------------------------------------------
+  # Resilient Mock Weather Entity for Clock & Weather Cards
+  # ----------------------------------------------------------------------------
+  - weather:
+      - name: Weather Home Mock
+        unique_id: weather_home_mock
+        condition_template: >
+          {% set c = states('sensor.weather_home_current_condition') %}
+          {% set valid = ['clear-night', 'cloudy', 'exceptional', 'fog', 'hail', 'lightning-rainy', 'lightning', 'partlycloudy', 'pouring', 'rainy', 'snowy-rainy', 'snowy', 'sunny', 'windy-variant', 'windy'] %}
+          {{ c if c in valid else 'cloudy' }}
+        temperature_template: "{{ states('sensor.weather_home_current_temperature') | float(0) }}"
+        temperature_unit: "°C"
+        humidity_template: "{{ 0.0 | float(0) }}"
+        forecast_hourly_template: >
+          {% set dt = state_attr('sensor.weather_home_forecast_at_midnight','datetime') %}
+          {% set temp = state_attr('sensor.weather_home_forecast_at_midnight','temperature') %}
+          {% set prec = state_attr('sensor.weather_home_forecast_at_midnight','precipitation') %}
+          {% set cond = state_attr('sensor.weather_home_forecast_at_midnight','condition') %}
+          {% set valid = ['clear-night', 'cloudy', 'exceptional', 'fog', 'hail', 'lightning-rainy', 'lightning', 'partlycloudy', 'pouring', 'rainy', 'snowy-rainy', 'snowy', 'sunny', 'windy-variant', 'windy'] %}
+          {% if dt and temp and cond and dt|length > 0 %}
+            [
+            {% for i in range(dt|length) %}
+              {
+                "datetime": "{{ dt[i] }}",
+                "temperature": {{ temp[i] | float(0) }},
+                "precipitation": {{ prec[i] | float(0) if (prec is defined and prec[i] is defined) else 0 }},
+                "condition": "{{ cond[i] if cond[i] in valid else 'cloudy' }}"
+              }
+              {% if not loop.last %},{% endif %}
+            {% endfor %}
+            ]
+          {% else %}[]{% endif %}

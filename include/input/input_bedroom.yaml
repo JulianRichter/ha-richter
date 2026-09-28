@@ -1,0 +1,14 @@
+input_boolean:
+  # Toggle to disable the bedroom morning alarm routine
+  bedroom_alarm_disabled:
+    name: Bedroom - Alarm Disabled
+    icon: mdi:alarm-off
+
+input_datetime:
+  # Scheduled start time for bedroom morning routine
+  bedroom_alarm_time:
+    name: Bedroom - Alarm Time
+    has_date: false
+    has_time: true
+    initial: "06:45:00"
+    icon: mdi:alarm
