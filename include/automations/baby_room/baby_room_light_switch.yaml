@@ -1,16 +1,23 @@
 automation:
   # ====================================================================
   # Baby Room - Light Switch
-  # - Controls baby room light and heater via wall switch button events
-  # - Single press up: Toggles light brightness (full 255 / warm 127)
-  # - Single press down: Turns off light smoothly via light_low_before_off
-  # - Hold up: Turns baby room heater on
-  # - Hold down: Turns baby room heater off
+  # - Controls baby room lighting and auxiliary heater via wall switch
+  # - Up single click: Toggles full daylight / warm ambient scene
+  # - Down single click: Smoothly turns off light via light_low_before_off
+  # - Up hold: Turns on auxiliary heater
+  # - Down hold: Turns off auxiliary heater
   # ====================================================================
 
   - id: "baby_room_light_switch"
     alias: "Baby Room - Light Switch"
     mode: single
+
+    variables:
+      brightness_high: "{{ states('input_number.light_brightness_high') | int(255) }}"
+      brightness_awake: "{{ states('input_number.light_brightness_awake') | int(126) }}"
+      color_awake: >-
+        {% set raw = states('input_text.light_color_awake') %}
+        {{ raw.split(',') | map('int') | list if (raw not in ['unknown', 'unavailable', '', 'none'] and ',' in raw) else [255, 166, 87] }}
 
     trigger:
       # Wall switch event received
@@ -31,21 +38,22 @@ automation:
               - choose:
                   conditions:
                     - condition: template
-                      value_template: "{{ state_attr('light.baby_room_light', 'brightness') | int != 255 }}"
+                      value_template: "{{ state_attr('light.baby_room_light', 'brightness') | default(0, true) | int(0) != brightness_high }}"
                   sequence:
                     - action: light.turn_on
                       data:
-                        brightness: 255
-                        color_temp_kelvin: 2700
+                        brightness: "{{ brightness_high }}"
+                        color_temp_kelvin: 2000
                       target:
                         entity_id: light.baby_room_light
                 default:
                   - action: light.turn_on
                     data:
-                      brightness: 127
-                      rgb_color: [255, 166, 87]
+                      brightness: "{{ brightness_awake }}"
+                      rgb_color: "{{ color_awake }}"
                     target:
                       entity_id: light.baby_room_light
+
           # Down: Light off
           - conditions:
               - condition: template
@@ -54,6 +62,7 @@ automation:
               - action: script.light_low_before_off
                 data:
                   entity_id: light.baby_room_light
+
           # Up hold: Heater on
           - conditions:
               - condition: template
@@ -62,6 +71,7 @@ automation:
               - action: switch.turn_on
                 target:
                   entity_id: switch.baby_room_heater
+
           # Down hold: Heater off
           - conditions:
               - condition: template
@@ -70,4 +80,5 @@ automation:
               - action: switch.turn_off
                 target:
                   entity_id: switch.baby_room_heater
+
         default: []

@@ -1,0 +1,47 @@
+# ====================================================================
+# Input - Global Lighting Presets
+# - Single point of configuration for global brightness and color presets
+# - Used by motion sensors, scripts, and scene automations
+# ====================================================================
+
+input_number:
+  light_brightness_sleep:
+    name: "Lighting - Brightness Sleep"
+    icon: mdi:weather-night
+    min: 1
+    max: 255
+    step: 1
+    initial: 5
+    mode: box
+
+  light_brightness_awake:
+    name: "Lighting - Brightness Awake"
+    icon: mdi:weather-sunset
+    min: 1
+    max: 255
+    step: 1
+    initial: 126
+    mode: box
+
+  light_brightness_high:
+    name: "Lighting - Brightness High"
+    icon: mdi:weather-sunny
+    min: 1
+    max: 255
+    step: 1
+    initial: 255
+    mode: box
+
+input_text:
+  light_color_sleep:
+    name: "Lighting - Color Sleep (RGB)"
+    icon: mdi:palette
+    initial: "255,0,0"
+    max: 30
+
+  light_color_awake:
+    name: "Lighting - Color Awake (RGB)"
+    icon: mdi:palette
+    initial: "255,166,87"
+    max: 30
+

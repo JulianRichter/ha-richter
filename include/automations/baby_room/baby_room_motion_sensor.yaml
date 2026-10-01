@@ -12,10 +12,15 @@ automation:
     mode: single
 
     variables:
-      brightness_sleep: 5
-      brightness_awake: 126
-      color_sleep: [255, 0, 0]
-      color_awake: [255, 166, 87]
+      brightness_sleep: "{{ states('input_number.light_brightness_sleep') | int(5) }}"
+      brightness_awake: "{{ states('input_number.light_brightness_awake') | int(126) }}"
+      color_sleep: >-
+        {% set raw = states('input_text.light_color_sleep') %}
+        {{ raw.split(',') | map('int') | list if (raw not in ['unknown', 'unavailable', '', 'none'] and ',' in raw) else [255, 0, 0] }}
+      color_awake: >-
+        {% set raw = states('input_text.light_color_awake') %}
+        {{ raw.split(',') | map('int') | list if (raw not in ['unknown', 'unavailable', '', 'none'] and ',' in raw) else [255, 166, 87] }}
+
 
     trigger:
       # Occupancy state changed

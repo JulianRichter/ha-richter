@@ -10,6 +10,14 @@ automation:
   - id: "living_room_light_switch"
     alias: "Living Room - Light Switch"
     mode: single
+
+    variables:
+      brightness_high: "{{ states('input_number.light_brightness_high') | int(255) }}"
+      brightness_awake: "{{ states('input_number.light_brightness_awake') | int(126) }}"
+      color_awake: >-
+        {% set raw = states('input_text.light_color_awake') %}
+        {{ raw.split(',') | map('int') | list if (raw not in ['unknown', 'unavailable', '', 'none'] and ',' in raw) else [255, 166, 87] }}
+
     trigger:
       # Button action event from living room switch
       - trigger: state
@@ -30,22 +38,22 @@ automation:
                   # If not currently full brightness, turn on full brightness
                   - conditions:
                       - condition: template
-                        value_template: "{{ state_attr('light.living_room_light_group', 'brightness') | default(0, true) | int(0) != 255 }}"
+                        value_template: "{{ state_attr('light.living_room_light_group', 'brightness') | default(0, true) | int(0) != brightness_high }}"
                     sequence:
                       - action: light.turn_on
                         target:
                           entity_id: light.living_room_light_group
                         data:
-                          brightness: 255
-                          color_temp_kelvin: 2700
+                          brightness: "{{ brightness_high }}"
+                          color_temp_kelvin: 2000
                 # If already at full brightness, switch to warm ambient
                 default:
                   - action: light.turn_on
                     target:
                       entity_id: light.living_room_light_group
                     data:
-                      brightness: 127
-                      rgb_color: [255, 166, 87]
+                      brightness: "{{ brightness_awake }}"
+                      rgb_color: "{{ color_awake }}"
 
           # Down single press: turn off lights smoothly
           - conditions:

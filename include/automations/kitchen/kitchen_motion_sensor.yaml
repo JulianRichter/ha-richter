@@ -1,47 +1,55 @@
 automation:
   # ====================================================================
   # Kitchen - Motion Sensor
-  # - Controls kitchen light automatically based on occupancy detection
-  # - Turns light on when motion detected
-  # - Turns light off when motion cleared
+  # - Controls kitchen lighting based on occupancy and presence state
+  # - Turns on dimmed when sleeping (presence_home off), full brightness when awake
+  # - Uses smooth transition off via light_low_before_off when motion clears
   # ====================================================================
 
   - id: "kitchen_motion_sensor"
     alias: "Kitchen - Motion Sensor"
     mode: single
-    trigger:
-      # Motion detected
-      - trigger: state
-        entity_id: binary_sensor.kitchen_motion_sensor_occupancy
-        to: "on"
-        id: motion_on
 
-      # Motion cleared
+    trigger:
+      # Motion detected or cleared on kitchen occupancy sensor
       - trigger: state
         entity_id: binary_sensor.kitchen_motion_sensor_occupancy
-        to: "off"
-        id: motion_off
 
     condition: []
 
     action:
       - choose:
-          # Motion detected: turn on kitchen light
+          # Motion detected: turn on light if currently off or dimmed low
           - conditions:
-              - condition: trigger
-                id: motion_on
+              # Motion active
+              - condition: template
+                value_template: "{{ trigger.to_state.state == 'on' }}"
+
+              # Light is currently off or low dimmed (<= sleep brightness)
+              - condition: template
+                value_template: "{{ state_attr('light.kitchen_light_group', 'brightness') | default(0, true) | int(0) <= (states('input_number.light_brightness_sleep') | int(5)) }}"
             sequence:
+              # Turn light on (dimmed if sleeping, full brightness otherwise)
               - action: light.turn_on
                 target:
-                  entity_id: light.kitchen_light
+                  entity_id: light.kitchen_light_group
                 data:
-                  brightness: 255
+                  brightness: "{{ states('input_number.light_brightness_sleep') | int(5) if is_state('input_boolean.presence_home', 'off') else states('input_number.light_brightness_high') | int(255) }}"
+                  transition: 1
 
-          # Motion cleared: turn off kitchen light
+          # Motion cleared: turn off light smoothly via light_low_before_off
           - conditions:
-              - condition: trigger
-                id: motion_off
+              # Motion cleared
+              - condition: template
+                value_template: "{{ trigger.to_state.state == 'off' }}"
+
+              # Motion sensor is confirmed clear
+              - condition: state
+                entity_id: binary_sensor.kitchen_motion_sensor_occupancy
+                state: "off"
             sequence:
-              - action: light.turn_off
-                target:
-                  entity_id: light.kitchen_light
+              # Turn off slowly if bright, fast if already dim
+              - action: script.light_low_before_off
+                data:
+                  entity_id: light.kitchen_light_group
+                  transition: "{{ 1 if (state_attr('light.kitchen_light_group', 'brightness') | default(0, true) | int(0) <= (states('input_number.light_brightness_sleep') | int(5))) else 15 }}"

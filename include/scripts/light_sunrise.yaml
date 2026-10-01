@@ -70,11 +70,3 @@ script:
             # Delay before next step
             - delay:
                 seconds: "{{ step_delay }}"
-
-      # Final neutral white color temperature
-      - action: light.turn_on
-        target:
-          entity_id: "{{ light }}"
-        data:
-          color_temp_kelvin: 2700
-

@@ -5,8 +5,8 @@ light:
 
   # Group kitchen lights to control them together
   - platform: group
-    name: Kitchen Light
-    unique_id: kitchen_light
+    name: Kitchen Light Group
+    unique_id: kitchen_light_group
     entities:
       - light.kitchen_light_left
       - light.kitchen_light_right

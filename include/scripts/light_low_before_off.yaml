@@ -2,7 +2,8 @@ script:
   # ====================================================================
   # Light - Low Before Off
   # - Prevents sudden bright flashes when lights are turned back on
-  # - Briefly switches currently-on lights to a dim red before turning them off
+  # - Dims lights to minimum before cutting power (red if RGB supported)
+  # - Supports optional transition duration for gentle fade-out
   # ====================================================================
 
   light_low_before_off:
@@ -19,15 +20,45 @@ script:
           entity:
             domain: light
             multiple: true
+      transition:
+        name: Transition
+        description: "Optional transition time in seconds for dimming before turning off."
+        required: false
+        default: 0
+        selector:
+          number:
+            min: 0
+            max: 60
+            unit_of_measurement: s
 
     sequence:
-      # Filter only lights that are currently on
+      # Filter only lights that are currently on and categorize by RGB support
       - variables:
           lights_on: >
             {{ expand(entity_id)
               | selectattr('state', 'equalto', 'on')
               | map(attribute='entity_id')
               | list }}
+          rgb_lights: >
+            {% set ns = namespace(entities=[]) %}
+            {% for l in expand(entity_id) | selectattr('state', 'equalto', 'on') %}
+              {% set modes = state_attr(l.entity_id, 'supported_color_modes') | default([], true) %}
+              {% if 'rgb' in modes or 'rgbw' in modes or 'rgbww' in modes or 'hs' in modes or 'xy' in modes %}
+                {% set ns.entities = ns.entities + [l.entity_id] %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.entities }}
+          non_rgb_lights: >
+            {{ lights_on | reject('in', rgb_lights) | list }}
+          trans: "{{ transition | default(0) | float(0) }}"
+          sleep_bright: "{{ states('input_number.light_brightness_sleep') | int(5) }}"
+          sleep_rgb: >
+            {% set raw = states('input_text.light_color_sleep') %}
+            {% if raw not in ['unknown', 'unavailable', '', 'none'] and ',' in raw %}
+              {{ raw.split(',') | map('int') | list }}
+            {% else %}
+              [255, 0, 0]
+            {% endif %}
 
       # Stop early if no target lights are on
       - choose:
@@ -35,17 +66,34 @@ script:
             sequence:
               - stop: "No lights were on."
 
-      # Set low red brightness before off
-      - action: light.turn_on
-        target:
-          entity_id: "{{ lights_on }}"
-        data:
-          brightness: 5
-          rgb_color: [255, 0, 0]
+      # Dim RGB lights to minimum red brightness
+      - if:
+          - condition: template
+            value_template: "{{ rgb_lights | count > 0 }}"
+        then:
+          - action: light.turn_on
+            target:
+              entity_id: "{{ rgb_lights }}"
+            data:
+              brightness: "{{ sleep_bright }}"
+              rgb_color: "{{ sleep_rgb }}"
+              transition: "{{ trans }}"
 
-      # Give bulbs time to apply transition
+      # Dim non-RGB lights to minimum brightness
+      - if:
+          - condition: template
+            value_template: "{{ non_rgb_lights | count > 0 }}"
+        then:
+          - action: light.turn_on
+            target:
+              entity_id: "{{ non_rgb_lights }}"
+            data:
+              brightness: "{{ sleep_bright }}"
+              transition: "{{ trans }}"
+
+      # Wait for transition to complete before cutting power
       - delay:
-          milliseconds: 500
+          milliseconds: "{{ (trans * 1000 + 500) | int if trans > 0 else 500 }}"
 
       # Turn off target lights
       - action: light.turn_off

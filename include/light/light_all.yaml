@@ -5,13 +5,16 @@ light:
 
   # Group all lights together
   - platform: group
-    name: Alle Lichter
-    unique_id: all
+    name: All Lights Group
+    unique_id: all_lights_group
     entities:
+      - light.kitchen_light_left
+      - light.kitchen_light_right
       - light.living_room_light_1
       - light.living_room_light_2
       - light.living_room_light_3
-      - light.living_room_light_4
-      - light.kitchen_light_left
-      - light.kitchen_light_right
+      - light.bedroom_light_left
+      - light.bedroom_light_right
+      - light.bedroom_light_sphere
       - light.bathroom_light
+      - light.baby_room_light
