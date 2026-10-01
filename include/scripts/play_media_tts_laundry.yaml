@@ -1,0 +1,94 @@
+script:
+  # ====================================================================
+  # Play Media - TTS Laundry
+  # - Plays a natural, intelligent TTS announcement when washing machine finishes
+  # - Randomly selects from 8 Jarvis-like variations to prevent repetitive phrasing
+  # - Announces in German and optionally in Chinese via play_media_tts_message
+  # ====================================================================
+
+  play_media_tts_laundry:
+    alias: "Play Media - TTS Laundry"
+    mode: queued
+    max: 5
+    icon: mdi:washing-machine
+
+    fields:
+      entity_id:
+        name: Speaker
+        description: "Entity ID of the media player to announce on (default: media_player.minis)."
+        example: media_player.minis
+        required: false
+        selector:
+          entity:
+            domain: media_player
+
+      media_player:
+        name: Speaker (Alternative)
+        description: "Alternative entity ID of the media player to announce on."
+        example: media_player.minis
+        required: false
+        selector:
+          entity:
+            domain: media_player
+
+      volume_level:
+        name: Volume Level
+        description: "Optional volume level (0.0 to 1.0) to override default announcement volume."
+        example: 0.4
+        required: false
+        selector:
+          number:
+            min: 0.0
+            max: 1.0
+            step: 0.05
+            mode: slider
+
+    sequence:
+      # Prepare TTS text variables with 8 random variations
+      - variables:
+          target_player: "{{ media_player | default(entity_id | default('media_player.minis', true), true) }}"
+          variant: "{{ [1, 2, 3, 4, 5, 6, 7, 8] | random }}"
+          message_de: >-
+            {% if variant == 1 %}
+              Die Waschmaschine ist fertig. Die Wäsche kann aufgehängt werden.
+            {% elif variant == 2 %}
+              Kurzer Hinweis: Der Waschgang ist beendet.
+            {% elif variant == 3 %}
+              Die Wäsche ist fertig und wartet darauf, aufgehängt zu werden.
+            {% elif variant == 4 %}
+              Waschprogramm abgeschlossen, die saubere Wäsche ist fertig.
+            {% elif variant == 5 %}
+              Kurzes Update aus dem Bad: Die Waschmaschine ist durch.
+            {% elif variant == 6 %}
+              Die Waschmaschine hat fertig geschleudert. Die Wäsche kann raus.
+            {% elif variant == 7 %}
+              Waschgang beendet, alles wieder frisch gewaschen.
+            {% else %}
+              Die Wäsche ist fertig gewaschen.
+            {% endif %}
+          message_zh: >-
+            {% if variant == 1 %}
+              洗衣机洗完啦，可以去把衣服晾起来了。
+            {% elif variant == 2 %}
+              洗衣程序已结束，衣物已经洗好。
+            {% elif variant == 3 %}
+              浴室提醒：洗衣机已经洗好了，记得晾衣服哦。
+            {% elif variant == 4 %}
+              洗衣完成，随时可以取出晾晒。
+            {% elif variant == 5 %}
+              洗衣机运转结束，衣物清新干净。
+            {% elif variant == 6 %}
+              通知一下，洗衣机已经停机，可以晾衣服了。
+            {% elif variant == 7 %}
+              洗涤程序结束，衣服已经甩干好了。
+            {% else %}
+              洗衣机洗好了，有空可以去收整晾晒。
+            {% endif %}
+
+      # Announce TTS message (German and optional Chinese)
+      - action: script.play_media_tts_message
+        data:
+          entity_id: "{{ target_player }}"
+          message: "{{ message_de }}"
+          message_chinese: "{{ message_zh }}"
+          volume_level: "{{ volume_level if volume_level is defined else none }}"

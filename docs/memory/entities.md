@@ -102,6 +102,7 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 | **Switch** | `switch.kitchen_fridge` | Refrigerator Smart Plug | Monitored power draw |
 | **Switch** | `switch.kitchen_microwave` | Microwave Smart Plug | Monitored power draw |
 | **Climate** | `climate.kitchen_thermostat` | Radiator Thermostat | Interlocked with window contact |
+| **Sensor** | `binary_sensor.kitchen_dishwasher` | Dishwasher Active State | On when power > 3.0W (5m delay off) |
 | **Sensor** | `binary_sensor.kitchen_motion_sensor_occupancy` | Motion Sensor | Auto light on/off |
 | **Sensor** | `binary_sensor.kitchen_window_contact` | Window Contact Sensor | Shuts off radiator & caring TTS |
 | **Sensor** | `sensor.kitchen_multi_sensor_temperature` | Ambient Temperature | Multi-sensor reading |
@@ -116,6 +117,7 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 | **Media** | `media_player.kitchen` | Kitchen Speaker | Audio playback |
 | **Media** | `media_player.kitchen_cast` | Kitchen Google Cast Target | TTS target |
 | **Helper** | `input_number.dashboard_thermostat_setpoint_kitchen` | UI Setpoint Helper | Thermostat target |
+| **Helper** | `input_boolean.kitchen_dishwasher_done` | Dishwasher Finished Reminder | Active when cycle finishes, cleared upon entry announcement |
 | **Helper** | `input_boolean.vacuum_clean_kitchen` | Room Vacuum Clean Toggle | Dispatched by Robi schedule |
 
 ---

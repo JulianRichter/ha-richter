@@ -3,13 +3,14 @@ automation:
   # Bathroom - Laundry
   # - Tracks washing machine cycle using binary_sensor.template_bathroom_washer
   # - Turns on input_boolean.bathroom_laundry when washer starts
-  # - Announces laundry completion via TTS when washer finishes
+  # - Announces laundry completion via play_media_tts_laundry when washer finishes
   # - Announces in German and optionally in Chinese via play_media_tts_message
   # ====================================================================
 
   - id: "bathroom_laundry"
     alias: "Bathroom - Laundry"
     mode: single
+
     trigger:
       # Washer started running
       - trigger: state
@@ -38,20 +39,11 @@ automation:
                 target:
                   entity_id: input_boolean.bathroom_laundry
 
-          # Notify laundry completed
+          # Notify laundry completed via randomized 8-variant TTS script
           - conditions:
               - condition: trigger
                 id: washer_off
             sequence:
-              # TTS announcement (German and optional Chinese)
-              - action: script.play_media_tts_message
+              - action: script.play_media_tts_laundry
                 data:
                   entity_id: media_player.minis
-                  message: >
-                    Hey.
-                    Ich wollte nur kurz Bescheid sagen, dass die Waschmaschine fertig ist.
-                    Die Wäsche kann langsam aufgehangen werden.
-                  message_chinese: >
-                    嘿。
-                    我只是想提醒一下，洗衣机已经洗完了。
-                    衣服可以慢慢晾起来了。

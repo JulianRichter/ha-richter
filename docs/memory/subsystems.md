@@ -25,7 +25,7 @@ This document preserves operational knowledge and architectural invariants for H
   4. If `input_boolean.home_chinese_tts_enabled` is on, waits for German playback to finish and plays Chinese translation (`cmn-CN-Chirp3-HD-Achernar`).
   5. Restores original speaker volume.
 - **Natural, Varied Phrasing Standard (Anti-Ear-Fatigue)**:
-  - All automated voice feedback scripts ([`play_media_tts_window_opened`](include/scripts/play_media_tts_window_opened.yaml), [`play_media_tts_window_closed`](include/scripts/play_media_tts_window_closed.yaml), [`play_media_tts_humidity_warning`](include/scripts/play_media_tts_humidity_warning.yaml), [`play_media_tts_shower_warning`](include/scripts/play_media_tts_shower_warning.yaml), [`play_media_tts_person_zone`](include/scripts/play_media_tts_person_zone.yaml)) use an 8-variant randomized pool with concise, natural phrasing.
+  - All automated voice feedback scripts ([`play_media_tts_window_opened`](include/scripts/play_media_tts_window_opened.yaml), [`play_media_tts_window_closed`](include/scripts/play_media_tts_window_closed.yaml), [`play_media_tts_humidity_warning`](include/scripts/play_media_tts_humidity_warning.yaml), [`play_media_tts_shower_warning`](include/scripts/play_media_tts_shower_warning.yaml), [`play_media_tts_person_zone`](include/scripts/play_media_tts_person_zone.yaml), [`play_media_tts_dishwasher`](include/scripts/play_media_tts_dishwasher.yaml), [`play_media_tts_laundry`](include/scripts/play_media_tts_laundry.yaml)) use an 8-variant randomized pool with concise, natural phrasing.
   - Avoids patronizing or repetitive clichés; maintains intelligent, calm butler-like demeanor in German and Chinese.
 - **Gemini AI Conversation & Briefing Integration**:
   - Direct integration via official Google Generative AI (`conversation.google_ai_conversation`) enabling fast, direct LLM generation in Home Assistant.
@@ -114,3 +114,15 @@ This document preserves operational knowledge and architectural invariants for H
 - **1-Click Resume & Memory**:
   - Automation [`home_media_last_played.yaml`](include/automations/home/home_media_last_played.yaml) captures the latest Spotify playlist, track, artist, cover art, and speaker to `input_text.last_played_*`.
   - Script [`script.media_resume_last_played`](include/scripts/media_resume_last_played.yaml) allows 1-click resumption through Music Assistant on the dashboard `#bubble_media_popup`.
+---
+
+## 8. Household Appliances (Washer & Dishwasher Lifecycle)
+- **Bathroom Washing Machine**:
+  - State tracking: [`include/template/template_washer.yaml`](include/template/template_washer.yaml) tracks `sensor.bathroom_washer_power > 3.0W` (5 min delay-off) as `binary_sensor.template_bathroom_washer`.
+  - Reminder helper: `input_boolean.bathroom_laundry` turns on during wash cycle.
+  - Notification: [`include/automations/bathroom/bathroom_laundry.yaml`](include/automations/bathroom/bathroom_laundry.yaml) announces cycle completion on speaker group `media_player.minis` via randomized 8-variant [`script.play_media_tts_laundry`](include/scripts/play_media_tts_laundry.yaml).
+- **Kitchen Dishwasher**:
+  - State tracking: [`include/template/template_dishwasher.yaml`](include/template/template_dishwasher.yaml) tracks `sensor.kitchen_dish_washer_power > 3.0W` (5 min delay-off) as `binary_sensor.kitchen_dishwasher`.
+  - Reminder helper: `input_boolean.kitchen_dishwasher_done` in [`include/input/input_kitchen.yaml`](include/input/input_kitchen.yaml) latches `on` upon cycle completion and clears when a new cycle starts.
+  - Entry-Triggered Announcement: [`include/automations/kitchen/kitchen_dishwasher.yaml`](include/automations/kitchen/kitchen_dishwasher.yaml) waits until someone enters the kitchen (`binary_sensor.kitchen_motion_sensor_occupancy = on`) and `presence_home = on` before announcing via randomized 8-variant [`script.play_media_tts_dishwasher`](include/scripts/play_media_tts_dishwasher.yaml) on `media_player.kitchen`, automatically clearing the helper. If someone is already in the kitchen when it finishes, it announces immediately.
+

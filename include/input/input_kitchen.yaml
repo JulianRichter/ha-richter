@@ -1,0 +1,9 @@
+input_boolean:
+  # ====================================================================
+  # Kitchen Helpers
+  # ====================================================================
+
+  # Dishwasher finished reminder (turns on when cycle completes, clears when announced upon entry)
+  kitchen_dishwasher_done:
+    name: Kitchen - Dishwasher Done
+    icon: mdi:dishwasher

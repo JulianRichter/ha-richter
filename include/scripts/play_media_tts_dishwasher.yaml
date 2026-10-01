@@ -1,0 +1,94 @@
+script:
+  # ====================================================================
+  # Play Media - TTS Dishwasher
+  # - Plays a natural, intelligent TTS announcement when dishwasher is done
+  # - Randomly selects from 8 Jarvis-like variations to prevent repetitive phrasing
+  # - Announces in German and optionally in Chinese via play_media_tts_message
+  # ====================================================================
+
+  play_media_tts_dishwasher:
+    alias: "Play Media - TTS Dishwasher"
+    mode: queued
+    max: 5
+    icon: mdi:dishwasher
+
+    fields:
+      entity_id:
+        name: Speaker
+        description: "Entity ID of the media player to announce on (default: media_player.kitchen)."
+        example: media_player.kitchen
+        required: false
+        selector:
+          entity:
+            domain: media_player
+
+      media_player:
+        name: Speaker (Alternative)
+        description: "Alternative entity ID of the media player to announce on."
+        example: media_player.kitchen
+        required: false
+        selector:
+          entity:
+            domain: media_player
+
+      volume_level:
+        name: Volume Level
+        description: "Optional volume level (0.0 to 1.0) to override default announcement volume."
+        example: 0.4
+        required: false
+        selector:
+          number:
+            min: 0.0
+            max: 1.0
+            step: 0.05
+            mode: slider
+
+    sequence:
+      # Prepare TTS text variables with 8 random variations
+      - variables:
+          target_player: "{{ media_player | default(entity_id | default('media_player.kitchen', true), true) }}"
+          variant: "{{ [1, 2, 3, 4, 5, 6, 7, 8] | random }}"
+          message_de: >-
+            {% if variant == 1 %}
+              Die Spülmaschine ist fertig durchgelaufen und kann ausgeräumt werden.
+            {% elif variant == 2 %}
+              Kurzer Hinweis: Das Geschirr ist sauber und abholbereit.
+            {% elif variant == 3 %}
+              Die Spülmaschine hat ihr Programm beendet.
+            {% elif variant == 4 %}
+              Spülgang abgeschlossen, alles wieder blitzblank.
+            {% elif variant == 5 %}
+              Die Spülmaschine ist fertig, das saubere Geschirr wartet auf euch.
+            {% elif variant == 6 %}
+              Kurzes Küchen-Update: Die Spülmaschine ist fertig.
+            {% elif variant == 7 %}
+              Alles sauber gespült, die Maschine kann ausgeräumt werden.
+            {% else %}
+              Spülmaschine ist durch. Zeit fürs Ausräumen.
+            {% endif %}
+          message_zh: >-
+            {% if variant == 1 %}
+              洗碗机已经洗完了，可以把干净餐具收起来啦。
+            {% elif variant == 2 %}
+              厨房提醒：洗碗机程序结束，碗碟已经洗干净了。
+            {% elif variant == 3 %}
+              洗碗机已完成清洗，随时可以打开通风或收纳。
+            {% elif variant == 4 %}
+              洗碗程序已结束，餐具干爽洁净。
+            {% elif variant == 5 %}
+              洗碗机洗好啦，有空可以把餐具整理一下。
+            {% elif variant == 6 %}
+              通知：厨房洗碗机已完成工作。
+            {% elif variant == 7 %}
+              洗碗机运转结束，餐具已经洗好啦。
+            {% else %}
+              洗碗机完成清洗，碗碟洁净待取。
+            {% endif %}
+
+      # Announce TTS message (German and optional Chinese)
+      - action: script.play_media_tts_message
+        data:
+          entity_id: "{{ target_player }}"
+          message: "{{ message_de }}"
+          message_chinese: "{{ message_zh }}"
+          volume_level: "{{ volume_level if volume_level is defined else none }}"

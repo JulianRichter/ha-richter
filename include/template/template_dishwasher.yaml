@@ -1,0 +1,15 @@
+template:
+  # ====================================================================
+  # Kitchen - Dishwasher
+  # - Tracks dishwasher running state based on smart plug power draw
+  # - 5-minute off-delay prevents false cycle completion during soak pauses
+  # ====================================================================
+
+  - binary_sensor:
+      - name: "Kitchen - Dishwasher"
+        unique_id: kitchen_dishwasher
+        state: "{{ states('sensor.kitchen_dish_washer_power') | float(0) > 3.0 }}"
+        delay_off:
+          minutes: 5
+        device_class: running
+        icon: mdi:dishwasher
