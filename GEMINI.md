@@ -17,7 +17,12 @@
   - Template entities: `include/template/`
   - Sensors & Utility meters: `include/sensor/`, `include/utility_meter/`
   - Themes & Dashboards: `themes/`, `dashboards/`
-- Entity Lookup Index: Consult [`docs/memory/entities.md`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/docs/memory/entities.md) for verified entity IDs across all areas and domains. Do not guess entity IDs.
+# Knowledge Base & Persistent Memory
+Before modifying, guessing entities, or scanning the workspace, always consult `docs/memory/`:
+- [`docs/memory/README.md`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/docs/memory/README.md): Memory repository overview and contributor conventions.
+- [`docs/memory/entities.md`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/docs/memory/entities.md): Verified entity catalog across rooms & domains. Always check here before creating automations/scripts.
+- [`docs/memory/subsystems.md`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/docs/memory/subsystems.md): Operational contracts (Presence, Audio/TTS & Gemini, Lighting, Climate, Roborock, Transit, Music Assistant).
+- [`docs/memory/architecture.md`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/docs/memory/architecture.md): Architectural Decision Records (ADRs) and configuration patterns.
 
 # Developer Verification & Safety Tooling
 - Pre-Flight Validation: Before concluding any change, ALWAYS run `python3 tools/validate_config.py` to verify YAML syntax, secrets, scripts, and header consistency.
@@ -30,6 +35,7 @@
 - Audio & TTS Pipeline:
   - Do NOT call `tts.speak` or `media_player` directly for spoken alerts.
   - Always route through `script.play_media_tts_message` (or room-specific wrappers) to support automatic volume ducking/restoration, day/night volume limits, and bilingual German/Chinese announcements.
+  - Gemini AI Briefings: Direct integration with Google Generative AI (`conversation.google_ai_conversation`). Always route dynamic/generative prompts through `script.play_media_tts_gemini` to query Gemini and speak responses safely with volume ducking and fallback handling.
   - Spotify & Music Assistant: Voice/Cast playback on speakers is automatically intercepted by `home_spotify_to_music_assistant.yaml` to hand over playback to Music Assistant. 1-click resumption routes through `script.media_resume_last_played`.
 - Lighting & Anti-Blinding:
   - When dimmable/ambient lights are turned off, route or call `script.light_low_before_off` to prevent bright flash on the next turn-on.

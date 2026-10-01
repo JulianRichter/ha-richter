@@ -23,19 +23,41 @@ This document preserves operational knowledge and architectural invariants for H
   3. Plays German announcement via Google Cloud TTS.
   4. If `input_boolean.home_chinese_tts_enabled` is on, waits for German playback to finish and plays Chinese translation (`cmn-CN-Chirp3-HD-Achernar`).
   5. Restores original speaker volume.
-- **AI Briefings**:
-  - Morning and evening briefings call [`script.play_media_tts_gemini`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/include/scripts/play_media_tts_gemini.yaml), which passes structured sensor prompts to the Gemini conversation agent and speaks the summarized response.
+- **Gemini AI Conversation & Briefing Integration**:
+  - Direct integration via official Google Generative AI (`conversation.google_ai_conversation`) enabling fast, direct LLM generation in Home Assistant.
+  - Generative alerts and summaries route through [`script.play_media_tts_gemini`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/include/scripts/play_media_tts_gemini.yaml).
+  - **Execution Flow**:
+    1. Caller automation passes Jinja2 template containing live sensor context (weather, tram departures, washer status, calendar) as `prompt`.
+    2. Calls `conversation.process` on `conversation.google_ai_conversation`.
+    3. Handles errors/timeouts gracefully with `continue_on_error: true` and spoken fallback (`error_message`).
+    4. Hands off the synthesized plain text to `script.play_media_tts_message` for volume ducking, speaker routing, and Chinese TTS if enabled.
+  - **Active Briefings & Spoken Alerts**:
+    - Morning briefing: [`include/automations/home/home_morning_briefing_julian.yaml`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/include/automations/home/home_morning_briefing_julian.yaml).
+    - Evening briefing: [`include/automations/home/home_evening_briefing_julian.yaml`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/include/automations/home/home_evening_briefing_julian.yaml).
+    - Rain alert: [`include/automations/home/home_rain_announcement.yaml`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/include/automations/home/home_rain_announcement.yaml) (~2h before rain, living room speaker, only when awake).
+  - **Bedtime Routine Contract**:
+    - Dedicated automation in [`include/automations/bedroom/bedroom_bedtime_routine.yaml`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/include/automations/bedroom/bedroom_bedtime_routine.yaml).
+    - Triggers when Julian's phone is charging AND `light.bedroom_light_left` turns off (between 22:00 and 06:00).
+    - Transitions house to night presence (`presence_home = off`, `presence_away = on`), lowers thermostats to night setpoint, and smoothly turns off all remaining lights across living room, kitchen, bathroom, and baby room via `script.light_low_before_off`.
 
 ---
 
 ## 3. Lighting & Anti-Blinding Standard
 - **The Retina Protection Rule**:
   - When turning off dimmable lights, call [`script.light_low_before_off`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/include/scripts/light_low_before_off.yaml).
-  - This sets brightness to 1 and color to red before cutting power, ensuring that when the light is next switched on physically or via default automation, it never flashes at 100% white into a dark room.
-- **Motion Triggered Lights**:
-  - Motion active + Sun down + `presence_home == on` $\rightarrow$ Warm ambient amber light (brightness 126).
-  - Motion active + Sun down + `presence_home == off` $\rightarrow$ Dim red nightlight (brightness 5).
-  - Motion cleared $\rightarrow$ Turn off smoothly via `script.light_low_before_off`.
+  - Automatically differentiates RGB vs non-RGB fixtures: sets brightness to minimum (default 5 via `input_number.light_brightness_sleep`) and color to red (`input_text.light_color_sleep`) for RGB lights, or brightness-only for non-RGB fixtures (kitchen/bathroom).
+  - Supports optional `transition` parameter (e.g. 15s slow fade for motion clearance, 0s/fast for switches) before cutting power.
+  - Ensures that when lights are next switched on physically or via default automation, they never flash at 100% white into a dark room.
+- **Centralized Lighting Helpers**:
+  - `input_number.light_brightness_sleep` (default: 5)
+  - `input_number.light_brightness_awake` (default: 126)
+  - `input_number.light_brightness_high` (default: 255)
+  - `input_text.light_color_sleep` (default: 255,0,0)
+  - `input_text.light_color_awake` (default: 255,166,87)
+- **Motion Triggered Lights (Kitchen & Bathroom)**:
+  - Motion active + `presence_home == on` $\rightarrow$ Daytime / full light (`light_brightness_high`).
+  - Motion active + `presence_home == off` $\rightarrow$ Dim nightlight (`light_brightness_sleep`).
+  - Motion cleared $\rightarrow$ Slow 15s fade-out via `script.light_low_before_off` (1s if already dim).
 
 ---
 

@@ -1,6 +1,6 @@
-# System Memory: Architectural Decisions (ADR)
+# System Memory: Architectural Decisions & Patterns (ADR)
 
-This document records the foundational architectural decisions made for this Home Assistant repository to prevent regressions and guide future configuration changes.
+This document records the foundational architectural decisions (ADRs) and structural design patterns for this Home Assistant repository to prevent regressions, preserve system contracts, and guide future configuration changes.
 
 ---
 
@@ -11,6 +11,7 @@ This document records the foundational architectural decisions made for this Hom
 - **Consequences**:
   - Automations must NEVER be placed in root `automations.yaml` (reserved exclusively for the HA UI editor).
   - New areas/rooms must follow `include/automations/<area>/<area>_<purpose>.yaml`.
+  - Helpers reside in `include/input/input_<area>.yaml`.
 
 ---
 
@@ -19,8 +20,8 @@ This document records the foundational architectural decisions made for this Hom
 - **Context**: Calling `tts.speak` or `media_player` directly causes harsh volume spikes at night, interrupts ongoing media without resuming, and makes multilingual announcements difficult.
 - **Decision**: All spoken voice messages must route through [`script.play_media_tts_message`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/include/scripts/play_media_tts_message.yaml).
 - **Consequences**:
-  - Guarantees volume ducking (20% sleep / 40% awake) and restoration.
-  - Automatically handles optional Chinese audio when enabled.
+  - Guarantees automatic volume ducking (20% sleeping or away / 40% awake) and restoration.
+  - Automatically handles optional bilingual Chinese audio (`input_boolean.home_chinese_tts_enabled`).
 
 ---
 
@@ -39,3 +40,15 @@ This document records the foundational architectural decisions made for this Hom
   - Modal interaction patterns use `#bubble_<subsystem>_popup` hash navigation.
   - Custom styling is applied via Bubble Card's native `styles:` block or scoped `card_mod` to avoid shadow-DOM piercing breakage across Home Assistant Core updates.
 
+---
+
+## ADR 05: Native Gemini AI Integration & Generative TTS Pipeline
+- **Status**: Accepted & Invariant
+- **Context**: Morning briefings, evening recaps, and dynamic notifications require natural, intelligent language synthesis conditioned on live home state (weather, transit delays, alarms, washer status) rather than static, robotic templates. Furthermore, direct external API calls scattered across automations cause token leaks, duplicate logic, and brittle failure modes.
+- **Decision**: 
+  - Integrate Gemini directly into Home Assistant via the official Google Generative AI integration (`google_generative_ai_conversation` $\rightarrow$ `conversation.google_ai_conversation`).
+  - Standardize all AI generative voice interactions through [`script.play_media_tts_gemini`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/include/scripts/play_media_tts_gemini.yaml).
+- **Consequences**:
+  - Automations feed templated prompts containing live Jinja2 state data directly into `script.play_media_tts_gemini`.
+  - The script queries `conversation.google_ai_conversation` via `conversation.process`, extracts speech text, catches timeout/error states, falls back to a friendly spoken error announcement if needed, and routes the final speech output through `script.play_media_tts_message`.
+  - Full volume ducking, multi-room speaker targeting, and audio pipeline safety are preserved automatically.

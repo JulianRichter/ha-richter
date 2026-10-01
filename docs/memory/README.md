@@ -13,14 +13,13 @@ Rather than re-scanning dozens of package files, automations, or device registri
 
 | File | Purpose | When to Consult | When to Update |
 | :--- | :--- | :--- | :--- |
-| [`entities.md`](./entities.md) | Verified inventory of physical and logical entity IDs grouped by room and domain | Before writing any script, automation, or dashboard card (never guess IDs) | When adding, renaming, or retiring physical devices or template helpers |
-| [`subsystems.md`](./subsystems.md) | Behavioral contracts for core house functions (Presence, Audio/TTS, Anti-Blinding, Climate, etc.) | Before modifying automations that interact with sound, lights, heating, or presence | When changing global rules or adding a new cross-room subsystem |
-| [`decisions.md`](./decisions.md) | Architectural Decision Records (ADRs) explaining *why* decisions were made | When questioning a pattern or considering a refactor | When making significant structural or architectural changes |
+| [`entities.md`](./entities.md) | Verified inventory of physical and logical entity IDs grouped by room and domain | Before writing any script, automation, or dashboard card (never guess IDs) | When adding, renaming, or retiring physical devices, integrations, or template helpers |
+| [`subsystems.md`](./subsystems.md) | Behavioral contracts for core house functions (Presence, Audio/TTS, Gemini AI Briefings, Anti-Blinding, Climate, etc.) | Before modifying automations that interact with sound, lights, heating, presence, or AI voice | When changing global rules or adding a new cross-room subsystem |
+| [`architecture.md`](./architecture.md) | Architectural Decision Records (ADRs) and design patterns explaining *why* decisions were made | When questioning a pattern, considering a refactor, or adding architectural components | When making significant structural or architectural changes |
 
 ---
 
 ## 📌 Rules for AI Agents & Developers
-1. **Source of Truth**: Treat `subsystems.md` as non-negotiable architectural contracts (e.g. always route TTS through `script.play_media_tts_message`, always apply low brightness before turning off ambient lights).
+1. **Source of Truth**: Treat `subsystems.md` and `architecture.md` as non-negotiable architectural contracts (e.g., always route TTS through `script.play_media_tts_message`, always query Gemini via `script.play_media_tts_gemini`, always apply low brightness before turning off ambient lights).
 2. **Entity Accuracy**: Always look up entity IDs in `entities.md`. If an entity does not exist or changes, update `entities.md` immediately.
 3. **Keep it Concise & High-Level**: Do not dump raw YAML files or micro-automation triggers here. Memory files should capture patterns, rationale, and indexes that remain valid across minor edits.
-

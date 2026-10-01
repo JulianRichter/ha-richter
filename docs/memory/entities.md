@@ -9,7 +9,7 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 | Domain | Entity ID | Role / Device | Notes |
 | :--- | :--- | :--- | :--- |
 | **Light** | `light.living_room_light_group` | Living Room Ceiling Group | Controls all 4 spots together |
-| **Light** | `light.living_room_light_1` ... `4` | Spot Lights 1 to 4 | Individual ceiling fixtures |
+| **Light** | `light.living_room_light_1` ... `3` | Spot Lights 1 to 3 | Individual ceiling fixtures |
 | **Light** | `light.living_room_light_google` | Google Assistant Light Template | Exposed to voice integration |
 | **Switch** | `switch.living_room_spot_lights` | Spot Light Relay Switch | Main switch |
 | **Switch** | `switch.living_room_tv` | TV Smart Plug | Power toggle & metering |
@@ -64,6 +64,7 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 | **Helper** | `input_datetime.bedroom_alarm_time` | Fallback Morning Alarm Time | Used if Google alarm is unset |
 | **Helper** | `input_number.dashboard_thermostat_setpoint_bedroom` | UI Setpoint Helper | Thermostat target |
 | **Helper** | `input_boolean.vacuum_clean_bedroom` | Room Vacuum Clean Toggle | Dispatched by Robi schedule |
+| **Automation** | `automation.bedroom_bedtime_routine` | Bedtime Routine | Phone charging + lamp off -> sleep scene |
 
 ---
 
@@ -95,7 +96,7 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 
 | Domain | Entity ID | Role / Device | Notes |
 | :--- | :--- | :--- | :--- |
-| **Light** | `light.kitchen_light` | Main Kitchen Light Group | Left + Right kitchen fixtures |
+| **Light** | `light.kitchen_light_group` | Main Kitchen Light Group | Left + Right kitchen fixtures |
 | **Light** | `light.kitchen_light_left` | Left Counter Spot | Direct illumination |
 | **Light** | `light.kitchen_light_right` | Right Counter Spot | Direct illumination |
 | **Switch** | `switch.kitchen_fridge` | Refrigerator Smart Plug | Monitored power draw |
@@ -148,12 +149,13 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 - `person.xingyang`: Xingyang's person tracker.
 - `binary_sensor.julian_is_charging`: Phone charging status (used in night routines).
 
-### Audio & Voice Notification Pipeline
+### Audio, Voice & AI Notification Pipeline
+- `conversation.google_ai_conversation`: Google Generative AI (Gemini) conversation agent for live briefings & natural language prompts.
 - `media_player.spotify_julian`: Active Spotify playback instance.
 - `media_player.living_room` / `kitchen` / `bedroom` / `bathroom` / `baby_room`: Music Assistant player targets.
 - `media_player.living_room_cast` / `kitchen_cast` / `bedroom_cast` / `bathroom_cast`: Native Cast targets for TTS.
 - `script.play_media_tts_message`: Central notification router with volume ducking & bilingual support.
-- `script.play_media_tts_gemini`: AI generative status briefing caller.
+- `script.play_media_tts_gemini`: AI generative status briefing caller (queries `conversation.google_ai_conversation` and broadcasts via `script.play_media_tts_message`).
 - `script.media_resume_last_played`: Resumes last played Spotify playlist/track via Music Assistant.
 - `sensor.last_played_media_info`: Consolidated template sensor for last played title, artist, picture, and speaker.
 - `input_text.last_played_media_id` / `last_played_media_type` / `last_played_speaker`: Persistence helpers for 1-click resume.
@@ -180,4 +182,12 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 - `counter.energy_basic_price_increase_counter`: Hourly operational counter for energy cost calculation.
 - `input_number.home_energy_price`: Current kWh tariff setpoint.
 - `input_number.home_energy_base_price`: Annual fixed base fee setpoint.
+
+### Global Lighting Presets & Anti-Blinding
+- `input_number.light_brightness_sleep`: Global sleep / nightlight brightness level (default: 5).
+- `input_number.light_brightness_awake`: Global awake / ambient warm brightness level (default: 126).
+- `input_number.light_brightness_high`: Global high / daytime brightness level (default: 255).
+- `input_text.light_color_sleep`: Global sleep / night RGB color string (default: `"255,0,0"`).
+- `input_text.light_color_awake`: Global awake / ambient RGB color string (default: `"255,166,87"`).
+- `cover.living_room_curtain_group`: Living Room Curtains group (left + right), auto-opened during morning vacuum schedule.
 
