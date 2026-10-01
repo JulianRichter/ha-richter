@@ -59,6 +59,11 @@ This document preserves operational knowledge and architectural invariants for H
   - Motion active + `presence_home == on` $\rightarrow$ Daytime / full light (`light_brightness_high`).
   - Motion active + `presence_home == off` $\rightarrow$ Dim nightlight (`light_brightness_sleep`).
   - Motion cleared $\rightarrow$ Slow 15s fade-out via `script.light_low_before_off` (1s if already dim).
+- **Wall Switch Single-Press Cycling**:
+  - 1st press when OFF: Always turns on in dim/warm ambient mode first (`brightness_awake` / `color_awake`). Anti-blinding guaranteed.
+  - 2nd press when ON (dim): Steps up to full daylight brightness (`brightness_high`, 2000K).
+  - 3rd press when ON (full): Toggles back down to dim/warm mode.
+  - Down press: Smoothly dims and turns off via `script.light_low_before_off`.
 
 ---
 

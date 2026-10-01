@@ -2,8 +2,9 @@ automation:
   # ====================================================================
   # Bedroom - Light Switch Right
   # - Controls right bedroom bedside light via wall switch
-  # - Single press up: Toggles right light (full 255 / warm 127)
-  # - Single press down: Smoothly turns off right light via light_low_before_off
+  # - Single press up when off: Turns on dim/warm ambient light first
+  # - Single press up when on: Steps up to full daylight (or toggles back to dim)
+  # - Single press down: Smoothly turns off light via light_low_before_off
   # - Hold up: Activates Home scene (presence_home on)
   # - Hold down: Activates Away scene (presence_home off, turns off all bedroom lights)
   # ====================================================================
@@ -18,7 +19,6 @@ automation:
       color_awake: >-
         {% set raw = states('input_text.light_color_awake') %}
         {{ raw.split(',') | map('int') | list if (raw not in ['unknown', 'unavailable', '', 'none'] and ',' in raw) else [255, 166, 87] }}
-
 
     trigger:
       # Switch action event
@@ -39,25 +39,39 @@ automation:
                 value_template: "{{ trigger.to_state.attributes.event_type == 'on' }}"
             sequence:
               - choose:
-                  # If not full brightness, turn on full
+                  # If light is currently off: always start with dim/warm ambient first
                   - conditions:
-                      - condition: template
-                        value_template: "{{ state_attr('light.bedroom_light_right', 'brightness') | default(0, true) | int(0) != brightness_high }}"
+                      - condition: state
+                        entity_id: light.bedroom_light_right
+                        state: "off"
                     sequence:
                       - action: light.turn_on
-                        data:
-                          brightness: "{{ brightness_high }}"
-                          color_temp_kelvin: 2000
                         target:
                           entity_id: light.bedroom_light_right
+                        data:
+                          brightness: "{{ brightness_awake }}"
+                          rgb_color: "{{ color_awake }}"
+
+                  # If light is already on at full brightness: toggle back to dim/warm ambient
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ state_attr('light.bedroom_light_right', 'brightness') | default(0, true) | int(0) == brightness_high }}"
+                    sequence:
+                      - action: light.turn_on
+                        target:
+                          entity_id: light.bedroom_light_right
+                        data:
+                          brightness: "{{ brightness_awake }}"
+                          rgb_color: "{{ color_awake }}"
+
+                # If light is already on at dim/warm: step up to full brightness
                 default:
-                  # Toggle to warm ambient brightness
                   - action: light.turn_on
-                    data:
-                      brightness: "{{ brightness_awake }}"
-                      rgb_color: "{{ color_awake }}"
                     target:
                       entity_id: light.bedroom_light_right
+                    data:
+                      brightness: "{{ brightness_high }}"
+                      color_temp_kelvin: 2700
 
           # ============================================================
           # Down: Light off
@@ -103,4 +117,3 @@ automation:
                     - light.bedroom_light_sphere
 
         default: []
-

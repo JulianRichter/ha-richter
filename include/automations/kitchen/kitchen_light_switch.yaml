@@ -2,8 +2,9 @@ automation:
   # ====================================================================
   # Kitchen - Light Switch
   # - Controls kitchen lighting via wall switch button events
-  # - Up single click turns on kitchen light using global high brightness
-  # - Down single click turns off kitchen light smoothly via light_low_before_off
+  # - Single press up when off: Turns on dim/warm light first
+  # - Single press up when on: Steps up to full brightness (or toggles back to dim)
+  # - Down single click: Turns off kitchen light smoothly via light_low_before_off
   # ====================================================================
 
   - id: "kitchen_light_switch"
@@ -12,6 +13,7 @@ automation:
 
     variables:
       brightness_high: "{{ states('input_number.light_brightness_high') | int(255) }}"
+      brightness_awake: "{{ states('input_number.light_brightness_awake') | int(126) }}"
 
     trigger:
       # Button action event from kitchen switch
@@ -29,12 +31,40 @@ automation:
               - condition: template
                 value_template: "{{ trigger.to_state.attributes.event_type == 'on' }}"
             sequence:
-              - action: light.turn_on
-                target:
-                  entity_id: light.kitchen_light_group
-                data:
-                  brightness: "{{ brightness_high }}"
-                  color_temp_kelvin: 2000
+              - choose:
+                  # If kitchen light is off: always start with dim/warm setting first
+                  - conditions:
+                      - condition: state
+                        entity_id: light.kitchen_light_group
+                        state: "off"
+                    sequence:
+                      - action: light.turn_on
+                        target:
+                          entity_id: light.kitchen_light_group
+                        data:
+                          brightness: "{{ brightness_awake }}"
+                          color_temp_kelvin: 2000
+
+                  # If already at full brightness: toggle back to dim/warm setting
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ state_attr('light.kitchen_light_group', 'brightness') | default(0, true) | int(0) == brightness_high }}"
+                    sequence:
+                      - action: light.turn_on
+                        target:
+                          entity_id: light.kitchen_light_group
+                        data:
+                          brightness: "{{ brightness_awake }}"
+                          color_temp_kelvin: 2000
+
+                # If already at dim/warm: step up to full brightness
+                default:
+                  - action: light.turn_on
+                    target:
+                      entity_id: light.kitchen_light_group
+                    data:
+                      brightness: "{{ brightness_high }}"
+                      color_temp_kelvin: 2000
 
           # Down single press: turn off light smoothly
           - conditions:
@@ -56,3 +86,5 @@ automation:
               - condition: template
                 value_template: "{{ trigger.to_state.attributes.event_type == 'brightness_move_down' }}"
             sequence: []
+
+        default: []

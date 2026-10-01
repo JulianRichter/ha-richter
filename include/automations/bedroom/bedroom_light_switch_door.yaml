@@ -2,9 +2,10 @@ automation:
   # ====================================================================
   # Bedroom - Light Switch Door
   # - Controls bedroom ceiling light group and sphere lamp via door switch
-  # - Single press up: Toggles ceiling light group (full daylight / warm ambient)
+  # - Single press up when off: Turns on dim/warm ambient light first
+  # - Single press up when on: Steps up to full daylight (or toggles back to dim)
   # - Single press down: Smoothly turns off ceiling light group via light_low_before_off
-  # - Hold up: Toggles sphere lamp (full daylight / warm ambient)
+  # - Hold up when off: Turns on sphere lamp dim/warm first (or steps up to full)
   # - Hold down: Smoothly turns off sphere lamp via light_low_before_off
   # ====================================================================
 
@@ -38,23 +39,37 @@ automation:
                 value_template: "{{ trigger.to_state.attributes.event_type == 'on' }}"
             sequence:
               - choose:
-                  # If not full brightness, turn on full
+                  # If ceiling group is off: always start with dim/warm ambient first
                   - conditions:
-                      - condition: template
-                        value_template: "{{ state_attr('light.bedroom_light_group', 'brightness') | default(0, true) | int(0) != brightness_high }}"
+                      - condition: state
+                        entity_id: light.bedroom_light_group
+                        state: "off"
                     sequence:
                       - action: light.turn_on
-                        data:
-                          brightness: "{{ brightness_high }}"
-                          color_temp_kelvin: 2000
                         target:
                           entity_id: light.bedroom_light_group
+                        data:
+                          brightness: "{{ brightness_awake }}"
+                          rgb_color: "{{ color_awake }}"
+
+                  # If ceiling group is already at full brightness: toggle back to dim/warm ambient
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ state_attr('light.bedroom_light_group', 'brightness') | default(0, true) | int(0) == brightness_high }}"
+                    sequence:
+                      - action: light.turn_on
+                        target:
+                          entity_id: light.bedroom_light_group
+                        data:
+                          brightness: "{{ brightness_awake }}"
+                          rgb_color: "{{ color_awake }}"
+
+                # If ceiling group is already at dim/warm: step up to full brightness
                 default:
-                  # Toggle to warm ambient brightness
                   - action: light.turn_on
                     data:
-                      brightness: "{{ brightness_awake }}"
-                      rgb_color: "{{ color_awake }}"
+                      brightness: "{{ brightness_high }}"
+                      color_temp_kelvin: 2700
                     target:
                       entity_id: light.bedroom_light_group
 
@@ -78,23 +93,37 @@ automation:
                 value_template: "{{ trigger.to_state.attributes.event_type == 'brightness_move_up' }}"
             sequence:
               - choose:
-                  # If not full brightness, turn on full
+                  # If sphere lamp is off: always start with dim/warm ambient first
                   - conditions:
-                      - condition: template
-                        value_template: "{{ state_attr('light.bedroom_light_sphere', 'brightness') | default(0, true) | int(0) != brightness_high }}"
+                      - condition: state
+                        entity_id: light.bedroom_light_sphere
+                        state: "off"
                     sequence:
                       - action: light.turn_on
-                        data:
-                          brightness: "{{ brightness_high }}"
-                          color_temp_kelvin: 2000
                         target:
                           entity_id: light.bedroom_light_sphere
+                        data:
+                          brightness: "{{ brightness_awake }}"
+                          rgb_color: "{{ color_awake }}"
+
+                  # If sphere lamp is already at full brightness: toggle back to dim/warm ambient
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ state_attr('light.bedroom_light_sphere', 'brightness') | default(0, true) | int(0) == brightness_high }}"
+                    sequence:
+                      - action: light.turn_on
+                        target:
+                          entity_id: light.bedroom_light_sphere
+                        data:
+                          brightness: "{{ brightness_awake }}"
+                          rgb_color: "{{ color_awake }}"
+
+                # If sphere lamp is already at dim/warm: step up to full brightness
                 default:
-                  # Toggle to warm ambient brightness
                   - action: light.turn_on
                     data:
-                      brightness: "{{ brightness_awake }}"
-                      rgb_color: "{{ color_awake }}"
+                      brightness: "{{ brightness_high }}"
+                      color_temp_kelvin: 2700
                     target:
                       entity_id: light.bedroom_light_sphere
 

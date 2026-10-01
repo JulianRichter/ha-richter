@@ -2,8 +2,9 @@ automation:
   # ====================================================================
   # Baby Room - Light Switch
   # - Controls baby room lighting and auxiliary heater via wall switch
-  # - Up single click: Toggles full daylight / warm ambient scene
-  # - Down single click: Smoothly turns off light via light_low_before_off
+  # - Single press up when off: Turns on dim/warm ambient light first
+  # - Single press up when on: Steps up to full daylight (or toggles back to dim)
+  # - Single press down: Smoothly turns off light via light_low_before_off
   # - Up hold: Turns on auxiliary heater
   # - Down hold: Turns off auxiliary heater
   # ====================================================================
@@ -36,21 +37,37 @@ automation:
                 value_template: "{{ trigger.to_state.attributes.event_type == 'on' }}"
             sequence:
               - choose:
-                  conditions:
-                    - condition: template
-                      value_template: "{{ state_attr('light.baby_room_light', 'brightness') | default(0, true) | int(0) != brightness_high }}"
-                  sequence:
-                    - action: light.turn_on
-                      data:
-                        brightness: "{{ brightness_high }}"
-                        color_temp_kelvin: 2000
-                      target:
+                  # If light is currently off: always start with dim/warm ambient first
+                  - conditions:
+                      - condition: state
                         entity_id: light.baby_room_light
+                        state: "off"
+                    sequence:
+                      - color_temp_kelvin: 2700
+                        data:
+                          brightness: "{{ brightness_awake }}"
+                          rgb_color: "{{ color_awake }}"
+                        target:
+                          entity_id: light.baby_room_light
+
+                  # If light is already on at full brightness: toggle back to dim/warm ambient
+                  - conditions:
+                      - condition: template
+                        value_template: "{{ state_attr('light.baby_room_light', 'brightness') | default(0, true) | int(0) == brightness_high }}"
+                    sequence:
+                      - action: light.turn_on
+                        data:
+                          brightness: "{{ brightness_awake }}"
+                          rgb_color: "{{ color_awake }}"
+                        target:
+                          entity_id: light.baby_room_light
+
+                # If light is already on at dim/warm: step up to full brightness
                 default:
                   - action: light.turn_on
                     data:
-                      brightness: "{{ brightness_awake }}"
-                      rgb_color: "{{ color_awake }}"
+                      brightness: "{{ brightness_high }}"
+                      color_temp_kelvin: 2000
                     target:
                       entity_id: light.baby_room_light
 

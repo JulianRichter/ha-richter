@@ -3,8 +3,7 @@ automation:
   # Bedroom - Bedtime Routine
   # - Detects Julian going to sleep between 22:00 and 06:00
   # - Triggers when phone is charging AND left bedside light is turned off
-  # - Handles both event sequences (plugging in then light off, or light off then plugging in)
-  # - Transitions house to night presence state, sets thermostats to night setpoint
+  # - Transitions house to night presence state (triggers climate setback)
   # - Smoothly turns off all remaining lights across living room, kitchen, bathroom, and baby room
   # ====================================================================
 
@@ -20,7 +19,7 @@ automation:
         to: "off"
 
       # Sequence B: Phone plugged into charger while bedside light is already off
-      - id: phone_charging_binary
+      - id: phone_charging
         trigger: state
         entity_id: binary_sensor.julian_is_charging
         to: "on"
@@ -47,25 +46,15 @@ automation:
         state: "off"
 
       # Julian's phone must be actively charging
-      - condition: template
-        value_template: "{{ is_state('binary_sensor.julian_is_charging', 'on') }}"
+      - condition: state
+        entity_id: binary_sensor.julian_is_charging
+        state: "on"
 
     action:
-      # Set house presence to night/away state
+      # Set house presence to night/away state (triggers climate setback in presence engine)
       - action: input_boolean.turn_off
         target:
           entity_id: input_boolean.presence_home
-
-      # Lower thermostats to nighttime setback temperature
-      - action: climate.set_temperature
-        target:
-          entity_id:
-            - climate.living_room_thermostat
-            - climate.kitchen_thermostat
-            - climate.bedroom_thermostat
-            - climate.baby_room_thermostat
-        data:
-          temperature: "{{ states('input_number.dashboard_thermostat_setpoint_night') | float(17) }}"
 
       # Smoothly turn off remaining lights throughout the house
       - action: script.light_low_before_off
