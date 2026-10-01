@@ -1,0 +1,67 @@
+automation:
+  # ====================================================================
+  # Home - Rain Announcement
+  # - Monitors hourly weather forecast for upcoming rain in ~2 hours
+  # - Only runs when presence_home is on (family is home and awake)
+  # - Delivers a friendly, Jarvis-like Gemini TTS notification in the living room
+  # - Rate-limited to once every 4 hours to avoid repetitive alerts
+  # ====================================================================
+
+  - id: "home_rain_announcement"
+    alias: "Home - Rain Announcement"
+    mode: single
+
+    trigger:
+      # Check periodically when forecast is refreshed
+      - trigger: time_pattern
+        minutes: "/30"
+
+    condition:
+      # Only announce when residents are home and awake
+      - condition: state
+        entity_id: input_boolean.presence_home
+        state: "on"
+
+      # Rate limit: minimum 4 hours between rain announcements
+      - condition: template
+        value_template: >
+          {% set last_run = state_attr('automation.home_rain_announcement', 'last_triggered') %}
+          {{ last_run is none or (now() - (last_run | as_datetime)).total_seconds() > 14400 }}
+
+      # Check if rain is forecast in approximately 2 hours (1.5h to 2.5h)
+      - condition: template
+        value_template: >
+          {% set dt_list = state_attr('sensor.weather_home_forecast', 'datetime') | default([], true) %}
+          {% set precip_list = state_attr('sensor.weather_home_forecast', 'precipitation') | default([], true) %}
+          {% set cond_list = state_attr('sensor.weather_home_forecast', 'condition') | default([], true) %}
+          {% set ns = namespace(rain_soon=false) %}
+          {% if dt_list is iterable and dt_list | length > 0 %}
+            {% for i in range(dt_list | length) %}
+              {% set f_dt = dt_list[i] | as_datetime %}
+              {% if f_dt is not none %}
+                {% set diff = (f_dt - now()).total_seconds() %}
+                {# Forecast window: 1.5 to 2.5 hours ahead (5400s to 9000s) #}
+                {% if 5400 <= diff <= 9000 %}
+                  {% set p = precip_list[i] | default(0) | float(0) %}
+                  {% set c = cond_list[i] | default('') %}
+                  {% if p >= 0.1 or c in ['rainy', 'pouring', 'lightning-rainy'] %}
+                    {% set ns.rain_soon = true %}
+                  {% endif %}
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+          {{ ns.rain_soon }}
+
+    action:
+      # Announce upcoming rain via Jarvis Gemini TTS prompt in living room
+      - action: script.play_media_tts_gemini
+        data:
+          entity_id: media_player.living_room
+          prompt: >
+            Du bist ein zuvorkommender, eleganter KI-Assistent im Stil von Jarvis für Julian und seine Familie in Augsburg.
+            Laut der aktuellen Wettervorhersage zieht in etwa zwei Stunden Regen auf.
+            Formuliere eine kurze, charmante und hilfreiche Ankündigung (1 bis 2 kurze Sätze) für den Lautsprecher im Wohnzimmer.
+            Erwähne keine offenen Fenster, sondern informiere einfach nett über den aufziehenden Regen in rund zwei Stunden.
+            Sprich natürlich, gelassen und freundlich auf Deutsch.
+          error_message: "Ein kleiner Hinweis: In etwa zwei Stunden wird es voraussichtlich regnen."

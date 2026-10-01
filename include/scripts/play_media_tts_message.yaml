@@ -81,6 +81,9 @@ script:
           cache: true
           media_player_entity_id: "{{ entity_id }}"
           message: "{{ message }}"
+          language: de-DE
+          options:
+            voice: de-DE-Chirp3-HD-Fenrir
 
       # Announce Chinese TTS via Google Cloud TTS if enabled and provided
       - if:

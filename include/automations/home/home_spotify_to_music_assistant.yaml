@@ -2,10 +2,10 @@ automation:
   # ====================================================================
   # Home - Spotify to Music Assistant
   # - Detects Spotify playback initiated via Google Home voice or Spotify Cast on speakers
-  # - Verifies native Spotify Cast app is active on the speaker (not Music Assistant stream)
-  # - Updates Spotify metadata and directly calls music_assistant.play_media on the speaker
-  # - Queues full playlist if initiated from a playlist, or enables radio mode for single tracks
-  # - Preserves shuffle state and ensures playback continues reliably across TTS notifications
+  # - Reads song title, artist, and content directly from the triggering Cast speaker
+  # - Prevents delayed Spotify entity metadata from overwriting new voice playback with old tracks
+  # - Hands over playback directly to Music Assistant on the mapped speaker
+  # - Enqueues full playlist if verified in sync, or enables radio mode for seamless track flow
   # ====================================================================
 
   - id: "home_spotify_to_music_assistant"
@@ -108,7 +108,7 @@ automation:
             'media_player.wohnzimmer_kuche_2': 'media_player.wohnzimmer_kuche',
             'media_player.chromecast': 'media_player.chromecast_cast'
           } %}
-          {% set is_cast = 'cast' in (trigger.id | default('')) %}
+          {% set is_cast = trigger.entity_id != 'media_player.spotify_julian' %}
           {% set key = trigger.entity_id if is_cast else state_attr('media_player.spotify_julian', 'source') %}
           {% set target = speaker_map.get(key) %}
           {% set cast_entity = trigger.entity_id if is_cast else ma_to_cast.get(target) %}
@@ -116,88 +116,141 @@ automation:
           {{ target is not none and cast_app | lower == 'spotify' }}
 
     # ------------------------------------------------------------------
-    # Actions: Update Spotify metadata and hand over playback to Music Assistant
+    # Actions: Read from Cast entity and hand over playback to Music Assistant
     # ------------------------------------------------------------------
     action:
-      # Step 1: Force Spotify entity update so Home Assistant has the latest track and playlist metadata immediately
-      - action: homeassistant.update_entity
-        target:
-          entity_id: media_player.spotify_julian
+      # Step 1: Resolve target player and cast entity
+      - variables:
+          speaker_map:
+            media_player.living_room_cast: media_player.living_room
+            media_player.kitchen_cast: media_player.kitchen
+            media_player.bathroom_cast: media_player.bathroom
+            media_player.bedroom_cast: media_player.bedroom
+            media_player.baby_room_cast: media_player.baby_room
+            media_player.entrance_cast: media_player.entrance
+            media_player.minis_cast: media_player.minis
+            media_player.wohnzimmer_kuche: media_player.wohnzimmer_kuche_2
+            media_player.chromecast_cast: media_player.chromecast
+            Wohnzimmer: media_player.living_room
+            "Living Room": media_player.living_room
+            Küche: media_player.kitchen
+            Kueche: media_player.kitchen
+            Kitchen: media_player.kitchen
+            Badezimmer: media_player.bathroom
+            Bad: media_player.bathroom
+            Bathroom: media_player.bathroom
+            Schlafzimmer: media_player.bedroom
+            Bedroom: media_player.bedroom
+            Kinderzimmer: media_player.baby_room
+            Baby Room: media_player.baby_room
+            Eingang: media_player.entrance
+            Entrance: media_player.entrance
+            Minis: media_player.minis
+            "Wohnzimmer Küche": media_player.wohnzimmer_kuche_2
+            "Wohnzimmer Kueche": media_player.wohnzimmer_kuche_2
+            Chromecast: media_player.chromecast
+            "Chromecast (Old)": media_player.chromecast
+          ma_to_cast:
+            media_player.living_room: media_player.living_room_cast
+            media_player.kitchen: media_player.kitchen_cast
+            media_player.bathroom: media_player.bathroom_cast
+            media_player.bedroom: media_player.bedroom_cast
+            media_player.baby_room: media_player.baby_room_cast
+            media_player.entrance: media_player.entrance_cast
+            media_player.minis: media_player.minis_cast
+            media_player.wohnzimmer_kuche_2: media_player.wohnzimmer_kuche
+            media_player.chromecast: media_player.chromecast_cast
+          is_cast: "{{ trigger.entity_id != 'media_player.spotify_julian' }}"
+          key: "{{ trigger.entity_id if is_cast else state_attr('media_player.spotify_julian', 'source') }}"
+          target_player: "{{ speaker_map.get(key, '') }}"
+          cast_entity: "{{ trigger.entity_id if is_cast else ma_to_cast.get(target_player, '') }}"
 
-      # Step 2: Wait briefly for Spotify metadata to be populated
+      # Step 2: Wait briefly for track metadata to be populated on the Cast entity
       - wait_template: >-
-          {{ state_attr('media_player.spotify_julian', 'media_content_id') is not none or state_attr('media_player.spotify_julian', 'media_playlist') is not none }}
-        timeout: "00:00:03"
+          {{ (state_attr(cast_entity, 'media_title') not in [none, '']) or
+             (state_attr(cast_entity, 'media_content_id') not in [none, '']) }}
+        timeout: "00:00:04"
         continue_on_timeout: true
 
-      # Step 3: Resolve target player and media metadata independently
+      # Step 3: Extract fresh playback details directly from the triggering Cast entity
       - variables:
-          target_player: >-
-            {% set speaker_map = {
-              'media_player.living_room_cast': 'media_player.living_room',
-              'media_player.kitchen_cast': 'media_player.kitchen',
-              'media_player.bathroom_cast': 'media_player.bathroom',
-              'media_player.bedroom_cast': 'media_player.bedroom',
-              'media_player.baby_room_cast': 'media_player.baby_room',
-              'media_player.entrance_cast': 'media_player.entrance',
-              'media_player.minis_cast': 'media_player.minis',
-              'media_player.wohnzimmer_kuche': 'media_player.wohnzimmer_kuche_2',
-              'media_player.chromecast_cast': 'media_player.chromecast',
-              'Wohnzimmer': 'media_player.living_room',
-              'Living Room': 'media_player.living_room',
-              'Küche': 'media_player.kitchen',
-              'Kueche': 'media_player.kitchen',
-              'Kitchen': 'media_player.kitchen',
-              'Badezimmer': 'media_player.bathroom',
-              'Bad': 'media_player.bathroom',
-              'Bathroom': 'media_player.bathroom',
-              'Schlafzimmer': 'media_player.bedroom',
-              'Bedroom': 'media_player.bedroom',
-              'Kinderzimmer': 'media_player.baby_room',
-              'Baby Room': 'media_player.baby_room',
-              'Eingang': 'media_player.entrance',
-              'Entrance': 'media_player.entrance',
-              'Minis': 'media_player.minis',
-              'Wohnzimmer Küche': 'media_player.wohnzimmer_kuche_2',
-              'Wohnzimmer Kueche': 'media_player.wohnzimmer_kuche_2',
-              'Chromecast': 'media_player.chromecast',
-              'Chromecast (Old)': 'media_player.chromecast'
-            } %}
-            {% set is_cast = 'cast' in (trigger.id | default('')) %}
-            {% set key = trigger.entity_id if is_cast else state_attr('media_player.spotify_julian', 'source') %}
-            {{ speaker_map.get(key, '') }}
-          spotify_playlist: "{{ state_attr('media_player.spotify_julian', 'media_playlist') }}"
-          spotify_track_id: "{{ state_attr('media_player.spotify_julian', 'media_content_id') }}"
-          is_shuffle: "{{ state_attr('media_player.spotify_julian', 'shuffle') | default(false, true) }}"
+          cast_title: "{{ state_attr(cast_entity, 'media_title') | default('', true) }}"
+          cast_artist: "{{ state_attr(cast_entity, 'media_artist') | default('', true) }}"
+          cast_content_id: "{{ state_attr(cast_entity, 'media_content_id') | default('', true) }}"
 
-      # Step 4: Hand over playback to Music Assistant on the matching media player
+      # Step 4: Poll Spotify entity until its current track matches the Cast speaker track
+      - repeat:
+          until:
+            - condition: template
+              value_template: >-
+                {{ (cast_title != '' and state_attr('media_player.spotify_julian', 'media_title') == cast_title) or
+                   repeat.index >= 4 }}
+          sequence:
+            - action: homeassistant.update_entity
+              target:
+                entity_id: media_player.spotify_julian
+            - delay:
+                milliseconds: 1500
+
+      # Step 5: Extract synchronized metadata and check if a playlist is active
+      - variables:
+          spotify_title: "{{ state_attr('media_player.spotify_julian', 'media_title') | default('', true) }}"
+          spotify_playlist: "{{ state_attr('media_player.spotify_julian', 'media_playlist') | default('', true) }}"
+          spotify_track_id: "{{ state_attr('media_player.spotify_julian', 'media_content_id') | default('', true) }}"
+          spotify_synced: "{{ cast_title != '' and spotify_title == cast_title }}"
+          is_shuffle: "{{ state_attr('media_player.spotify_julian', 'shuffle') | default(false, true) if spotify_synced else false }}"
+
+      # Step 6: Determine media ID and type (prioritizing synced playlist queue)
+      - variables:
+          has_synced_playlist: "{{ spotify_synced and spotify_playlist != '' }}"
+          media_id: >-
+            {% if has_synced_playlist %}
+              {{ spotify_playlist }}
+            {% elif spotify_synced and spotify_track_id != '' %}
+              {{ spotify_track_id }}
+            {% elif 'spotify:' in cast_content_id %}
+              {{ cast_content_id }}
+            {% elif cast_title != '' %}
+              {{ cast_title }}
+            {% else %}
+              {{ '' }}
+            {% endif %}
+          media_type: "{{ 'playlist' if has_synced_playlist else 'track' }}"
+          media_artist: "{{ '' if has_synced_playlist else cast_artist }}"
+          use_radio: "{{ not has_synced_playlist }}"
+
+      # Step 7: Dispatch playback to Music Assistant on the matching speaker
       - if:
           - condition: template
-            value_template: >-
-              {{ target_player is not none and target_player != '' and ((spotify_playlist is not none and spotify_playlist | trim != '') or (spotify_track_id is not none and spotify_track_id | trim != '')) }}
+            value_template: "{{ target_player != '' and media_id != '' }}"
         then:
-          # Start Music Assistant playback with full playlist or single track with radio mode
-          - action: music_assistant.play_media
-            target:
-              entity_id: "{{ target_player }}"
-            data:
-              media_id: >-
-                {% if spotify_playlist is not none and spotify_playlist | trim != '' %}
-                  {{ spotify_playlist }}
-                {% else %}
-                  {{ spotify_track_id }}
-                {% endif %}
-              media_type: >-
-                {% if spotify_playlist is not none and spotify_playlist | trim != '' %}
-                  playlist
-                {% else %}
-                  track
-                {% endif %}
-              radio_mode: >-
-                {{ spotify_playlist is none or spotify_playlist | trim == '' }}
-              enqueue: replace
+          - choose:
+              # Case 1: Track with specific artist -> pass artist to Music Assistant for exact matching
+              - conditions:
+                  - condition: template
+                    value_template: "{{ media_artist != '' }}"
+                sequence:
+                  - action: music_assistant.play_media
+                    target:
+                      entity_id: "{{ target_player }}"
+                    data:
+                      media_id: "{{ media_id }}"
+                      media_type: "{{ media_type }}"
+                      artist: "{{ media_artist }}"
+                      radio_mode: "{{ use_radio }}"
+                      enqueue: replace
+            # Case 2: Playlist or URI without separate artist parameter
+            default:
+              - action: music_assistant.play_media
+                target:
+                  entity_id: "{{ target_player }}"
+                data:
+                  media_id: "{{ media_id }}"
+                  media_type: "{{ media_type }}"
+                  radio_mode: "{{ use_radio }}"
+                  enqueue: replace
 
-          # Apply shuffle setting if shuffle was active in Spotify
+          # Apply shuffle if synced and shuffle was active
           - if:
               - condition: template
                 value_template: "{{ is_shuffle == true }}"

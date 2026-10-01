@@ -5,6 +5,7 @@ google_assistant:
   expose_by_default: false
   # Config entities. https://www.home-assistant.io/integrations/google_assistant/
   entity_config:
+
     # Covers.
     cover.home_assistant_controller_google:
       name: Home Assistant
@@ -12,10 +13,18 @@ google_assistant:
     cover.bedroom_roller_blinds:
       name: Schlafzimmer Rollo
       expose: true
+    cover.baby_room_roller_blinds:
+      name: Kinderzimmer Rollo
+      expose: true
+    cover.living_room_curtain_group:
+      name: Wohnzimmer Gardinen
+      expose: true
+
     # Fans.
     fan.living_room_air_purifier:
       name: Luftreiniger
       expose: true
+
     # Inputs.
     input_boolean.bedroom_alarm_disabled:
       name: Ausschlafen
@@ -34,7 +43,7 @@ google_assistant:
     light.bedroom_light_sphere_google:
       name: Kugel Licht
       expose: true
-    light.kitchen_light:
+    light.kitchen_light_group:
       name: Küchenlicht
       expose: true
     light.living_room_light_google:
@@ -43,6 +52,7 @@ google_assistant:
     light.baby_room_light_google:
       name: Kinderzimmer Licht
       expose: true
+
     # Sensors.
     sensor.bathroom_multi_sensor_temperature:
       name: Badezimmer Temperatur
@@ -80,6 +90,7 @@ google_assistant:
     sensor.garden_multi_sensor_humidity:
       name: Garten Luftfeuchtigkeit
       expose: true
+
     # Switches.
     switch.baby_room_heater:
       name: Wärmekissen
