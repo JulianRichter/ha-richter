@@ -1,9 +1,9 @@
 script:
   # ====================================================================
   # Play Media - TTS Humidity Warning
-  # - Plays a natural, caring TTS announcement for room humidity changes
+  # - Plays a natural, intelligent TTS announcement for room humidity changes
   # - Notifies when humidity is high (prompting to open window) or stabilized (prompting to close)
-  # - Randomly selects from 4 friendly variations to avoid repetitive phrasing
+  # - Randomly selects from 8 Jarvis-like variations to prevent repetitive phrasing
   # - Announces in German and optionally in Chinese via play_media_tts_message
   # ====================================================================
 
@@ -68,13 +68,13 @@ script:
             device_class: humidity
 
     sequence:
-      # Prepare TTS text variables with random variation, room names, and humidity
+      # Prepare TTS text variables with 8 random variations, room names, and humidity
       - variables:
           target_player: "{{ media_player | default(entity_id, true) }}"
           h_sensor: "{{ humidity_sensor | default('', true) }}"
           has_humidity: "{{ h_sensor != '' and states(h_sensor) not in ['unavailable', 'unknown', ''] }}"
           humidity: "{{ states(h_sensor) | float(0) | round if h_sensor != '' else 0 }}"
-          variant: "{{ [1, 2, 3, 4] | random }}"
+          variant: "{{ [1, 2, 3, 4, 5, 6, 7, 8] | random }}"
           is_high: "{{ status in ['high', 'warning', 'too_high'] }}"
           room_de_map:
             bedroom: "im Schlafzimmer"
@@ -94,45 +94,77 @@ script:
           message_de: >-
             {% if is_high %}
               {% if variant == 1 %}
-                Die Luft {{ room_de }} ist etwas feucht geworden{% if has_humidity %} – wir liegen bei {{ humidity }} %{% endif %}. Ein kurzes Stoßlüften würde jetzt richtig guttun!
+                Kurzer Hinweis: Die Luftfeuchtigkeit {{ room_de }} liegt bei {{ humidity }} Prozent. Ein kurzes Stoßlüften wäre ratsam.
               {% elif variant == 2 %}
-                Kleine Erinnerung: {{ room_de | capitalize }} ist die Luftfeuchtigkeit{% if has_humidity %} mit {{ humidity }} %{% endif %} etwas hoch. Öffnet am besten kurz das Fenster für frische Luft.
+                Die Luft {{ room_de }} ist mit {{ humidity }} Prozent etwas feucht. Zeit für ein paar Minuten Frischluft.
               {% elif variant == 3 %}
-                Zeit zum Durchatmen! {{ room_de | capitalize }} ist es gerade recht feucht. Wenn ihr kurz das Fenster aufmacht, bleibt das Raumklima angenehm.
+                Erhöhte Feuchtigkeit {{ room_de }}: aktuell {{ humidity }} Prozent. Bitte kurz das Fenster öffnen.
+              {% elif variant == 4 %}
+                {{ humidity }} Prozent Luftfeuchtigkeit {{ room_de }}. Ein kurzes Durchlüften würde guttun.
+              {% elif variant == 5 %}
+                Hinweis zum Raumklima: {{ room_de | capitalize }} sind es {{ humidity }} Prozent Feuchte. Stoßlüften empfohlen.
+              {% elif variant == 6 %}
+                Die Feuchtigkeit {{ room_de }} ist auf {{ humidity }} Prozent gestiegen. Ein kurzes Öffnen des Fensters hilft.
+              {% elif variant == 7 %}
+                Kurzer Check: {{ humidity }} Prozent Luftfeuchtigkeit {{ room_de }}. Zeit für frische Luft.
               {% else %}
-                Für ein gesundes Raumklima: Die Feuchtigkeit {{ room_de }} ist etwas gestiegen. Wärt ihr so lieb und öffnet kurz das Fenster?
+                Feuchtigkeitsanstieg {{ room_de }} auf {{ humidity }} Prozent. Kurzes Lüften wäre jetzt ideal.
               {% endif %}
             {% else %}
               {% if variant == 1 %}
-                Super gelüftet! Die Luftfeuchtigkeit {{ room_de }} ist wieder im optimalen Bereich. Das Fenster kann gerne wieder geschlossen werden.
+                Die Luftfeuchtigkeit {{ room_de }} ist wieder normal{% if has_humidity %} bei {{ humidity }} Prozent{% endif %}. Das Fenster kann wieder geschlossen werden.
               {% elif variant == 2 %}
-                Wunderbar, die Luft {{ room_de }} ist wieder herrlich frisch und ausgeglichen. Das Fenster kann wieder zu.
+                Raumklima {{ room_de }} hat sich stabilisiert. Ihr könnt das Fenster wieder zumachen.
               {% elif variant == 3 %}
-                Perfektes Raumklima {{ room_de }}! Die Feuchtigkeit hat sich stabilisiert, ihr könnt das Fenster jetzt wieder zumachen.
+                Ausreichend gelüftet {{ room_de }}. Das Fenster kann wieder zu.
+              {% elif variant == 4 %}
+                Feuchtigkeit {{ room_de }} ist wieder im grünen Bereich{% if has_humidity %} mit {{ humidity }} Prozent{% endif %}. Fenster kann verriegelt werden.
+              {% elif variant == 5 %}
+                Genug frische Luft {{ room_de }}. Das Fenster kann geschlossen werden.
+              {% elif variant == 6 %}
+                Die Luftfeuchtigkeit {{ room_de }} hat sich eingepegelt. Fenster kann wieder zu.
+              {% elif variant == 7 %}
+                Luftaustausch {{ room_de }} abgeschlossen. Ihr könnt das Fenster wieder schließen.
               {% else %}
-                Vielen Dank fürs Lüften! {{ room_de | capitalize }} ist alles wieder im grünen Bereich, das Fenster kann wieder geschlossen werden.
+                Werte {{ room_de }} sind wieder optimal. Das Fenster kann wieder zugemacht werden.
               {% endif %}
             {% endif %}
           message_zh: >-
             {% if is_high %}
               {% if variant == 1 %}
-                {{ room_zh }}的空气有点潮湿啦{% if has_humidity %}，现在是 {{ humidity }}%{% endif %}。开窗透透气会舒服很多哦！
+                提示：{{ room_zh }}湿度偏高{% if has_humidity %}，达到 {{ humidity }}%{% endif %}，建议开窗通风一会儿。
               {% elif variant == 2 %}
-                温馨提醒：{{ room_zh }}的湿度{% if has_humidity %}已经有 {{ humidity }}% 了{% endif %}，稍微偏高。建议开窗换换新鲜空气哦。
+                {{ room_zh }}的空气湿度有点高{% if has_humidity %}，现在是 {{ humidity }}%{% endif %}，开窗换换新鲜空气吧。
               {% elif variant == 3 %}
-                是时候给{{ room_zh }}换换气啦！现在屋里湿度偏高，开一下窗户，保持空气清新吧。
+                室内湿度提示：{{ room_zh }}当前 {{ humidity }}%，建议短时间开窗透气。
+              {% elif variant == 4 %}
+                {{ room_zh }}湿度达到 {{ humidity }}%，适合开窗通风几分钟。
+              {% elif variant == 5 %}
+                环境提醒：{{ room_zh }}湿度偏高，可以开一下窗户保持空气干爽。
+              {% elif variant == 6 %}
+                {{ room_zh }}当前湿度 {{ humidity }}%，建议稍微开窗通风。
+              {% elif variant == 7 %}
+                空气质量提醒：{{ room_zh }}湿度上升至 {{ humidity }}%，适时开窗通风。
               {% else %}
-                为了保持健康舒适的环境，{{ room_zh }}湿度有点高了，能麻烦开窗通风一下吗？
+                {{ room_zh }}湿度较高（{{ humidity }}%），建议开窗通风透气。
               {% endif %}
             {% else %}
               {% if variant == 1 %}
-                通风效果非常好！{{ room_zh }}的湿度已经回到舒适范围，可以把窗户关上啦。
+                {{ room_zh }}的湿度已恢复正常{% if has_humidity %}，现在是 {{ humidity }}%{% endif %}，可以把窗户关上啦。
               {% elif variant == 2 %}
-                太棒啦，{{ room_zh }}的空气现在清新又干爽，窗户随时可以关好咯。
+                {{ room_zh }}通风已充分，环境已稳定，可以关好窗户了。
               {% elif variant == 3 %}
-                {{ room_zh }}的室内环境已经很舒适啦！湿度已经稳定下来，可以把窗户关上了哦。
+                空气已充分置换，{{ room_zh }}的窗户可以关上了。
+              {% elif variant == 4 %}
+                {{ room_zh }}湿度回到舒适区间，记得顺手关好窗户。
+              {% elif variant == 5 %}
+                {{ room_zh }}换气完成，可以把窗户关起来保暖了。
+              {% elif variant == 6 %}
+                环境指标正常，{{ room_zh }}的窗户随时可以关闭。
+              {% elif variant == 7 %}
+                {{ room_zh }}湿度已稳定，可以关闭窗户了。
               {% else %}
-                辛苦通风啦！{{ room_zh }}的湿度恢复正常，可以把窗户关起来保暖了。
+                通风充分，{{ room_zh }}窗户可以关上了。
               {% endif %}
             {% endif %}
 

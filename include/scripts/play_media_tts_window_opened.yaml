@@ -1,10 +1,10 @@
 script:
   # ====================================================================
   # Play Media - TTS Window Opened
-  # - Plays a natural, caring TTS announcement when a window is opened
+  # - Plays a natural, intelligent TTS announcement when a window is opened
   # - Compares humidity against input_number.dashboard_humidity_threshold_medium
-  # - Uses adapted friendly phrasing depending on whether humidity is elevated or already optimal
-  # - Randomly selects from 4 friendly variations to avoid repetitive phrasing
+  # - Uses adapted smart phrasing depending on whether humidity is elevated or normal
+  # - Randomly selects from 8 Jarvis-like variations to prevent repetitive phrasing
   # - Announces in German and optionally in Chinese via play_media_tts_message
   # ====================================================================
 
@@ -44,7 +44,7 @@ script:
             device_class: humidity
 
     sequence:
-      # Prepare TTS text variables with random variation, threshold comparison, and formatting
+      # Prepare TTS text variables with 8 random variations, threshold comparison, and formatting
       - variables:
           target_player: "{{ media_player | default(entity_id, true) }}"
           h_sensor: "{{ humidity_sensor | default('', true) }}"
@@ -52,73 +52,121 @@ script:
           humidity: "{{ states(h_sensor) | float(0) | round if h_sensor != '' else 0 }}"
           threshold: "{{ states('input_number.dashboard_humidity_threshold_medium') | float(60) | round }}"
           is_high: "{{ has_humidity and humidity > threshold }}"
-          variant: "{{ [1, 2, 3, 4] | random }}"
+          variant: "{{ [1, 2, 3, 4, 5, 6, 7, 8] | random }}"
           message_de: >-
             {% if has_humidity %}
               {% if is_high %}
                 {% if variant == 1 %}
-                  Frische Luft tut gut! Bei {{ humidity }} % Luftfeuchtigkeit ist Lüften genau richtig, ich pausiere kurz die Heizung.
+                  Fenster geöffnet. Bei {{ humidity }} Prozent Luftfeuchtigkeit ist Lüften ideal, Heizung pausiert.
                 {% elif variant == 2 %}
-                  Fenster ist auf! Die Luftfeuchtigkeit liegt bei {{ humidity }} %, frische Luft tut jetzt gut. Ich mache die Heizung kurz aus.
+                  Frischluft zieht ein. Ich habe die Heizung abgedreht, Feuchtigkeit liegt bei {{ humidity }} Prozent.
                 {% elif variant == 3 %}
-                  Zeit zum Durchlüften! Wir liegen bei {{ humidity }} % Luftfeuchtigkeit, ich schalte die Heizung kurz ab.
+                  Stoßlüften registriert. Heizkörper sind aus, Raumfeuchte liegt bei {{ humidity }} Prozent.
+                {% elif variant == 4 %}
+                  Thermostat pausiert. Bei {{ humidity }} Prozent Feuchtigkeit tut der Luftaustausch gut.
+                {% elif variant == 5 %}
+                  Fenster ist offen. Die Heizung ist abgeschaltet, Feuchtigkeit beträgt {{ humidity }} Prozent.
+                {% elif variant == 6 %}
+                  Lüftung läuft. Ich halte die Heizung an, aktuelle Luftfeuchtigkeit {{ humidity }} Prozent.
+                {% elif variant == 7 %}
+                  Alles klar, Heizung pausiert bei {{ humidity }} Prozent Luftfeuchtigkeit.
                 {% else %}
-                  Gute Idee! Bei {{ humidity }} % Luftfeuchtigkeit tut frische Luft gut, ich pausiere die Heizung.
+                  Fenster offen, Heizkörper aus. Die Raumfeuchte liegt bei {{ humidity }} Prozent.
                 {% endif %}
               {% else %}
                 {% if variant == 1 %}
-                  Frische Luft tut gut! Die Luftfeuchtigkeit liegt bei {{ humidity }} %, ich pausiere kurz die Heizung.
+                  Fenster geöffnet. Heizung pausiert bei {{ humidity }} Prozent Luftfeuchtigkeit.
                 {% elif variant == 2 %}
-                  Fenster ist auf! Bei {{ humidity }} % Luftfeuchtigkeit schalte ich die Heizung kurz aus.
+                  Frischluft zieht ein. Thermostat ist vorübergehend aus.
                 {% elif variant == 3 %}
-                  Etwas frische Luft schadet nie! Wir liegen bei {{ humidity }} % Luftfeuchtigkeit, ich drehe die Heizung kurz ab.
+                  Fenster ist offen. Heizung pausiert bei {{ humidity }} Prozent Raumfeuchte.
+                {% elif variant == 4 %}
+                  Thermostat abgeschaltet, während das Fenster offen steht.
+                {% elif variant == 5 %}
+                  Alles klar, Heizkörper sind für die Lüftung abgedreht.
+                {% elif variant == 6 %}
+                  Lüftung registriert. Heizung ist pausiert, Feuchtigkeit bei {{ humidity }} Prozent.
+                {% elif variant == 7 %}
+                  Fenster auf, Heizung pausiert.
                 {% else %}
-                  Frische Luft ist immer gut! Die Luftfeuchtigkeit liegt bei {{ humidity }} %, ich pausiere die Heizung.
+                  Stoßlüften aktiv, Thermostate pausieren.
                 {% endif %}
               {% endif %}
             {% else %}
               {% if variant == 1 %}
-                Frische Luft tut gut! Ich pausiere kurz die Heizung.
+                Fenster geöffnet. Heizung pausiert.
               {% elif variant == 2 %}
-                Herrlich, etwas frische Luft! Ich mache die Heizung kurz aus.
+                Frischluft zieht ein. Thermostat ist vorübergehend aus.
               {% elif variant == 3 %}
-                Ein bisschen Frischluft schadet nie. Ich drehe die Heizung kurz ab.
+                Fenster ist offen. Heizkörper pausieren automatisch.
+              {% elif variant == 4 %}
+                Thermostat abgeschaltet, während gelüftet wird.
+              {% elif variant == 5 %}
+                Alles klar, ich drehe die Heizung kurz ab.
+              {% elif variant == 6 %}
+                Lüftung registriert, Heizung pausiert.
+              {% elif variant == 7 %}
+                Fenster auf, Heizung ist aus.
               {% else %}
-                Frische Luft ist immer gut! Ich pausiere die Heizung.
+                Stoßlüften aktiv, Thermostate pausieren.
               {% endif %}
             {% endif %}
           message_zh: >-
             {% if has_humidity %}
               {% if is_high %}
                 {% if variant == 1 %}
-                  开窗通风正合适！现在湿度有 {{ humidity }}%，透透气刚好降一降，我先把暖气暂停啦。
+                  窗户已开，暖气暂停。当前湿度 {{ humidity }}%，正好透透气。
                 {% elif variant == 2 %}
-                  窗户打开啦！当前湿度是 {{ humidity }}%，换换空气很舒服，暖气我先暂时关掉哦。
+                  正在开窗通风，暖气已关。室内湿度 {{ humidity }}%。
                 {% elif variant == 3 %}
-                  正好换换气！现在屋里湿度是 {{ humidity }}%，开窗通通风，我先把暖气关上。
+                  检测到开窗，已暂停加热。当前湿度 {{ humidity }}%。
+                {% elif variant == 4 %}
+                  通风中，温控已关闭。湿度为 {{ humidity }}%。
+                {% elif variant == 5 %}
+                  窗户打开，暖气已调低。当前室内湿度 {{ humidity }}%。
+                {% elif variant == 6 %}
+                  换气模式，暖气暂时停止。湿度 {{ humidity }}%。
+                {% elif variant == 7 %}
+                  收到，通风期间已暂停暖气。当前湿度 {{ humidity }}%。
                 {% else %}
-                  透透气真好！目前湿度是 {{ humidity }}%，换换新鲜空气，我先暂停暖气啦。
+                  已开窗通风，暖气已关，湿度 {{ humidity }}%。
                 {% endif %}
               {% else %}
                 {% if variant == 1 %}
-                  透透气真舒服！当前湿度是 {{ humidity }}%，换换新鲜空气，我先把暖气暂停啦。
+                  窗户已打开，暖气暂停。当前湿度 {{ humidity }}%。
                 {% elif variant == 2 %}
-                  窗户打开啦！现在湿度是 {{ humidity }}%，暖气我先暂时关掉哦。
+                  正在通风，暖气已为您关闭。
                 {% elif variant == 3 %}
-                  来点新鲜空气！目前湿度是 {{ humidity }}%，我先把暖气关上。
+                  窗户开启，温控已自动暂停。
+                {% elif variant == 4 %}
+                  通风中，暖气暂时关闭。湿度 {{ humidity }}%。
+                {% elif variant == 5 %}
+                  收到，开窗期间暖气已停。
+                {% elif variant == 6 %}
+                  检测到开窗，暖气已暂停。
+                {% elif variant == 7 %}
+                  窗户已开，温控关闭。
                 {% else %}
-                  开窗透透气！现在湿度是 {{ humidity }}%，我先暂停暖气。
+                  通风模式，暖气暂停。
                 {% endif %}
               {% endif %}
             {% else %}
               {% if variant == 1 %}
-                透透气真舒服！我先把暖气暂停啦。
+                窗户已打开，暖气暂停。
               {% elif variant == 2 %}
-                来点新鲜空气真好！暖气我先暂时关掉哦。
+                正在通风，暖气已为您关闭。
               {% elif variant == 3 %}
-                呼吸一下新鲜空气吧。我先把暖气关上。
+                窗户开启，温控已自动暂停。
+              {% elif variant == 4 %}
+                通风中，暖气暂时关闭。
+              {% elif variant == 5 %}
+                收到，开窗期间暖气已停。
+              {% elif variant == 6 %}
+                检测到开窗，暖气已暂停。
+              {% elif variant == 7 %}
+                窗户已开，温控关闭。
               {% else %}
-                开窗透透气！我先暂停暖气啦。
+                通风模式，暖气暂停。
               {% endif %}
             {% endif %}
 

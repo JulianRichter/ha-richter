@@ -4,6 +4,7 @@ script:
   # - Announces person zone events (departure, approaching home, zone arrival)
   # - Selects from natural German and optional Chinese phrasing variations
   # - Formulates appropriate German prepositions and articles (am / im / beim / in der / den / die / das)
+  # - Randomly selects from 8 Jarvis-like variations to prevent repetitive phrasing
   # - Plays announcements via play_media_tts_message
   # ====================================================================
 
@@ -104,17 +105,25 @@ script:
             {%- else -%}
               {{ current_zone }}
             {%- endif -%}
-          variant: "{{ [1, 2, 3, 4] | random }}"
+          variant: "{{ [1, 2, 3, 4, 5, 6, 7, 8] | random }}"
           message_de: >-
             {%- if current_event in ['left_home', 'departed'] -%}
               {%- if variant == 1 -%}
                 {{ p_name }} ist jetzt unterwegs.
               {%- elif variant == 2 -%}
-                {{ p_name }} hat gerade das Haus verlassen.
+                {{ p_name }} hat das Haus verlassen.
               {%- elif variant == 3 -%}
                 {{ p_name }} ist losgefahren.
-              {%- else -%}
+              {%- elif variant == 4 -%}
                 {{ p_name }} ist gerade aufgebrochen.
+              {%- elif variant == 5 -%}
+                {{ p_name }} hat sich auf den Weg gemacht.
+              {%- elif variant == 6 -%}
+                {{ p_name }} ist jetzt los.
+              {%- elif variant == 7 -%}
+                {{ p_name }} ist unterwegs.
+              {%- else -%}
+                {{ p_name }} hat das Haus verlassen und ist auf dem Weg.
               {%- endif -%}
             {%- elif current_event in ['returns_home', 'approaching'] -%}
               {%- if variant == 1 -%}
@@ -123,8 +132,16 @@ script:
                 {{ p_name }} ist bald da.
               {%- elif variant == 3 -%}
                 {{ p_name }} ist auf dem Rückweg.
-              {%- else -%}
+              {%- elif variant == 4 -%}
                 {{ p_name }} nähert sich dem Zuhause.
+              {%- elif variant == 5 -%}
+                {{ p_name }} trifft gleich ein.
+              {%- elif variant == 6 -%}
+                {{ p_name }} ist fast da.
+              {%- elif variant == 7 -%}
+                {{ p_name }} ist auf den letzten Metern.
+              {%- else -%}
+                {{ p_name }} kommt in Kürze an.
               {%- endif -%}
             {%- else -%}
               {%- if current_zone != '' -%}
@@ -134,8 +151,16 @@ script:
                   {{ p_name }} ist soeben {{ prep }} {{ current_zone }} angekommen.
                 {%- elif variant == 3 -%}
                   {{ p_name }} hat {{ zone_akk }} erreicht.
+                {%- elif variant == 4 -%}
+                  Update: {{ p_name }} ist jetzt {{ prep }} {{ current_zone }}.
+                {%- elif variant == 5 -%}
+                  {{ p_name }} ist bei {{ zone_akk }} eingetroffen.
+                {%- elif variant == 6 -%}
+                  Kurze Info: {{ p_name }} ist {{ prep }} {{ current_zone }}.
+                {%- elif variant == 7 -%}
+                  {{ p_name }} befindet sich jetzt {{ prep }} {{ current_zone }}.
                 {%- else -%}
-                  Kurze Info: {{ p_name }} ist jetzt {{ prep }} {{ current_zone }}.
+                  {{ p_name }} ist am Ziel {{ prep }} {{ current_zone }}.
                 {%- endif -%}
               {%- else -%}
                 {{ p_name }} ist am Ziel angekommen.
@@ -146,35 +171,59 @@ script:
               {%- if variant == 1 -%}
                 {{ p_name_zh }}出发了。
               {%- elif variant == 2 -%}
-                {{ p_name_zh }}刚离开家。
+                {{ p_name_zh }}已离开家。
               {%- elif variant == 3 -%}
                 {{ p_name_zh }}出门了。
-              {%- else -%}
+              {%- elif variant == 4 -%}
                 {{ p_name_zh }}正在路上。
+              {%- elif variant == 5 -%}
+                {{ p_name_zh }}启程出发。
+              {%- elif variant == 6 -%}
+                {{ p_name_zh }}已经动身。
+              {%- elif variant == 7 -%}
+                {{ p_name_zh }}出门在途中。
+              {%- else -%}
+                {{ p_name_zh }}已离家出行。
               {%- endif -%}
             {%- elif current_event in ['returns_home', 'approaching'] -%}
               {%- if variant == 1 -%}
                 {{ p_name_zh }}马上就到家了。
               {%- elif variant == 2 -%}
-                {{ p_name_zh }}快要到家啦。
+                {{ p_name_zh }}快要到家了。
               {%- elif variant == 3 -%}
                 {{ p_name_zh }}正在回家的路上。
+              {%- elif variant == 4 -%}
+                {{ p_name_zh }}已接近家。
+              {%- elif variant == 5 -%}
+                {{ p_name_zh }}即将到达。
+              {%- elif variant == 6 -%}
+                {{ p_name_zh }}快到门口了。
+              {%- elif variant == 7 -%}
+                {{ p_name_zh }}正在归途中。
               {%- else -%}
-                {{ p_name_zh }}快回来了。
+                {{ p_name_zh }}很快就到家。
               {%- endif -%}
             {%- else -%}
               {%- if current_zone != '' -%}
                 {%- if variant == 1 -%}
                   {{ p_name_zh }}现在在{{ current_zone }}。
                 {%- elif variant == 2 -%}
-                  {{ p_name_zh }}已经到达{{ current_zone }}了。
+                  {{ p_name_zh }}已到达{{ current_zone }}。
                 {%- elif variant == 3 -%}
                   {{ p_name_zh }}刚到{{ current_zone }}。
+                {%- elif variant == 4 -%}
+                  通知：{{ p_name_zh }}已到达{{ current_zone }}。
+                {%- elif variant == 5 -%}
+                  {{ p_name_zh }}已抵达{{ current_zone }}。
+                {%- elif variant == 6 -%}
+                  位置更新：{{ p_name_zh }}在{{ current_zone }}。
+                {%- elif variant == 7 -%}
+                  {{ p_name_zh }}已进{{ current_zone }}。
                 {%- else -%}
-                  通知一下，{{ p_name_zh }}已经到了{{ current_zone }}。
+                  {{ p_name_zh }}已顺利到达{{ current_zone }}。
                 {%- endif -%}
               {%- else -%}
-                {{ p_name_zh }}已经到达目的地。
+                {{ p_name_zh }}已到达目的地。
               {%- endif -%}
             {%- endif -%}
 
