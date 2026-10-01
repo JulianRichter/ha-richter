@@ -17,19 +17,24 @@ automation:
       # Google Home alarm: trigger 15 minutes before the next scheduled alarm
       - trigger: template
         value_template: >
-          {% set alarm = states('sensor.baby_room_alarms') %}
-          {% if alarm not in ['unknown', 'unavailable', 'none', ''] %}
-            {{ (now() + timedelta(seconds=start_offset)).strftime('%H:%M') == (alarm | as_datetime).strftime('%H:%M') }}
+          {% set alarm_dt = states('sensor.baby_room_alarms') | as_datetime %}
+          {% if alarm_dt is not none and alarm_dt > now() %}
+            {{ (now() + timedelta(minutes=15)).strftime('%Y-%m-%d %H:%M') == (alarm_dt | as_local).strftime('%Y-%m-%d %H:%M') }}
           {% else %}
             false
           {% endif %}
 
-      # Manual alarm: trigger 15 minutes before scheduled alarm time
+      # Manual alarm: trigger 15 minutes before scheduled alarm time (used if Google alarm is unset)
       - trigger: template
         value_template: >
-          {% set alarm = states('input_datetime.baby_room_alarm_time') %}
-          {% if alarm not in ['unknown', 'unavailable', 'none', ''] %}
-            {{ (now() + timedelta(seconds=start_offset)).strftime('%H:%M') == alarm[:5] }}
+          {% set google_alarm_dt = states('sensor.baby_room_alarms') | as_datetime %}
+          {% if google_alarm_dt is none or google_alarm_dt < now() %}
+            {% set alarm = states('input_datetime.baby_room_alarm_time') %}
+            {% if alarm not in ['unknown', 'unavailable', 'none', ''] %}
+              {{ (now() + timedelta(minutes=15)).strftime('%H:%M') == alarm[:5] }}
+            {% else %}
+              false
+            {% endif %}
           {% else %}
             false
           {% endif %}
@@ -44,7 +49,7 @@ automation:
       - condition: template
         value_template: >
           {% set last_run = state_attr('automation.baby_room_morning_routine', 'last_triggered') %}
-          {{ last_run is none or (last_run | as_datetime).date() != now().date() }}
+          {{ last_run is none or (last_run | as_datetime | as_local).date() != now().date() }}
 
       # Only continue baby room wake-up sequence if someone is at home
       - condition: state

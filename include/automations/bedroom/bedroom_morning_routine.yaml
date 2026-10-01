@@ -2,6 +2,7 @@ automation:
   # ====================================================================
   # Bedroom - Morning Routine
   # - Starts 15 min before alarm (once/day when alarm enabled and residents home)
+  # - Priority: Google Home alarm > Julian next phone alarm > input_datetime fallback
   # - Starts 10m sunrise light effect, opens blinds, plays TTS at alarm time, turns off light 15m later
   # ====================================================================
 
@@ -14,22 +15,43 @@ automation:
       sunrise_time: 600 # 10 minutes duration for sunrise light effect (in seconds)
 
     trigger:
-      # Google Home alarm: trigger 15 minutes before the next scheduled alarm
+      # Priority 1: Google Home alarm (15 minutes prior)
       - trigger: template
         value_template: >
-          {% set alarm = states('sensor.bedroom_alarms') %}
-          {% if alarm not in ['unknown', 'unavailable', 'none', ''] %}
-            {{ (now() + timedelta(seconds=start_offset)).strftime('%H:%M') == (alarm | as_datetime).strftime('%H:%M') }}
+          {% set alarm_dt = states('sensor.bedroom_alarms') | as_datetime %}
+          {% if alarm_dt is not none and alarm_dt > now() %}
+            {{ (now() + timedelta(minutes=15)).strftime('%Y-%m-%d %H:%M') == (alarm_dt | as_local).strftime('%Y-%m-%d %H:%M') }}
           {% else %}
             false
           {% endif %}
 
-      # Manual alarm: trigger 15 minutes before scheduled alarm time
+      # Priority 2: Julian phone next alarm (15 minutes prior, if Google alarm unset)
       - trigger: template
         value_template: >
-          {% set alarm = states('input_datetime.bedroom_alarm_time') %}
-          {% if alarm not in ['unknown', 'unavailable', 'none', ''] %}
-            {{ (now() + timedelta(seconds=start_offset)).strftime('%H:%M') == alarm[:5] }}
+          {% set google_alarm_dt = states('sensor.bedroom_alarms') | as_datetime %}
+          {% if google_alarm_dt is none or google_alarm_dt < now() %}
+            {% set phone_alarm_dt = states('sensor.julian_next_alarm') | as_datetime %}
+            {% if phone_alarm_dt is not none and phone_alarm_dt > now() %}
+              {{ (now() + timedelta(minutes=15)).strftime('%Y-%m-%d %H:%M') == (phone_alarm_dt | as_local).strftime('%Y-%m-%d %H:%M') }}
+            {% else %}
+              false
+            {% endif %}
+          {% else %}
+            false
+          {% endif %}
+
+      # Priority 3: Fallback datetime helper (15 minutes prior, if both Google and phone alarms unset)
+      - trigger: template
+        value_template: >
+          {% set google_alarm_dt = states('sensor.bedroom_alarms') | as_datetime %}
+          {% set phone_alarm_dt = states('sensor.julian_next_alarm') | as_datetime %}
+          {% if (google_alarm_dt is none or google_alarm_dt < now()) and (phone_alarm_dt is none or phone_alarm_dt < now()) %}
+            {% set alarm = states('input_datetime.bedroom_alarm_time') %}
+            {% if alarm not in ['unknown', 'unavailable', 'none', ''] %}
+              {{ (now() + timedelta(minutes=15)).strftime('%H:%M') == alarm[:5] }}
+            {% else %}
+              false
+            {% endif %}
           {% else %}
             false
           {% endif %}
@@ -44,7 +66,7 @@ automation:
       - condition: template
         value_template: >
           {% set last_run = state_attr('automation.bedroom_morning_routine', 'last_triggered') %}
-          {{ last_run is none or (last_run | as_datetime).date() != now().date() }}
+          {{ last_run is none or (last_run | as_datetime | as_local).date() != now().date() }}
 
       # Only continue bedroom wake-up sequence if someone is at home
       - condition: state

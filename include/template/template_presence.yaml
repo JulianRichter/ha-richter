@@ -1,0 +1,21 @@
+template:
+  # ====================================================================
+  # Presence - Away Switch Template
+  # - Interactive Away entity that is the exact inverse of presence_home
+  # - State is on when presence_home is off (sleeping or away)
+  # - Used in Bubble Card dashboard to toggle presence cleanly
+  # ====================================================================
+
+  - switch:
+      - name: "Presence Away"
+        unique_id: presence_away
+        icon: mdi:sleep
+        state: "{{ is_state('input_boolean.presence_home', 'off') }}"
+        turn_on:
+          action: input_boolean.turn_off
+          target:
+            entity_id: input_boolean.presence_home
+        turn_off:
+          action: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.presence_home

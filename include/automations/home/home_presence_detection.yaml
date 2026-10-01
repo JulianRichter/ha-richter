@@ -1,7 +1,7 @@
 automation:
   # ====================================================================
   # Home - Presence Detection
-  # - Automates Home and Away scenes via a single presence_home toggle
+  # - Automates Home and Away scenes via single presence_home toggle
   # - on = home/awake, off = away/sleeping
   # - Triggered via manual dashboard/switch toggles or GPS resident tracking
   # - Regulates thermostats, transitions lights, and announces status via TTS
@@ -11,6 +11,7 @@ automation:
   - id: "home_presence_detection"
     alias: "Home - Presence Detection"
     mode: single
+
     trigger:
       # Manual or switch input: Home (presence_home turned on)
       - id: home_manual
@@ -18,14 +19,8 @@ automation:
         entity_id: input_boolean.presence_home
         to: "on"
 
-      # Manual dashboard input: Away
+      # Manual switch or dashboard input: Away (presence_home turned off)
       - id: away_manual
-        trigger: state
-        entity_id: input_boolean.presence_away
-        to: "on"
-
-      # Manual switch/assistant input: Away (presence_home turned off)
-      - id: away_manual_switch
         trigger: state
         entity_id: input_boolean.presence_home
         to: "off"
@@ -42,17 +37,7 @@ automation:
         entity_id: group.residents
         to: "not_home"
 
-    condition:
-      # Ignore secondary sync events between presence_home and presence_away
-      - condition: template
-        value_template: >-
-          {% if trigger.id == 'away_manual' %}
-            {{ is_state('input_boolean.presence_home', 'on') }}
-          {% elif trigger.id == 'away_manual_switch' %}
-            {{ is_state('input_boolean.presence_away', 'off') }}
-          {% else %}
-            true
-          {% endif %}
+    condition: []
 
     action:
       - choose:
@@ -67,11 +52,6 @@ automation:
               - action: input_boolean.turn_on
                 target:
                   entity_id: input_boolean.presence_home
-
-              # Sync dashboard mirror
-              - action: input_boolean.turn_off
-                target:
-                  entity_id: input_boolean.presence_away
 
               # Set thermostat daytime target temperatures
               - action: climate.set_temperature
@@ -108,7 +88,7 @@ automation:
                     target:
                       entity_id: light.bathroom_light
                     data:
-                      brightness: 255
+                      brightness_pct: 100
                       transition: 10
 
               # Scenario-specific greetings
@@ -141,17 +121,12 @@ automation:
           # ============================================================
           - conditions:
               - condition: template
-                value_template: "{{ trigger.id in ['away_manual', 'away_manual_switch', 'away_gps'] }}"
+                value_template: "{{ trigger.id in ['away_manual', 'away_gps'] }}"
             sequence:
               # Ensure presence_home is off (idempotent for GPS trigger)
               - action: input_boolean.turn_off
                 target:
                   entity_id: input_boolean.presence_home
-
-              # Sync dashboard mirror
-              - action: input_boolean.turn_on
-                target:
-                  entity_id: input_boolean.presence_away
 
               # Set thermostat setback temperature for nighttime/away
               - action: climate.set_temperature
@@ -174,15 +149,15 @@ automation:
                     target:
                       entity_id: light.bathroom_light
                     data:
-                      brightness: 5
+                      brightness_pct: 2
                       transition: 10
 
               # Scenario-specific departures/goodnight actions
               - choose:
                   # Manual goodnight
                   - conditions:
-                      - condition: template
-                        value_template: "{{ trigger.id in ['away_manual', 'away_manual_switch'] }}"
+                      - condition: trigger
+                        id: away_manual
                     sequence:
                       # TTS announcement (German and optional Chinese)
                       - action: script.play_media_tts_message

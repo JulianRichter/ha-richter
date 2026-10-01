@@ -2,6 +2,8 @@ automation:
   # ====================================================================
   # Home - Vacuum Cleaning
   # - Scheduled time: Starts automated vacuum cleaning once per calendar day
+  # - Opens living room curtains for morning daylight
+  # - Resets all room cleaning toggles to ensure a full house clean
   # - Dispatches vacuum_start script using configured cleaning parameters
   # ====================================================================
 
@@ -23,6 +25,22 @@ automation:
           {{ last_run is none or (last_run | as_datetime).date() != now().date() }}
 
     action:
+      # Open living room curtains
+      - action: cover.open_cover
+        target:
+          entity_id: cover.living_room_curtain_group
+
+      # Reset all vacuum room cleaning helpers so morning clean is a full clean
+      - action: input_boolean.turn_off
+        target:
+          entity_id:
+            - input_boolean.vacuum_clean_kitchen
+            - input_boolean.vacuum_clean_entrance
+            - input_boolean.vacuum_clean_living_room
+            - input_boolean.vacuum_clean_bathroom
+            - input_boolean.vacuum_clean_kidroom
+            - input_boolean.vacuum_clean_bedroom
+
       # Start automated vacuum cleaning
       - action: script.vacuum_start
 

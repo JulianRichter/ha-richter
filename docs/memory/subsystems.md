@@ -8,9 +8,10 @@ This document preserves operational knowledge and architectural invariants for H
 - **State Definition**:
   - `input_boolean.presence_home = on`: Home & Awake. Normal daytime lighting, 40% announcement volume, automatic motion triggers enabled.
   - `input_boolean.presence_home = off`: Away or Sleeping. Red/dim night lights, 20% announcement volume limit, motion lights use ultra-dim nightlight mode.
-- **Synchronization**:
-  - Automations in [`include/automations/home/home_presence_detection.yaml`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/include/automations/home/home_presence_detection.yaml) synchronize `group.residents` (GPS trackers for Julian & Xingyang) with manual wall switches and dashboard toggles (`input_boolean.presence_home` & `presence_away`).
-  - Condition filters ignore echo sync loops between `presence_home` and `presence_away`.
+- **Synchronization & Single Source of Truth**:
+  - `input_boolean.presence_home` is the sole source of truth for home/away status (`on` = home & awake, `off` = away or sleeping).
+  - `switch.presence_away` is an interactive template switch in [`include/template/template_presence.yaml`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/include/template/template_presence.yaml) whose state is the exact inverse of `presence_home`. Toggling it on the Bubble Card dashboard directly controls `presence_home`.
+  - [`include/automations/home/home_presence_detection.yaml`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/include/automations/home/home_presence_detection.yaml) synchronizes `group.residents` (GPS trackers for Julian & Xingyang) with manual wall switches and `presence_home` without needing sync loops or mirror helpers.
 
 ---
 

@@ -27,7 +27,7 @@ views:
         "sidebar  .       .       ."
       mediaquery:
         # Mobile layout: single column, sidebar hidden via card_mod
-        '(max-width: 600px)':
+        "(max-width: 600px)":
           grid-template-columns: 1fr
           grid-template-rows: auto auto auto auto auto auto
           grid-template-areas: |
@@ -49,11 +49,11 @@ views:
             attribute: sidebar_html_text
             tap_action:
               action: navigate
-              navigation_path: '#bubble_calendar_popup'
+              navigation_path: "#bubble_calendar_popup"
             button_action:
               tap_action:
                 action: navigate
-                navigation_path: '#bubble_calendar_popup'
+                navigation_path: "#bubble_calendar_popup"
             styles: |
               /* position button in sidebar */
               ha-card {
@@ -83,7 +83,6 @@ views:
                 top: -.09em;
               }
 
-                
           - type: custom:bubble-card
             card_type: button
             entity: sensor.template_tablet_sidebar_date
@@ -93,11 +92,11 @@ views:
             attribute: sidebar_html_text
             tap_action:
               action: navigate
-              navigation_path: '#bubble_calendar_popup'
+              navigation_path: "#bubble_calendar_popup"
             button_action:
               tap_action:
                 action: navigate
-                navigation_path: '#bubble_calendar_popup'
+                navigation_path: "#bubble_calendar_popup"
             styles: >
               /* position button in sidebar */
 
@@ -137,7 +136,7 @@ views:
                 const el = this.shadowRoot.querySelector('.bubble-button-card-container');
                 if (el) el.style.height = height + 'px';
               })()}
-                
+
           - type: custom:bubble-card
             card_type: button
             entity: sensor.template_tablet_sidebar_weather
@@ -147,11 +146,11 @@ views:
             attribute: sidebar_html_text
             tap_action:
               action: navigate
-              navigation_path: '#bubble_climate_popup'
+              navigation_path: "#bubble_climate_popup"
             button_action:
               tap_action:
                 action: navigate
-                navigation_path: '#bubble_climate_popup'
+                navigation_path: "#bubble_climate_popup"
             styles: |
               /* position button in sidebar */
               ha-card {
@@ -187,7 +186,6 @@ views:
                 height: 6em;
               }
 
-                
           - type: custom:apexcharts-card
             graph_span: 24h
             span:
@@ -209,7 +207,7 @@ views:
                   });
                 type: area
                 stroke_width: 0
-                color: '#42a5f5'
+                color: "#42a5f5"
                 opacity: 0.1
                 yaxis_id: rain
               - name: Forecast
@@ -220,7 +218,7 @@ views:
                   });
                 type: line
                 stroke_width: 3
-                color: '#ffa726'
+                color: "#ffa726"
                 opacity: 0.2
                 yaxis_id: temp
               - name: Temperature
@@ -228,7 +226,7 @@ views:
                 extend_to: now
                 type: line
                 stroke_width: 3
-                color: '#ffa726'
+                color: "#ffa726"
                 yaxis_id: temp
               - name: Temperature
                 entity: sensor.weather_home_current_temperature
@@ -238,7 +236,7 @@ views:
                   return [[ts, val]];
                 type: line
                 stroke_width: 0
-                color: '#ffa726'
+                color: "#ffa726"
                 yaxis_id: temp
             apex_config:
               markers:
@@ -247,8 +245,8 @@ views:
                   - seriesIndex: 3
                     dataPointIndex: 0
                     size: 3
-                    fillColor: '#ffa726'
-                    strokeColor: '#ffa726'
+                    fillColor: "#ffa726"
+                    strokeColor: "#ffa726"
               chart:
                 height: 90px
                 width: 100%
@@ -288,7 +286,6 @@ views:
                   max-width: 100% !important;
                 }
 
-                  
           - type: custom:clock-weather-card
             entity: weather.weather_home_mock
             weather_icon_type: line
@@ -318,7 +315,6 @@ views:
                   display: none !important;
                 }
 
-                  
           - type: custom:bubble-card
             card_type: button
             entity: binary_sensor.template_tablet_sidebar_birthday_notification
@@ -372,7 +368,6 @@ views:
                 if (el) el.style.height = height + 'px';
               })()}
 
-                
           - type: custom:bubble-card
             card_type: button
             entity: binary_sensor.template_tablet_sidebar_anniversary_notification
@@ -426,7 +421,6 @@ views:
                 if (el) el.style.height = height + 'px';
               })()}
 
-                
           - type: custom:bubble-card
             card_type: button
             entity: binary_sensor.template_tablet_sidebar_sensors_offline
@@ -476,7 +470,6 @@ views:
                 if (el) el.style.height = height + 'px';
               })()}
 
-                
           - type: custom:bubble-card
             card_type: button
             entity: binary_sensor.template_tablet_sidebar_window_contacts
@@ -617,7 +610,7 @@ views:
             name: Rollo
             card_layout: large
             sub_button:
-              - entity: cover.living_room_curtains
+              - entity: cover.living_room_curtain_group
                 icon: mdi:dots-horizontal
                 tap_action:
                   action: toggle
@@ -639,10 +632,9 @@ views:
                 padding: 1.5vw 0 0 0 !important;
               }
 
-                
           - type: custom:bubble-card
             card_type: button
-            entity: light.living_room_light_google
+            entity: light.living_room_light_group
             name: Wohnzimmer
             icon: mdi:sofa
             show_state: true
@@ -679,16 +671,15 @@ views:
                 100% { opacity: 1; }
               }
 
-                
           - type: custom:bubble-card
             card_type: button
-            entity: light.bedroom_light_google
+            entity: light.bedroom_light_group
             name: Schlafzimmer
             icon: mdi:bed
             show_state: true
             card_layout: large
             sub_button:
-              - entity: light.bedroom_light_sphere_google
+              - entity: light.bedroom_light_sphere
                 icon: mdi:dots-horizontal
                 tap_action:
                   action: toggle
@@ -719,10 +710,9 @@ views:
                 100% { opacity: 1; }
               }
 
-                
           - type: custom:bubble-card
             card_type: button
-            entity: light.baby_room_light_google
+            entity: light.baby_room_light
             name: Kinderzimmer
             icon: mdi:cradle
             show_state: true
@@ -759,12 +749,11 @@ views:
                 100% { opacity: 1; }
               }
 
-                
           - type: horizontal-stack
             cards:
               - type: custom:bubble-card
                 card_type: button
-                entity: light.kitchen_light
+                entity: light.kitchen_light_group
                 name: Küche
                 icon: mdi:fridge-outline
                 show_state: true
@@ -798,7 +787,6 @@ views:
                     100% { opacity: 1; }
                   }
 
-                    
               - type: custom:bubble-card
                 card_type: button
                 entity: light.bathroom_light
@@ -835,7 +823,6 @@ views:
                     100% { opacity: 1; }
                   }
 
-                    
         columns: 1
         view_layout:
           grid-area: cell2
@@ -852,31 +839,30 @@ views:
                 font-weight: var(--dashboard-header-font-weight);
               }
 
-                
           - type: custom:mini-graph-card
             entities:
               - entity: input_number.dashboard_humidity_threshold_medium
                 show_legend: false
-                color: '#1db954'
+                color: "#1db954"
               - entity: input_number.dashboard_humidity_threshold_medium
                 show_legend: false
                 show_fill: false
                 color: rgba(115, 115, 115, 0.7)
               - entity: sensor.living_room_multi_sensor_humidity
                 name: Wohnz.
-                color: '#ffa726'
+                color: "#ffa726"
                 show_fill: false
               - entity: sensor.bedroom_multi_sensor_humidity
                 name: Schlafz.
-                color: '#ef5350'
+                color: "#ef5350"
                 show_fill: false
               - entity: sensor.baby_room_multi_sensor_humidity
                 name: Kinderz.
-                color: '#ab47bc'
+                color: "#ab47bc"
                 show_fill: false
               - entity: sensor.bathroom_multi_sensor_humidity
                 name: Badez.
-                color: '#42a5f5'
+                color: "#42a5f5"
                 show_fill: false
             hour24: true
             hours_to_show: 2
@@ -949,7 +935,7 @@ views:
                 card_layout: large
               - type: custom:bubble-card
                 card_type: button
-                entity: input_boolean.presence_away
+                entity: switch.presence_away
                 name: Away
                 icon: mdi:sleep
                 card_layout: large
@@ -976,11 +962,11 @@ views:
             card_layout: large
             tap_action:
               action: navigate
-              navigation_path: '#bubble_vacuum_popup'
+              navigation_path: "#bubble_vacuum_popup"
             button_action:
               tap_action:
                 action: navigate
-                navigation_path: '#bubble_vacuum_popup'
+                navigation_path: "#bubble_vacuum_popup"
             styles: |
               .bubble-name {
                 font-size: var(--dashboard-footer-font-size);
@@ -1007,7 +993,6 @@ views:
                 if (el) el.innerHTML = txt;
               })()}
 
-                
           - type: custom:bubble-card
             card_type: button
             entity: media_player.spotify_julian
@@ -1017,11 +1002,11 @@ views:
             card_layout: large
             tap_action:
               action: navigate
-              navigation_path: '#bubble_media_popup'
+              navigation_path: "#bubble_media_popup"
             button_action:
               tap_action:
                 action: navigate
-                navigation_path: '#bubble_media_popup'
+                navigation_path: "#bubble_media_popup"
             styles: |
               .bubble-name {
                 font-size: var(--dashboard-footer-font-size);
@@ -1047,26 +1032,24 @@ views:
                 if (el) el.innerHTML = txt;
               })()}
 
-                
           - type: custom:bubble-card
             card_type: button
-            entity: light.living_room_light_google
+            entity: light.living_room_light_group
             name: Klima
             icon: mdi:temperature-celsius
             button_type: switch
             tap_action:
               action: navigate
-              navigation_path: '#bubble_climate_popup'
+              navigation_path: "#bubble_climate_popup"
             button_action:
               tap_action:
                 action: navigate
-                navigation_path: '#bubble_climate_popup'
+                navigation_path: "#bubble_climate_popup"
             styles: |
               .bubble-name {
                 font-size: var(--dashboard-footer-font-size);
               }
 
-                
           - type: custom:bubble-card
             card_type: button
             entity: sensor.home_total_power
@@ -1076,11 +1059,11 @@ views:
             card_layout: large
             tap_action:
               action: navigate
-              navigation_path: '#bubble_energy_popup'
+              navigation_path: "#bubble_energy_popup"
             button_action:
               tap_action:
                 action: navigate
-                navigation_path: '#bubble_energy_popup'
+                navigation_path: "#bubble_energy_popup"
             # Mobile: hide this footer button
             card_mod:
               style: |
@@ -1111,11 +1094,11 @@ views:
             card_layout: large
             tap_action:
               action: navigate
-              navigation_path: '#bubble_tram_popup'
+              navigation_path: "#bubble_tram_popup"
             button_action:
               tap_action:
                 action: navigate
-                navigation_path: '#bubble_tram_popup'
+                navigation_path: "#bubble_tram_popup"
             # Mobile: hide this footer button
             card_mod:
               style: |
@@ -1152,14 +1135,14 @@ views:
                 const kpText = formatTime(sKp);
                 const lhText = formatTime(sLh);
                 const el = card.querySelector('.bubble-state');
-                if (el) el.innerHTML = "Kö " + kpText + " \u00A0|\u00A0 Ost " + lhText;
+                if (el) el.innerHTML = kpText + " \u00A0|\u00A0 " + lhText;
               })()}
         view_layout:
           grid-area: footer
       - type: custom:bubble-card
         card_type: pop-up
-        hash: '#bubble_vacuum_popup'
-        name: ''
+        hash: "#bubble_vacuum_popup"
+        name: ""
         show_header: false
         button_type: name
         cards:
@@ -1237,11 +1220,11 @@ views:
               - type: image
                 image:
                   media_content_id: /local/image/vacuum_room_selection/entrance_full.png
-                  media_content_type: ''
+                  media_content_type: ""
                   metadata:
                     navigateIds:
                       - {}
-                      - media_content_type: ''
+                      - media_content_type: ""
                         media_content_id: __MANUAL_ENTRY__
                 entity: input_boolean.vacuum_clean_entrance
                 tap_action:
@@ -1251,16 +1234,16 @@ views:
                   top: 50%
                   left: 50%
                 state_filter:
-                  'on': opacity(50%)
-                  'off': opacity(0%)
+                  "on": opacity(50%)
+                  "off": opacity(0%)
               - type: image
                 image:
                   media_content_id: /local/image/vacuum_room_selection/living_room_full.png
-                  media_content_type: ''
+                  media_content_type: ""
                   metadata:
                     navigateIds:
                       - {}
-                      - media_content_type: ''
+                      - media_content_type: ""
                         media_content_id: __MANUAL_ENTRY__
                 entity: input_boolean.vacuum_clean_living_room
                 tap_action:
@@ -1270,16 +1253,16 @@ views:
                   top: 50%
                   left: 50%
                 state_filter:
-                  'on': opacity(50%)
-                  'off': opacity(0%)
+                  "on": opacity(50%)
+                  "off": opacity(0%)
               - type: image
                 image:
                   media_content_id: /local/image/vacuum_room_selection/bedroom_full.png
-                  media_content_type: ''
+                  media_content_type: ""
                   metadata:
                     navigateIds:
                       - {}
-                      - media_content_type: ''
+                      - media_content_type: ""
                         media_content_id: __MANUAL_ENTRY__
                 entity: input_boolean.vacuum_clean_bedroom
                 tap_action:
@@ -1289,16 +1272,16 @@ views:
                   top: 50%
                   left: 50%
                 state_filter:
-                  'on': opacity(50%)
-                  'off': opacity(0%)
+                  "on": opacity(50%)
+                  "off": opacity(0%)
               - type: image
                 image:
                   media_content_id: /local/image/vacuum_room_selection/baby_room_full.png
-                  media_content_type: ''
+                  media_content_type: ""
                   metadata:
                     navigateIds:
                       - {}
-                      - media_content_type: ''
+                      - media_content_type: ""
                         media_content_id: __MANUAL_ENTRY__
                 entity: input_boolean.vacuum_clean_kidroom
                 tap_action:
@@ -1308,16 +1291,16 @@ views:
                   top: 50%
                   left: 50%
                 state_filter:
-                  'on': opacity(50%)
-                  'off': opacity(0%)
+                  "on": opacity(50%)
+                  "off": opacity(0%)
               - type: image
                 image:
                   media_content_id: /local/image/vacuum_room_selection/bathroom_full.png
-                  media_content_type: ''
+                  media_content_type: ""
                   metadata:
                     navigateIds:
                       - {}
-                      - media_content_type: ''
+                      - media_content_type: ""
                         media_content_id: __MANUAL_ENTRY__
                 entity: input_boolean.vacuum_clean_bathroom
                 tap_action:
@@ -1327,16 +1310,16 @@ views:
                   top: 50%
                   left: 50%
                 state_filter:
-                  'on': opacity(50%)
-                  'off': opacity(0%)
+                  "on": opacity(50%)
+                  "off": opacity(0%)
               - type: image
                 image:
                   media_content_id: /local/image/vacuum_room_selection/kitchen_2_full.png
-                  media_content_type: ''
+                  media_content_type: ""
                   metadata:
                     navigateIds:
                       - {}
-                      - media_content_type: ''
+                      - media_content_type: ""
                         media_content_id: __MANUAL_ENTRY__
                 entity: input_boolean.vacuum_clean_kitchen
                 tap_action:
@@ -1346,16 +1329,16 @@ views:
                   top: 50%
                   left: 50%
                 state_filter:
-                  'on': opacity(50%)
-                  'off': opacity(0%)
+                  "on": opacity(50%)
+                  "off": opacity(0%)
               - type: image
                 image:
                   media_content_id: /local/image/vacuum_room_selection/kitchen_toggle.png
-                  media_content_type: ''
+                  media_content_type: ""
                   metadata:
                     navigateIds:
                       - {}
-                      - media_content_type: ''
+                      - media_content_type: ""
                         media_content_id: __MANUAL_ENTRY__
                 entity: input_boolean.vacuum_clean_kitchen
                 tap_action:
@@ -1368,11 +1351,11 @@ views:
               - type: image
                 image:
                   media_content_id: /local/image/vacuum_room_selection/entrance_toggle.png
-                  media_content_type: ''
+                  media_content_type: ""
                   metadata:
                     navigateIds:
                       - {}
-                      - media_content_type: ''
+                      - media_content_type: ""
                         media_content_id: __MANUAL_ENTRY__
                 entity: input_boolean.vacuum_clean_entrance
                 tap_action:
@@ -1385,11 +1368,11 @@ views:
               - type: image
                 image:
                   media_content_id: /local/image/vacuum_room_selection/living_room_toggle.png
-                  media_content_type: ''
+                  media_content_type: ""
                   metadata:
                     navigateIds:
                       - {}
-                      - media_content_type: ''
+                      - media_content_type: ""
                         media_content_id: __MANUAL_ENTRY__
                 entity: input_boolean.vacuum_clean_living_room
                 tap_action:
@@ -1402,11 +1385,11 @@ views:
               - type: image
                 image:
                   media_content_id: /local/image/vacuum_room_selection/bathroom_toggle.png
-                  media_content_type: ''
+                  media_content_type: ""
                   metadata:
                     navigateIds:
                       - {}
-                      - media_content_type: ''
+                      - media_content_type: ""
                         media_content_id: __MANUAL_ENTRY__
                 entity: input_boolean.vacuum_clean_bathroom
                 tap_action:
@@ -1419,11 +1402,11 @@ views:
               - type: image
                 image:
                   media_content_id: /local/image/vacuum_room_selection/baby_room_toggle.png
-                  media_content_type: ''
+                  media_content_type: ""
                   metadata:
                     navigateIds:
                       - {}
-                      - media_content_type: ''
+                      - media_content_type: ""
                         media_content_id: __MANUAL_ENTRY__
                 entity: input_boolean.vacuum_clean_kidroom
                 tap_action:
@@ -1436,11 +1419,11 @@ views:
               - type: image
                 image:
                   media_content_id: /local/image/vacuum_room_selection/bedroom_toggle.png
-                  media_content_type: ''
+                  media_content_type: ""
                   metadata:
                     navigateIds:
                       - {}
-                      - media_content_type: ''
+                      - media_content_type: ""
                         media_content_id: __MANUAL_ENTRY__
                 entity: input_boolean.vacuum_clean_bedroom
                 tap_action:
@@ -1501,7 +1484,7 @@ views:
               columns: 6
       - type: custom:bubble-card
         card_type: pop-up
-        hash: '#bubble_energy_popup'
+        hash: "#bubble_energy_popup"
         show_header: false
         button_type: name
         cards:
@@ -1585,7 +1568,7 @@ views:
               columns: 6
       - type: custom:bubble-card
         card_type: pop-up
-        hash: '#bubble_media_popup'
+        hash: "#bubble_media_popup"
         show_header: false
         button_type: name
         cards:
@@ -1660,7 +1643,7 @@ views:
               columns: 12
       - type: custom:bubble-card
         card_type: pop-up
-        hash: '#bubble_climate_popup'
+        hash: "#bubble_climate_popup"
         show_header: false
         button_type: name
         cards:
@@ -1674,19 +1657,19 @@ views:
             entities:
               - entity: sensor.living_room_multi_sensor_temperature
                 name: Wohnz.
-                color: '#ffa726'
+                color: "#ffa726"
               - entity: sensor.bedroom_multi_sensor_temperature
                 name: Schlafz.
-                color: '#ef5350'
+                color: "#ef5350"
               - entity: sensor.baby_room_multi_sensor_temperature
                 name: Kinderz.
-                color: '#ab47bc'
+                color: "#ab47bc"
               - entity: sensor.kitchen_multi_sensor_temperature
                 name: Küche
-                color: '#26a69a'
+                color: "#26a69a"
               - entity: sensor.bathroom_multi_sensor_temperature
                 name: Bad
-                color: '#42a5f5'
+                color: "#42a5f5"
             hour24: true
             hours_to_show: 24
             points_per_hour: 4
@@ -1764,7 +1747,7 @@ views:
               columns: 12
       - type: custom:bubble-card
         card_type: pop-up
-        hash: '#bubble_tram_popup'
+        hash: "#bubble_tram_popup"
         show_header: false
         button_type: name
         cards:
@@ -1862,7 +1845,7 @@ views:
               columns: 12
       - type: custom:bubble-card
         card_type: pop-up
-        hash: '#bubble_calendar_popup'
+        hash: "#bubble_calendar_popup"
         show_header: false
         button_type: name
         cards:
@@ -1896,4 +1879,3 @@ views:
                 }
             grid_options:
               columns: 12
-

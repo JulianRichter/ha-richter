@@ -143,7 +143,7 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 
 ### Presence & Resident Tracking
 - `input_boolean.presence_home`: Master house state (`on` = home & awake, `off` = away or sleeping).
-- `input_boolean.presence_away`: Dashboard away toggle.
+- `switch.presence_away`: Interactive template switch (exact inverse of `presence_home`) for Bubble Card dashboard.
 - `group.residents`: Tracks GPS location for Julian and Xingyang.
 - `person.julian`: Julian's person tracker.
 - `person.xingyang`: Xingyang's person tracker.
