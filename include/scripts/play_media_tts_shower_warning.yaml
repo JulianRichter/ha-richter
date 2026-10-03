@@ -86,57 +86,57 @@ script:
               {% if variant == 1 %}
                 Der Wasserdampf ist raus, Feuchtigkeit liegt wieder bei {{ humidity }} Prozent. Das Fenster kann wieder zu.
               {% elif variant == 2 %}
-                Das Bad ist wieder trocken. Das Fenster kann geschlossen werden.
+                Das Bad ist wieder trocken{% if has_humidity %} bei {{ humidity }} Prozent Feuchtigkeit{% endif %}. Das Fenster kann geschlossen werden.
               {% elif variant == 3 %}
-                Feuchtigkeit im Badezimmer hat sich gelegt bei {{ humidity }} Prozent. Fenster kann wieder zugemacht werden.
+                Feuchtigkeit im Badezimmer hat sich gelegt bei {{ humidity }} Prozent. Fenster kann wieder geschlossen werden.
               {% elif variant == 4 %}
-                Ausreichend gelüftet im Bad. Das Fenster kann wieder zu, damit es warm bleibt.
+                Ausreichend gelüftet im Bad{% if has_humidity %}, Feuchte liegt bei {{ humidity }} Prozent{% endif %}. Das Fenster kann wieder zu.
               {% elif variant == 5 %}
-                Raumluft im Bad ist wieder im normalen Bereich. Ihr könnt das Fenster schließen.
+                Raumluft im Bad ist wieder normal{% if has_humidity %} bei {{ humidity }} Prozent Feuchtigkeit{% endif %}. Das Fenster kann geschlossen werden.
               {% elif variant == 6 %}
-                Der Duschdampf ist abgezogen. Fenster kann verriegelt werden.
+                Der Duschdampf ist abgezogen{% if has_humidity %}, Feuchte liegt bei {{ humidity }} Prozent{% endif %}. Fenster kann verriegelt werden.
               {% elif variant == 7 %}
                 Luftfeuchtigkeit im Badezimmer ist wieder optimal bei {{ humidity }} Prozent. Fenster kann zu.
               {% else %}
-                Badezimmer ist durchgelüftet. Fenster kann geschlossen werden.
+                Badezimmer ist durchgelüftet{% if has_humidity %}, Feuchtigkeit liegt bei {{ humidity }} Prozent{% endif %}. Fenster kann geschlossen werden.
               {% endif %}
             {% endif %}
           message_zh: >-
             {% if is_high %}
               {% if variant == 1 %}
-                洗澡后浴室湿度较高{% if has_humidity %}（{{ humidity }}%）{% endif %}，建议开窗通风散散水汽。
+                洗澡后浴室湿度较高{% if has_humidity %}（{{ humidity }}%）{% endif %}，建议开窗通风。
               {% elif variant == 2 %}
-                浴室水蒸气较多，当前湿度 {{ humidity }}%，顺手开一下窗户通通风吧。
+                浴室水蒸气较多，当前湿度 {{ humidity }}%，建议开窗通风换气。
               {% elif variant == 3 %}
-                淋浴后浴室湿度达到 {{ humidity }}%，建议开窗透气让湿气散去。
+                淋浴后浴室湿度达到 {{ humidity }}%，建议开窗透气排湿。
               {% elif variant == 4 %}
-                温馨提示：浴室水汽集中（{{ humidity }}%），短时间开窗通风干得更快。
+                提示：浴室水汽集中（{{ humidity }}%），建议开窗通风。
               {% elif variant == 5 %}
-                浴室当前湿度 {{ humidity }}%，建议打开窗户换换气。
+                浴室当前湿度 {{ humidity }}%，建议打开窗户换气。
               {% elif variant == 6 %}
-                洗澡后水汽偏重，湿度 {{ humidity }}%，开窗通风几分钟吧。
+                洗澡后水汽偏重，湿度 {{ humidity }}%，建议开窗通风。
               {% elif variant == 7 %}
                 浴室湿度升至 {{ humidity }}%，建议开窗排湿。
               {% else %}
-                提示：浴室湿度 {{ humidity }}%，请开窗通风散气。
+                提示：浴室湿度 {{ humidity }}%，请开窗通风。
               {% endif %}
             {% else %}
               {% if variant == 1 %}
-                浴室水汽已散去{% if has_humidity %}，湿度降至 {{ humidity }}%{% endif %}，可以把窗户关上啦。
+                浴室水汽已散去{% if has_humidity %}，湿度降至 {{ humidity }}%{% endif %}，可以关闭窗户。
               {% elif variant == 2 %}
-                浴室已经恢复干燥舒适，窗户可以关好了。
+                浴室已恢复干爽{% if has_humidity %}（湿度 {{ humidity }}%）{% endif %}，窗户可以关闭。
               {% elif variant == 3 %}
-                淋浴水汽已完全排出，记得顺手把窗户关上。
+                淋浴水汽已排出{% if has_humidity %}，当前湿度 {{ humidity }}%{% endif %}，可以关好窗户。
               {% elif variant == 4 %}
-                通风充分，浴室湿度恢复正常，可以关闭窗户保暖了。
+                通风充分，浴室湿度恢复正常{% if has_humidity %}（{{ humidity }}%）{% endif %}，可以关闭窗户。
               {% elif variant == 5 %}
-                浴室空气已恢复干爽，窗户随时可以关上。
+                浴室空气已恢复干爽{% if has_humidity %}，湿度 {{ humidity }}%{% endif %}，窗户可以关上。
               {% elif variant == 6 %}
-                水汽已散，浴室环境已稳定，可以关好窗户了。
+                水汽已散，浴室环境稳定{% if has_humidity %}（{{ humidity }}%）{% endif %}，可以关好窗户。
               {% elif variant == 7 %}
-                浴室湿度回到舒适水平（{{ humidity }}%），窗户可以关了。
+                浴室湿度回到舒适水平（{{ humidity }}%），窗户可以关闭。
               {% else %}
-                浴室通风完成，窗户可以关闭。
+                浴室通风完成{% if has_humidity %}，当前湿度 {{ humidity }}%{% endif %}，窗户可以关闭。
               {% endif %}
             {% endif %}
 

@@ -54,35 +54,35 @@ script:
             {% elif variant == 2 %}
               Kurzer Hinweis: Der Waschgang ist beendet.
             {% elif variant == 3 %}
-              Die Wäsche ist fertig und wartet darauf, aufgehängt zu werden.
+              Die Wäsche ist fertig gewaschen und bereit zum Aufhängen.
             {% elif variant == 4 %}
-              Waschprogramm abgeschlossen, die saubere Wäsche ist fertig.
+              Waschprogramm abgeschlossen, die Wäsche ist fertig.
             {% elif variant == 5 %}
-              Kurzes Update aus dem Bad: Die Waschmaschine ist durch.
+              Kurzes Update aus dem Bad: Der Waschgang ist abgeschlossen.
             {% elif variant == 6 %}
-              Die Waschmaschine hat fertig geschleudert. Die Wäsche kann raus.
+              Die Waschmaschine hat fertig geschleudert. Die Wäsche ist entnahmebereit.
             {% elif variant == 7 %}
               Waschgang beendet, alles wieder frisch gewaschen.
             {% else %}
-              Die Wäsche ist fertig gewaschen.
+              Die Waschmaschine hat ihr Programm beendet.
             {% endif %}
           message_zh: >-
             {% if variant == 1 %}
-              洗衣机洗完啦，可以去把衣服晾起来了。
+              洗衣机已完成运转，可以晾晒衣物。
             {% elif variant == 2 %}
-              洗衣程序已结束，衣物已经洗好。
+              洗衣程序已结束，衣物清洗完毕。
             {% elif variant == 3 %}
-              浴室提醒：洗衣机已经洗好了，记得晾衣服哦。
+              浴室通知：洗衣机已洗好，随时可以晾晒。
             {% elif variant == 4 %}
-              洗衣完成，随时可以取出晾晒。
+              洗衣完成，衣物已甩干，可以取出晾晒。
             {% elif variant == 5 %}
-              洗衣机运转结束，衣物清新干净。
+              洗衣机运转结束，衣物洁净清新。
             {% elif variant == 6 %}
-              通知一下，洗衣机已经停机，可以晾衣服了。
+              浴室更新：洗衣机已停机，可以取出衣物。
             {% elif variant == 7 %}
-              洗涤程序结束，衣服已经甩干好了。
+              洗涤程序结束，甩干已完成。
             {% else %}
-              洗衣机洗好了，有空可以去收整晾晒。
+              洗衣机程序结束，衣物准备就绪。
             {% endif %}
 
       # Announce TTS message (German and optional Chinese)

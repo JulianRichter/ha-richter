@@ -19,6 +19,7 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 | **Climate** | `climate.living_room_thermostat` | Living Room Radiator Valve | Linked to window contact |
 | **Cover** | `cover.living_room_curtain_left` | Left Window Curtain | Smart curtain motor |
 | **Cover** | `cover.living_room_curtain_right`| Right Window Curtain | Smart curtain motor |
+| **Cover** | `cover.living_room_curtain_group`| Smart Template Curtain Group | Left + Right group with window safety interlock |
 | **Sensor** | `binary_sensor.living_room_motion_sensor_occupancy` | Motion / Occupancy Sensor | Triggers daytime/night scenes |
 | **Sensor** | `binary_sensor.living_room_window_contact` | Window Contact Sensor | Auto shutoff for thermostat |
 | **Sensor** | `sensor.living_room_multi_sensor_temperature` | Ambient Temperature | Displayed on dashboard |
@@ -56,15 +57,14 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 | **Sensor** | `sensor.bedroom_humidity_change` | Rate of Humidity Change | Evaluates ventilation status |
 | **Sensor** | `sensor.bedroom_alarms` | Google Home Next Alarm Time | Triggers morning routine 15m prior |
 | **Switch Event**| `event.bedroom_light_switch_door_action` | Door Wall Switch | Single: ceiling / Hold: sphere |
-| **Switch Event**| `event.bedroom_light_switch_left_action` | Left Bedside Switch | Single: lamp / Hold: Home/Away |
-| **Switch Event**| `event.bedroom_light_switch_right_action`| Right Bedside Switch | Single: lamp / Hold: Home/Away |
+| **Switch Event**| `event.bedroom_light_switch_left_action` | Left Bedside Switch | Single: lamp / Hold Up: Home / Hold Down: Bedtime & house off |
+| **Switch Event**| `event.bedroom_light_switch_right_action`| Right Bedside Switch | Single: lamp / Hold Up: Home / Hold Down: Bedtime & house off |
 | **Media** | `media_player.bedroom` | Bedroom Speaker | Audio playback |
 | **Media** | `media_player.bedroom_cast` | Bedroom Google Cast Target | TTS target |
 | **Helper** | `input_boolean.bedroom_alarm_disabled` | Alarm Override Toggle | Disables morning wake-up routine |
 | **Helper** | `input_datetime.bedroom_alarm_time` | Fallback Morning Alarm Time | Used if Google alarm is unset |
 | **Helper** | `input_number.dashboard_thermostat_setpoint_bedroom` | UI Setpoint Helper | Thermostat target |
 | **Helper** | `input_boolean.vacuum_clean_bedroom` | Room Vacuum Clean Toggle | Dispatched by Robi schedule |
-| **Automation** | `automation.bedroom_bedtime_routine` | Bedtime Routine | Phone charging + lamp off -> sleep scene |
 
 ---
 
@@ -163,6 +163,8 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 - `input_text.last_played_media_id` / `last_played_media_type` / `last_played_speaker`: Persistence helpers for 1-click resume.
 - `input_boolean.home_chinese_tts_enabled`: Global switch enabling bilingual Chinese TTS broadcasts.
 - `media_player.entrance_cast` / `media_player.minis_cast` / `media_player.wohnzimmer_kuche`: Speaker targets.
+- `script.play_media_tts_pixel_watch`: 8-variant randomized Jarvis reminder when Pixel Watch is charged.
+- `sensor.pixel_watch_3_battery_state` / `sensor.pixel_watch_3_battery_level`: Pixel Watch 3 battery sensors.
 
 ### Vacuum (Robi) Dispatch
 - `vacuum.robi`: Dreame robot vacuum cleaner.
@@ -191,5 +193,5 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 - `input_number.light_brightness_high`: Global high / daytime brightness level (default: 255).
 - `input_text.light_color_sleep`: Global sleep / night RGB color string (default: `"255,0,0"`).
 - `input_text.light_color_awake`: Global awake / ambient RGB color string (default: `"255,166,87"`).
-- `cover.living_room_curtain_group`: Living Room Curtains group (left + right), auto-opened during morning vacuum schedule.
+- `cover.living_room_curtain_group`: Living Room Curtains smart template cover (left + right) with window safety interlock, auto-opened during morning vacuum schedule.
 

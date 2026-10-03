@@ -1,7 +1,8 @@
 script:
   # ====================================================================
   # Light - Sunrise
-  # - Gradually raises light brightness from 1% to 100% and shifts color
+  # - Gradually raises light brightness from 1% to target brightness (default 40%)
+  # - Shifts color smoothly in color mode from deep dawn amber to warm golden glow
   # - Aborts automatically if the light is turned off during the animation
   # ====================================================================
 
@@ -29,26 +30,73 @@ script:
             max: 3600
             unit_of_measurement: seconds
 
-    sequence:
-      # Initialize step counters and delays
-      - variables:
-          steps: 100
-          step_delay: "{{ (seconds | default(600) / steps) | float }}"
-          light: "{{ entity_id }}"
+      target_brightness_pct:
+        name: Target Brightness
+        description: "Maximum brightness percentage to reach (default 40%)."
+        default: 40
+        selector:
+          number:
+            min: 5
+            max: 100
+            unit_of_measurement: "%"
 
-      # Start dim and warm
-      - action: light.turn_on
-        target:
-          entity_id: "{{ light }}"
-        data:
-          brightness_pct: 1
-          rgb_color: [255, 166, 87]
+      start_color_rgb:
+        name: Start Color RGB
+        description: "Starting RGB color list [R, G, B] for deep dawn glow."
+        required: false
+
+      end_color_rgb:
+        name: End Color RGB
+        description: "Ending RGB color list [R, G, B] for warm awake glow."
+        required: false
+
+    sequence:
+      # Initialize step counters, target brightness, color bounds, and delays
+      - variables:
+          light: "{{ entity_id }}"
+          target_pct: "{{ target_brightness_pct | default(40) | int(40) }}"
+          steps: "{{ [target_pct, 20] | max }}"
+          step_delay: "{{ (seconds | default(600) / steps) | float(15) }}"
+          # RGB Start: Deep Dawn Amber / Ember [255, 95, 20]
+          r_start: "{{ (start_color_rgb | default([255, 95, 20]))[0] | default(255) | int(255) }}"
+          g_start: "{{ (start_color_rgb | default([255, 95, 20]))[1] | default(95) | int(95) }}"
+          b_start: "{{ (start_color_rgb | default([255, 95, 20]))[2] | default(20) | int(20) }}"
+          # RGB End: Warm Golden Awake [255, 166, 87] (matches light_color_awake)
+          r_end: "{{ (end_color_rgb | default([255, 166, 87]))[0] | default(255) | int(255) }}"
+          g_end: "{{ (end_color_rgb | default([255, 166, 87]))[1] | default(166) | int(166) }}"
+          b_end: "{{ (end_color_rgb | default([255, 166, 87]))[2] | default(87) | int(87) }}"
+          supports_rgb: >-
+            {% set modes = state_attr(entity_id, 'supported_color_modes') | default([], true) %}
+            {{ modes is not none and ('rgb' in modes or 'rgbw' in modes or 'rgbww' in modes or 'hs' in modes or 'xy' in modes) }}
+
+      # Start dim and deep dawn amber (or dim only for non-RGB lights)
+      - choose:
+          # RGB-capable light: initiate deep amber dawn
+          - conditions:
+              - condition: template
+                value_template: "{{ supports_rgb }}"
+            sequence:
+              - action: light.turn_on
+                target:
+                  entity_id: "{{ light }}"
+                data:
+                  brightness_pct: 1
+                  rgb_color:
+                    - "{{ r_start }}"
+                    - "{{ g_start }}"
+                    - "{{ b_start }}"
+        default:
+          - action: light.turn_on
+            target:
+              entity_id: "{{ light }}"
+            data:
+              brightness_pct: 1
 
       # Allow bulb to apply initial state
       - delay:
           seconds: 1
 
-      # Progressive brightness step loop (1% to 100%)
+      # Progressive brightness and color ramp
       - repeat:
           count: "{{ steps }}"
           sequence:
@@ -60,12 +108,37 @@ script:
                   sequence:
                     - stop: "Sunrise stopped because the light was turned off."
 
-            # Increment brightness percentage
-            - action: light.turn_on
-              target:
-                entity_id: "{{ light }}"
-              data:
-                brightness_pct: "{{ repeat.index }}"
+            # Calculate progress ratio and interpolated brightness & color
+            - variables:
+                progress: "{{ repeat.index / steps }}"
+                curr_bright: "{{ (1 + (target_pct - 1) * progress) | round(0) | int }}"
+                curr_g: "{{ (g_start + (g_end - g_start) * progress) | round(0) | int }}"
+                curr_b: "{{ (b_start + (b_end - b_start) * progress) | round(0) | int }}"
+
+            # Apply incremental step with smooth transition (color mode for RGB, brightness for non-RGB)
+            - choose:
+                # RGB-capable light
+                - conditions:
+                    - condition: template
+                      value_template: "{{ supports_rgb }}"
+                  sequence:
+                    - action: light.turn_on
+                      target:
+                        entity_id: "{{ light }}"
+                      data:
+                        brightness_pct: "{{ curr_bright }}"
+                        rgb_color:
+                          - 255
+                          - "{{ curr_g }}"
+                          - "{{ curr_b }}"
+                        transition: 2
+              default:
+                - action: light.turn_on
+                  target:
+                    entity_id: "{{ light }}"
+                  data:
+                    brightness_pct: "{{ curr_bright }}"
+                    transition: 2
 
             # Delay before next step
             - delay:

@@ -1,0 +1,94 @@
+script:
+  # ====================================================================
+  # Play Media - TTS Pixel Watch
+  # - Plays a natural, intelligent TTS announcement when Pixel Watch is charged
+  # - Randomly selects from 8 Jarvis-like variations to prevent repetitive phrasing
+  # - Announces in German and optionally in Chinese via play_media_tts_message
+  # ====================================================================
+
+  play_media_tts_pixel_watch:
+    alias: "Play Media - TTS Pixel Watch"
+    mode: queued
+    max: 5
+    icon: mdi:watch-vibrate
+
+    fields:
+      entity_id:
+        name: Speaker
+        description: "Entity ID of the media player to announce on (default: media_player.living_room)."
+        example: media_player.living_room
+        required: false
+        selector:
+          entity:
+            domain: media_player
+
+      media_player:
+        name: Speaker (Alternative)
+        description: "Alternative entity ID of the media player to announce on."
+        example: media_player.living_room
+        required: false
+        selector:
+          entity:
+            domain: media_player
+
+      volume_level:
+        name: Volume Level
+        description: "Optional volume level (0.0 to 1.0) to override default announcement volume."
+        example: 0.4
+        required: false
+        selector:
+          number:
+            min: 0.0
+            max: 1.0
+            step: 0.05
+            mode: slider
+
+    sequence:
+      # Prepare TTS text variables with 8 random variations
+      - variables:
+          target_player: "{{ media_player | default(entity_id | default('media_player.living_room', true), true) }}"
+          variant: "{{ [1, 2, 3, 4, 5, 6, 7, 8] | random }}"
+          message_de: >-
+            {% if variant == 1 %}
+              Julian, die Pixel Watch ist vollständig geladen und liegt bereit auf der Ladestation.
+            {% elif variant == 2 %}
+              Kurzer Hinweis: Die Pixel Watch hat 100 Prozent Akkuladung erreicht und kann wieder angelegt werden.
+            {% elif variant == 3 %}
+              Der Ladevorgang der Pixel Watch ist abgeschlossen. Die Uhr liegt bereit im Badezimmer.
+            {% elif variant == 4 %}
+              Julian, der Akku deiner Pixel Watch ist voll. Du kannst sie wieder vom Ladegerät nehmen.
+            {% elif variant == 5 %}
+              Die Pixel Watch ist fertig geladen. Zeit, sie wieder ans Handgelenk zu nehmen.
+            {% elif variant == 6 %}
+              Ladezyklus beendet. Die Pixel Watch ist einsatzbereit und wartet auf der Ladestation.
+            {% elif variant == 7 %}
+              Julian, deine Smartwatch hat wieder volle Energie. Sie liegt auf dem Ladegerät.
+            {% else %}
+              Akku vollständig geladen: Die Pixel Watch ist wieder bereit für den Einsatz.
+            {% endif %}
+          message_zh: >-
+            {% if variant == 1 %}
+              Julian，Pixel Watch 已充满电，随时可以从充电座取下佩戴。
+            {% elif variant == 2 %}
+              手表电量已达到百分之百，可以重新佩戴了。
+            {% elif variant == 3 %}
+              提醒您，Pixel Watch 充电已完成，正在浴室充电座上就绪。
+            {% elif variant == 4 %}
+              Julian，您的智能手表电量已满，可以取下佩戴。
+            {% elif variant == 5 %}
+              Pixel Watch 充电完成，随时可以戴回手腕。
+            {% elif variant == 6 %}
+              充电周期已结束，Pixel Watch 已就绪待取。
+            {% elif variant == 7 %}
+              Julian，手表已恢复满电状态，可以从充电器上取下了。
+            {% else %}
+              电量充沛，Pixel Watch 充电完毕，可以继续使用。
+            {% endif %}
+
+      # Announce TTS message (German and optional Chinese)
+      - action: script.play_media_tts_message
+        data:
+          entity_id: "{{ target_player }}"
+          message: "{{ message_de }}"
+          message_chinese: "{{ message_zh }}"
+          volume_level: "{{ volume_level if volume_level is defined else none }}"

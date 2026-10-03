@@ -29,7 +29,5 @@ automation:
       - action: script.play_media_tts_message
         data:
           entity_id: media_player.minis
-          message: >
-            Hey.
-            Kurze Info, dass ein Paket gerade in den Lieferwagen geladen wurde
-            und heute geliefert wird.
+          message: Ein Paket befindet sich in Zustellung und wird voraussichtlich heute eintreffen.
+          message_chinese: 您的包裹已装车派送，预计今日送达。

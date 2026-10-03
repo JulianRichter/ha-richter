@@ -77,19 +77,19 @@ script:
                 {% if variant == 1 %}
                   Fenster geöffnet. Heizung pausiert bei {{ humidity }} Prozent Luftfeuchtigkeit.
                 {% elif variant == 2 %}
-                  Frischluft zieht ein. Thermostat ist vorübergehend aus.
+                  Frischluft zieht ein. Thermostat pausiert, Feuchtigkeit liegt bei {{ humidity }} Prozent.
                 {% elif variant == 3 %}
                   Fenster ist offen. Heizung pausiert bei {{ humidity }} Prozent Raumfeuchte.
                 {% elif variant == 4 %}
-                  Thermostat abgeschaltet, während das Fenster offen steht.
+                  Thermostat abgeschaltet. Die Luftfeuchtigkeit beträgt solide {{ humidity }} Prozent.
                 {% elif variant == 5 %}
-                  Alles klar, Heizkörper sind für die Lüftung abgedreht.
+                  Alles klar. Heizkörper für die Lüftung abgedreht, Feuchte liegt bei {{ humidity }} Prozent.
                 {% elif variant == 6 %}
                   Lüftung registriert. Heizung ist pausiert, Feuchtigkeit bei {{ humidity }} Prozent.
                 {% elif variant == 7 %}
-                  Fenster auf, Heizung pausiert.
+                  Fenster auf, Heizung pausiert. Aktuelle Feuchtigkeit {{ humidity }} Prozent.
                 {% else %}
-                  Stoßlüften aktiv, Thermostate pausieren.
+                  Stoßlüften aktiv, Thermostate pausieren. Raumfeuchte bei {{ humidity }} Prozent.
                 {% endif %}
               {% endif %}
             {% else %}
@@ -115,7 +115,7 @@ script:
             {% if has_humidity %}
               {% if is_high %}
                 {% if variant == 1 %}
-                  窗户已开，暖气暂停。当前湿度 {{ humidity }}%，正好透透气。
+                  窗户已开，暖气暂停。当前湿度 {{ humidity }}%，正好通风换气。
                 {% elif variant == 2 %}
                   正在开窗通风，暖气已关。室内湿度 {{ humidity }}%。
                 {% elif variant == 3 %}
@@ -135,19 +135,19 @@ script:
                 {% if variant == 1 %}
                   窗户已打开，暖气暂停。当前湿度 {{ humidity }}%。
                 {% elif variant == 2 %}
-                  正在通风，暖气已为您关闭。
+                  正在通风，暖气已关闭。室内湿度 {{ humidity }}%。
                 {% elif variant == 3 %}
-                  窗户开启，温控已自动暂停。
+                  窗户开启，温控已自动暂停。当前湿度为 {{ humidity }}%。
                 {% elif variant == 4 %}
-                  通风中，暖气暂时关闭。湿度 {{ humidity }}%。
+                  通风中，暖气暂时关闭。室内湿度 {{ humidity }}%。
                 {% elif variant == 5 %}
-                  收到，开窗期间暖气已停。
+                  收到，开窗期间暖气已停。当前湿度 {{ humidity }}%。
                 {% elif variant == 6 %}
-                  检测到开窗，暖气已暂停。
+                  检测到开窗，暖气已暂停。空气湿度 {{ humidity }}%。
                 {% elif variant == 7 %}
-                  窗户已开，温控关闭。
+                  窗户已开，温控关闭。当前湿度 {{ humidity }}%。
                 {% else %}
-                  通风模式，暖气暂停。
+                  通风模式，暖气暂停。室内湿度保持在 {{ humidity }}%。
                 {% endif %}
               {% endif %}
             {% else %}

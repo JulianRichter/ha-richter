@@ -38,3 +38,89 @@ template:
           - action: cover.stop_cover
             target:
               entity_id: cover.bedroom_roller_blinds
+
+  # ====================================================================
+  # Living Room Curtains (Smart Window Safety)
+  # - Controls left and right living room curtains together as a group
+  # - Protects left curtain from closing when living room window is open
+  # - Reflects intended closed state via right curtain when window is open
+  # ====================================================================
+  - cover:
+      - unique_id: living_room_curtain_group
+        name: Living Room Curtain Group
+        device_class: curtain
+        availability: >
+          {{ has_value('cover.living_room_curtain_left') and has_value('cover.living_room_curtain_right') }}
+        state: >
+          {% set left = states('cover.living_room_curtain_left') %}
+          {% set right = states('cover.living_room_curtain_right') %}
+          {% set win_open = is_state('binary_sensor.living_room_window_contact', 'on') %}
+          {% if left == 'opening' or right == 'opening' %}
+            opening
+          {% elif left == 'closing' or right == 'closing' %}
+            closing
+          {% elif win_open and right in ['closed', 'closing'] %}
+            closed
+          {% elif left == 'closed' and right == 'closed' %}
+            closed
+          {% else %}
+            open
+          {% endif %}
+        position: >
+          {% set left_pos = state_attr('cover.living_room_curtain_left', 'current_position') | default(0, true) | int(0) %}
+          {% set right_pos = state_attr('cover.living_room_curtain_right', 'current_position') | default(0, true) | int(0) %}
+          {% if is_state('binary_sensor.living_room_window_contact', 'on') %}
+            {{ right_pos }}
+          {% else %}
+            {{ ((left_pos + right_pos) / 2) | round(0) | int(0) }}
+          {% endif %}
+        open_cover:
+          # Open both left and right curtains
+          - action: cover.open_cover
+            target:
+              entity_id:
+                - cover.living_room_curtain_left
+                - cover.living_room_curtain_right
+        close_cover:
+          # Always close right curtain
+          - action: cover.close_cover
+            target:
+              entity_id: cover.living_room_curtain_right
+          # Only close left curtain if living room window is closed
+          - if:
+              - condition: state
+                entity_id: binary_sensor.living_room_window_contact
+                state: "off"
+            then:
+              - action: cover.close_cover
+                target:
+                  entity_id: cover.living_room_curtain_left
+        stop_cover:
+          # Stop both left and right curtains
+          - action: cover.stop_cover
+            target:
+              entity_id:
+                - cover.living_room_curtain_left
+                - cover.living_room_curtain_right
+        set_cover_position:
+          # Set position for right curtain
+          - action: cover.set_cover_position
+            data:
+              position: "{{ position }}"
+            target:
+              entity_id: cover.living_room_curtain_right
+          # Only set position for left curtain if window is closed or target position is fully open
+          - if:
+              - condition: or
+                conditions:
+                  - condition: state
+                    entity_id: binary_sensor.living_room_window_contact
+                    state: "off"
+                  - condition: template
+                    value_template: "{{ position | int(0) == 100 }}"
+            then:
+              - action: cover.set_cover_position
+                data:
+                  position: "{{ position }}"
+                target:
+                  entity_id: cover.living_room_curtain_left

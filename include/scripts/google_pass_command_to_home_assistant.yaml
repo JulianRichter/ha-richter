@@ -160,5 +160,6 @@ script:
           - action: script.play_media_tts_message
             data:
               entity_id: media_player.living_room
-              message: Oh, dafür kenne ich noch keinen Befehl in Home Assistant.
+              message: Dafür liegt mir derzeit kein passender Befehl vor.
+              message_chinese: 目前没有适用的指令。
 

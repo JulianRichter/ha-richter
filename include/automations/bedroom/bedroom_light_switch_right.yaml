@@ -6,7 +6,7 @@ automation:
   # - Single press up when on: Steps up to full daylight (or toggles back to dim)
   # - Single press down: Smoothly turns off light via light_low_before_off
   # - Hold up: Activates Home scene (presence_home on)
-  # - Hold down: Activates Away scene (presence_home off, turns off all bedroom lights)
+  # - Hold down: Bedtime / Away scene (presence_home off; turns off bedroom lights if on, or all home lights if bedroom already off)
   # ====================================================================
 
   - id: "bedroom_light_switch_right"
@@ -98,22 +98,41 @@ automation:
                   entity_id: input_boolean.presence_home
 
           # ============================================================
-          # Down hold: Away Scene
+          # Down hold: Bedtime / Away Scene
           # ============================================================
           - conditions:
               - condition: template
                 value_template: "{{ trigger.to_state.attributes.event_type == 'brightness_move_down' }}"
             sequence:
-              # Activate away scene
+              # Activate away / night scene
               - action: input_boolean.turn_off
                 target:
                   entity_id: input_boolean.presence_home
-              # Turn off all bedroom lights
-              - action: script.light_low_before_off
-                data:
-                  entity_id:
-                    - light.bedroom_light_left
-                    - light.bedroom_light_right
-                    - light.bedroom_light_sphere
+
+              - choose:
+                  # If any bedroom light is currently on: turn off all bedroom lights
+                  - conditions:
+                      - condition: template
+                        value_template: >-
+                          {{ is_state('light.bedroom_light_left', 'on')
+                             or is_state('light.bedroom_light_right', 'on')
+                             or is_state('light.bedroom_light_sphere', 'on') }}
+                    sequence:
+                      - action: script.light_low_before_off
+                        data:
+                          entity_id:
+                            - light.bedroom_light_left
+                            - light.bedroom_light_right
+                            - light.bedroom_light_sphere
+
+                # If all bedroom lights are already off: turn off all lights across the entire home
+                default:
+                  - action: script.light_low_before_off
+                    data:
+                      entity_id: light.all_lights_group
+
+                  - action: switch.turn_off
+                    target:
+                      entity_id: switch.living_room_spot_lights
 
         default: []

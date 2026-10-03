@@ -68,7 +68,7 @@ automation:
                       entity_id: light.living_room_light_group
                     data:
                       brightness: "{{ brightness_high }}"
-                      color_temp_kelvin: 2700
+                      color_temp_kelvin: 2000
 
           # Down single press: turn off lights smoothly
           - conditions:

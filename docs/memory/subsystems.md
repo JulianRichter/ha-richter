@@ -12,6 +12,10 @@ This document preserves operational knowledge and architectural invariants for H
   - `input_boolean.presence_home` is the sole source of truth for home/away status (`on` = home & awake, `off` = away or sleeping).
   - `switch.presence_away` is an interactive template switch in [`include/template/template_presence.yaml`](include/template/template_presence.yaml) whose state is the exact inverse of `presence_home`. Toggling it on the Bubble Card dashboard directly controls `presence_home`.
   - [`include/automations/home/home_presence_detection.yaml`](include/automations/home/home_presence_detection.yaml) synchronizes `group.residents` (GPS trackers for Julian & Xingyang) with manual wall switches and `presence_home` without needing sync loops or mirror helpers.
+- **Morning Auto-Wake & Fallback Architecture**:
+  - Scheduled Alarm: [`bedroom_morning_routine.yaml`](include/automations/bedroom/bedroom_morning_routine.yaml) (and [`baby_room_morning_routine.yaml`](include/automations/baby_room/baby_room_morning_routine.yaml)) automatically sets `presence_home = on` at alarm wake-up time (when blinds open).
+  - Living Room Greeting Suppression: When waking via alarm morning routine, living room TTS greeting is suppressed so only the bedroom speaker greets.
+  - Sunrise Fallback: If no alarm ran earlier and residents are home (`group.residents = home`), `home_presence_detection.yaml` automatically turns `presence_home = on` silently at astronomical sunrise as a fallback, adjusting thermostats to daytime mode.
 
 ---
 
@@ -39,10 +43,12 @@ This document preserves operational knowledge and architectural invariants for H
     - Morning briefing: [`include/automations/home/home_morning_briefing_julian.yaml`](include/automations/home/home_morning_briefing_julian.yaml) (Pixel Watch charging + bathroom motion).
     - Evening briefing: [`include/automations/home/home_evening_briefing_julian.yaml`](include/automations/home/home_evening_briefing_julian.yaml) (18:00 daily, living room).
     - Rain alert: [`include/automations/home/home_rain_announcement.yaml`](include/automations/home/home_rain_announcement.yaml) (~2h before rain, living room speaker, only when awake).
-- **Bedtime Routine Contract**:
-  - Dedicated automation in [`include/automations/bedroom/bedroom_bedtime_routine.yaml`](include/automations/bedroom/bedroom_bedtime_routine.yaml).
-  - Triggers when Julian's phone is charging AND `light.bedroom_light_left` turns off (between 22:00 and 06:00).
-  - Transitions house to night presence (`presence_home = off`), lowers thermostats to night setpoint, and smoothly turns off all remaining lights across living room, kitchen, bathroom, and baby room via `script.light_low_before_off`.
+- **Bedtime Routine & Master Light Shut-off Contract**:
+  - Handled directly via bedside wall switches ([`bedroom_light_switch_left.yaml`](include/automations/bedroom/bedroom_light_switch_left.yaml) and [`bedroom_light_switch_right.yaml`](include/automations/bedroom/bedroom_light_switch_right.yaml)).
+  - Hold Down transitions house to night presence (`presence_home = off`, triggering climate setback).
+  - 2-Tier Shut-off:
+    - If bedroom lights are on: smoothly dims and turns off bedroom lights (`bedroom_light_left`, `bedroom_light_right`, `bedroom_light_sphere`).
+    - If bedroom lights are already off: executes master shut-off across all lights in the home (`light.all_lights_group`) and spot switch (`switch.living_room_spot_lights`).
 
 ---
 
@@ -77,6 +83,11 @@ This document preserves operational knowledge and architectural invariants for H
 - **Caring Humidity Feedback**:
   - Window open/close events invoke [`script.play_media_tts_window_opened`](include/scripts/play_media_tts_window_opened.yaml) and [`script.play_media_tts_window_closed`](include/scripts/play_media_tts_window_closed.yaml).
   - If ambient humidity exceeds `input_number.dashboard_humidity_threshold_medium`, caring TTS advises airing out or closing windows when optimal.
+- **Living Room Window & Curtain Interlock**:
+  - `cover.living_room_curtain_group` is a smart template cover in [`include/template/template_cover.yaml`](include/template/template_cover.yaml).
+  - Opening `binary_sensor.living_room_window_contact` automatically opens `cover.living_room_curtain_left` via [`living_room_window_sensor.yaml`](include/automations/living_room/living_room_window_sensor.yaml).
+  - When the window is open, closing or toggling `cover.living_room_curtain_group` only closes `cover.living_room_curtain_right`, preventing the left curtain from closing.
+  - When the window closes, if the right curtain is closed/closing, `cover.living_room_curtain_left` is automatically closed to restore the user's intended room state without requiring manual re-triggering.
 
 ---
 
@@ -107,7 +118,8 @@ This document preserves operational knowledge and architectural invariants for H
 - **Playback Architecture**:
   - Google Home speakers (`media_player.*_cast`) run the native Spotify Cast receiver when initiated by voice or Spotify Connect.
   - [`home_spotify_to_music_assistant.yaml`](include/automations/home/home_spotify_to_music_assistant.yaml) intercepts playback:
-    - Resolves active Spotify playlist or track URI from `media_player.spotify_julian`.
+    - Triggers only on Cast speakers (`playing` / `media_title` change) with `mode: restart` + 3 s settle delay, because Spotify briefly restores the previous session on launch (stale track).
+    - The Cast speaker is the source of truth; `media_player.spotify_julian` playlist/shuffle is only used when it is `playing` the same track (title or track URI).
     - Handshakes playback directly to Music Assistant player entities (`media_player.living_room`, `media_player.kitchen`, etc.).
     - Queues full playlist or enables radio mode for single tracks, preserving shuffle.
     - Ensures clean playback resilience across TTS speech ducking and notifications.

@@ -1,0 +1,46 @@
+automation:
+  # ====================================================================
+  # Home - Pixel Watch Charging Reminder
+  # - Plays Jarvis TTS announcement in living room when Pixel Watch is fully charged
+  # - Triggers when battery level reaches 100% or battery state reports full
+  # - Verifies watch is on charger (charging or full) and Julian is home/awake
+  # ====================================================================
+
+  - id: "home_pixel_watch_charging"
+    alias: "Home - Pixel Watch Charging Reminder"
+    mode: single
+
+    trigger:
+      # Battery level reaches 100%
+      - trigger: numeric_state
+        entity_id: sensor.pixel_watch_3_battery_level
+        above: 99
+
+      # Battery state reported as full
+      - trigger: state
+        entity_id: sensor.pixel_watch_3_battery_state
+        to: "full"
+
+    condition:
+      # Only announce when Julian is home and awake
+      - condition: state
+        entity_id: input_boolean.presence_home
+        state: "on"
+
+      # Watch is still on charger (state is charging or full)
+      - condition: template
+        value_template: >-
+          {{ states('sensor.pixel_watch_3_battery_state') in ['charging', 'full'] }}
+
+      # Rate limit: minimum 30 minutes between announcements
+      - condition: template
+        value_template: >-
+          {% set last = state_attr('automation.home_pixel_watch_charging', 'last_triggered') %}
+          {{ last is none or (now() - (last | as_datetime)).total_seconds() > 1800 }}
+
+    action:
+      # Announce in living room via Jarvis TTS script
+      - action: script.play_media_tts_pixel_watch
+        data:
+          entity_id: media_player.living_room
+

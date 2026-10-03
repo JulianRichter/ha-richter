@@ -2,7 +2,7 @@ automation:
   # ====================================================================
   # Baby Room - Morning Routine
   # - Starts 15 min before alarm (once/day when alarm enabled and residents home)
-  # - Starts 10m sunrise light effect, opens blinds, plays TTS at alarm time, turns off light 15m later
+  # - Starts 10m sunrise light effect, opens blinds, plays TTS at alarm time, sets presence_home on, turns off light 15m later
   # ====================================================================
 
   - id: "baby_room_morning_routine"
@@ -57,11 +57,12 @@ automation:
         state: "home"
 
     action:
-      # Start 10-minute sunrise light ramp on baby room light
+      # Start 10-minute sunrise light ramp on baby room light (gentle 40% cap)
       - action: script.light_sunrise
         data:
           entity_id: light.baby_room_light
           seconds: "{{ sunrise_time }}"
+          target_brightness_pct: 40
 
       # Wait until wake-up time (15 minutes after routine start)
       - delay:
@@ -77,6 +78,11 @@ automation:
         data:
           entity_id: media_player.baby_room
           message: Guten Morgen
+
+      # Set house presence to awake / home mode
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.presence_home
 
       # Keep light on for another 15 minutes before turning off
       - delay:

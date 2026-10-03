@@ -114,57 +114,57 @@ script:
               {% if variant == 1 %}
                 Die Luftfeuchtigkeit {{ room_de }} ist wieder normal{% if has_humidity %} bei {{ humidity }} Prozent{% endif %}. Das Fenster kann wieder geschlossen werden.
               {% elif variant == 2 %}
-                Raumklima {{ room_de }} hat sich stabilisiert. Ihr könnt das Fenster wieder zumachen.
+                Raumklima {{ room_de }} hat sich stabilisiert{% if has_humidity %} bei {{ humidity }} Prozent Feuchtigkeit{% endif %}. Das Fenster kann wieder geschlossen werden.
               {% elif variant == 3 %}
-                Ausreichend gelüftet {{ room_de }}. Das Fenster kann wieder zu.
+                Ausreichend gelüftet {{ room_de }}{% if has_humidity %}, Feuchte liegt bei {{ humidity }} Prozent{% endif %}. Das Fenster kann wieder zu.
               {% elif variant == 4 %}
                 Feuchtigkeit {{ room_de }} ist wieder im grünen Bereich{% if has_humidity %} mit {{ humidity }} Prozent{% endif %}. Fenster kann verriegelt werden.
               {% elif variant == 5 %}
-                Genug frische Luft {{ room_de }}. Das Fenster kann geschlossen werden.
+                Genug frische Luft {{ room_de }}{% if has_humidity %}, Feuchtigkeit beträgt {{ humidity }} Prozent{% endif %}. Das Fenster kann geschlossen werden.
               {% elif variant == 6 %}
-                Die Luftfeuchtigkeit {{ room_de }} hat sich eingepegelt. Fenster kann wieder zu.
+                Die Luftfeuchtigkeit {{ room_de }} hat sich{% if has_humidity %} bei {{ humidity }} Prozent{% endif %} eingepegelt. Fenster kann wieder zu.
               {% elif variant == 7 %}
-                Luftaustausch {{ room_de }} abgeschlossen. Ihr könnt das Fenster wieder schließen.
+                Luftaustausch {{ room_de }} abgeschlossen{% if has_humidity %} bei {{ humidity }} Prozent Raumfeuchte{% endif %}. Das Fenster kann wieder geschlossen werden.
               {% else %}
-                Werte {{ room_de }} sind wieder optimal. Das Fenster kann wieder zugemacht werden.
+                Werte {{ room_de }} sind wieder optimal{% if has_humidity %} bei {{ humidity }} Prozent Feuchtigkeit{% endif %}. Das Fenster kann wieder geschlossen werden.
               {% endif %}
             {% endif %}
           message_zh: >-
             {% if is_high %}
               {% if variant == 1 %}
-                提示：{{ room_zh }}湿度偏高{% if has_humidity %}，达到 {{ humidity }}%{% endif %}，建议开窗通风一会儿。
+                提示：{{ room_zh }}湿度偏高{% if has_humidity %}，达到 {{ humidity }}%{% endif %}，建议开窗通风。
               {% elif variant == 2 %}
-                {{ room_zh }}的空气湿度有点高{% if has_humidity %}，现在是 {{ humidity }}%{% endif %}，开窗换换新鲜空气吧。
+                {{ room_zh }}空气湿度偏高{% if has_humidity %}，当前为 {{ humidity }}%{% endif %}，建议通风换气。
               {% elif variant == 3 %}
                 室内湿度提示：{{ room_zh }}当前 {{ humidity }}%，建议短时间开窗透气。
               {% elif variant == 4 %}
-                {{ room_zh }}湿度达到 {{ humidity }}%，适合开窗通风几分钟。
+                {{ room_zh }}湿度达到 {{ humidity }}%，适合开窗通风。
               {% elif variant == 5 %}
-                环境提醒：{{ room_zh }}湿度偏高，可以开一下窗户保持空气干爽。
+                环境提醒：{{ room_zh }}湿度偏高{% if has_humidity %}（{{ humidity }}%）{% endif %}，建议开窗通风。
               {% elif variant == 6 %}
-                {{ room_zh }}当前湿度 {{ humidity }}%，建议稍微开窗通风。
+                {{ room_zh }}当前湿度 {{ humidity }}%，建议开窗通风。
               {% elif variant == 7 %}
-                空气质量提醒：{{ room_zh }}湿度上升至 {{ humidity }}%，适时开窗通风。
+                空气指标提醒：{{ room_zh }}湿度上升至 {{ humidity }}%，建议通风换气。
               {% else %}
-                {{ room_zh }}湿度较高（{{ humidity }}%），建议开窗通风透气。
+                {{ room_zh }}湿度偏高{% if has_humidity %}（{{ humidity }}%）{% endif %}，建议开窗通风。
               {% endif %}
             {% else %}
               {% if variant == 1 %}
-                {{ room_zh }}的湿度已恢复正常{% if has_humidity %}，现在是 {{ humidity }}%{% endif %}，可以把窗户关上啦。
+                {{ room_zh }}湿度已恢复正常{% if has_humidity %}，降至 {{ humidity }}%{% endif %}，可以关闭窗户。
               {% elif variant == 2 %}
-                {{ room_zh }}通风已充分，环境已稳定，可以关好窗户了。
+                {{ room_zh }}通风已充分，环境已稳定{% if has_humidity %}（湿度 {{ humidity }}%）{% endif %}，可以关好窗户。
               {% elif variant == 3 %}
-                空气已充分置换，{{ room_zh }}的窗户可以关上了。
+                空气已充分置换{% if has_humidity %}，湿度 {{ humidity }}%{% endif %}，{{ room_zh }}窗户可以关闭。
               {% elif variant == 4 %}
-                {{ room_zh }}湿度回到舒适区间，记得顺手关好窗户。
+                {{ room_zh }}湿度回到舒适区间{% if has_humidity %}（{{ humidity }}%）{% endif %}，可以关闭窗户。
               {% elif variant == 5 %}
-                {{ room_zh }}换气完成，可以把窗户关起来保暖了。
+                {{ room_zh }}换气完成{% if has_humidity %}，湿度 {{ humidity }}%{% endif %}，可以关好窗户。
               {% elif variant == 6 %}
-                环境指标正常，{{ room_zh }}的窗户随时可以关闭。
+                环境指标正常{% if has_humidity %}，当前湿度 {{ humidity }}%{% endif %}，{{ room_zh }}窗户可以关闭。
               {% elif variant == 7 %}
-                {{ room_zh }}湿度已稳定，可以关闭窗户了。
+                {{ room_zh }}湿度已稳定{% if has_humidity %}在 {{ humidity }}%{% endif %}，可以关闭窗户。
               {% else %}
-                通风充分，{{ room_zh }}窗户可以关上了。
+                通风充分{% if has_humidity %}，湿度 {{ humidity }}%{% endif %}，{{ room_zh }}窗户可以关闭。
               {% endif %}
             {% endif %}
 

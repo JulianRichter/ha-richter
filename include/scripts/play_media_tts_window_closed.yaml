@@ -61,35 +61,35 @@ script:
                 {% elif variant == 2 %}
                   Fenster ist wieder zu. Thermostat übernimmt, Feuchte liegt bei {{ humidity }} Prozent.
                 {% elif variant == 3 %}
-                  Alles wieder verriegelt. Heizkörper schalten sich wieder ein.
+                  Alles verriegelt. Heizkörper schalten sich wieder ein, Feuchte noch bei {{ humidity }} Prozent.
                 {% elif variant == 4 %}
                   Fenster zu. Raumfeuchte ist noch bei {{ humidity }} Prozent, Heizung läuft wieder an.
                 {% elif variant == 5 %}
-                  Wieder dicht. Ich stelle die Solltemperatur wieder her.
+                  Wieder dicht. Solltemperatur wird wiederhergestellt, Feuchtigkeit beträgt {{ humidity }} Prozent.
                 {% elif variant == 6 %}
                   Fenster geschlossen, Heizung reaktiviert bei {{ humidity }} Prozent Feuchtigkeit.
                 {% elif variant == 7 %}
-                  Lüften beendet. Thermostat heizt wieder auf.
+                  Lüften beendet. Thermostat heizt wieder auf, Restfeuchte liegt bei {{ humidity }} Prozent.
                 {% else %}
-                  Fenster ist zu, Heizbetrieb wird fortgesetzt.
+                  Fenster ist zu, Heizbetrieb fortgesetzt. Feuchtigkeit liegt bei {{ humidity }} Prozent.
                 {% endif %}
               {% else %}
                 {% if variant == 1 %}
                   Fenster geschlossen. Luftfeuchtigkeit liegt bei {{ humidity }} Prozent, Heizung läuft wieder an.
                 {% elif variant == 2 %}
-                  Fenster ist wieder zu, Thermostat übernimmt wieder.
+                  Fenster ist wieder zu. Thermostat übernimmt bei optimalen {{ humidity }} Prozent Feuchtigkeit.
                 {% elif variant == 3 %}
                   Alles verriegelt. Heizkörper schalten sich bei {{ humidity }} Prozent Feuchte wieder ein.
                 {% elif variant == 4 %}
-                  Durchgelüftet. Die Heizung heizt wieder an.
+                  Durchgelüftet. Die Heizung heizt bei {{ humidity }} Prozent Raumfeuchte wieder an.
                 {% elif variant == 5 %}
-                  Fenster zu. Ich stelle die Raumtemperatur wieder her.
+                  Fenster zu. Ich stelle die Raumtemperatur wieder her, Feuchte liegt bei {{ humidity }} Prozent.
                 {% elif variant == 6 %}
                   Wieder dicht. Heizung läuft bei optimalen {{ humidity }} Prozent Feuchtigkeit weiter.
                 {% elif variant == 7 %}
-                  Lüften beendet, Thermostat ist wieder aktiv.
+                  Lüften beendet, Thermostat ist wieder aktiv. Feuchtigkeit liegt bei {{ humidity }} Prozent.
                 {% else %}
-                  Fenster geschlossen, Heizbetrieb fortgesetzt.
+                  Fenster geschlossen, Heizbetrieb fortgesetzt. Raumfeuchte bei {{ humidity }} Prozent.
                 {% endif %}
               {% endif %}
             {% else %}
@@ -115,39 +115,39 @@ script:
             {% if has_humidity %}
               {% if is_high %}
                 {% if variant == 1 %}
-                  窗户已关好。湿度还在 {{ humidity }}%，已为您恢复暖气。
+                  窗户已关好。湿度还在 {{ humidity }}%，已恢复暖气。
                 {% elif variant == 2 %}
                   通风结束，窗户已关。正在重新加热，湿度 {{ humidity }}%。
                 {% elif variant == 3 %}
-                  窗户已闭合，温控已重新启动。
+                  窗户已闭合，温控已重新启动。当前湿度 {{ humidity }}%。
                 {% elif variant == 4 %}
                   已关窗，暖气恢复运行。当前湿度 {{ humidity }}%。
                 {% elif variant == 5 %}
-                  窗户已关好，温控开始恢复室温。
+                  窗户已关好，温控开始恢复室温。当前湿度 {{ humidity }}%。
                 {% elif variant == 6 %}
                   通风完成，暖气重新开启。室内湿度 {{ humidity }}%。
                 {% elif variant == 7 %}
-                  窗户闭合，温控已接管。
+                  窗户闭合，温控已接管。剩余湿度 {{ humidity }}%。
                 {% else %}
-                  已关窗，暖气已重新启动。
+                  已关窗，暖气已重新启动。室内湿度 {{ humidity }}%。
                 {% endif %}
               {% else %}
                 {% if variant == 1 %}
                   窗户已关好。当前湿度 {{ humidity }}%，暖气重新启动。
                 {% elif variant == 2 %}
-                  通风完成，窗户已关，温控恢复正常。
+                  通风完成，窗户已关。湿度处于良好的 {{ humidity }}%，温控恢复正常。
                 {% elif variant == 3 %}
-                  窗户已闭合，暖气已重新开启。
+                  窗户已闭合，当前湿度 {{ humidity }}%，暖气已重新开启。
                 {% elif variant == 4 %}
-                  通风结束，已关窗。正在恢复室温。
+                  通风结束，已关窗。室内湿度 {{ humidity }}%，正在恢复室温。
                 {% elif variant == 5 %}
-                  窗户已关好，温控接管运行。
+                  窗户已关好，湿度 {{ humidity }}%，温控接管运行。
                 {% elif variant == 6 %}
                   已关窗，湿度处于舒适的 {{ humidity }}%，暖气继续运行。
                 {% elif variant == 7 %}
-                  通风完成，温控重新启动。
+                  通风完成，温控重新启动。当前湿度 {{ humidity }}%。
                 {% else %}
-                  已关窗，暖气恢复。
+                  已关窗，暖气恢复。室内湿度维持在 {{ humidity }}%。
                 {% endif %}
               {% endif %}
             {% else %}

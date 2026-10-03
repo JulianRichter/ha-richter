@@ -1,9 +1,9 @@
 automation:
   # ====================================================================
   # Living Room - Window Sensor
-  # - Controls living room thermostat based on window contact state
-  # - Turns off thermostat and announces caring TTS with humidity when opened
-  # - Restores thermostat and announces caring TTS with humidity when closed
+  # - Controls living room thermostat & curtain based on window contact state
+  # - Opens left curtain and turns off thermostat when window is opened
+  # - Restores thermostat and re-closes left curtain if right curtain is closed
   # - Announces in German and optionally in Chinese via play_media_tts_window scripts
   # ====================================================================
 
@@ -29,11 +29,20 @@ automation:
 
     action:
       - choose:
-          # Window opened: turn off heating and announce
+          # Window opened: open left curtain, turn off heating, and announce
           - conditions:
               - condition: trigger
                 id: window_opened
             sequence:
+              # Automatically open left curtain to clear window area
+              - if:
+                  - condition: template
+                    value_template: "{{ states('cover.living_room_curtain_left') != 'open' }}"
+                then:
+                  - action: cover.open_cover
+                    target:
+                      entity_id: cover.living_room_curtain_left
+
               # Turn off living room thermostat
               - action: climate.turn_off
                 target:
@@ -45,11 +54,22 @@ automation:
                   entity_id: media_player.living_room
                   humidity_sensor: sensor.living_room_multi_sensor_humidity
 
-          # Window closed: turn on heating and announce
+          # Window closed: restore left curtain if right is closed, turn on heating, and announce
           - conditions:
               - condition: trigger
                 id: window_closed
             sequence:
+              # Restore left curtain to closed if right curtain is closed/closing
+              - if:
+                  - condition: template
+                    value_template: >
+                      {{ states('cover.living_room_curtain_right') in ['closed', 'closing']
+                         and states('cover.living_room_curtain_left') != 'closed' }}
+                then:
+                  - action: cover.close_cover
+                    target:
+                      entity_id: cover.living_room_curtain_left
+
               # Turn on living room thermostat
               - action: climate.turn_on
                 target:

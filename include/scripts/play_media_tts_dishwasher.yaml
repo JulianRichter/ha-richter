@@ -50,39 +50,39 @@ script:
           variant: "{{ [1, 2, 3, 4, 5, 6, 7, 8] | random }}"
           message_de: >-
             {% if variant == 1 %}
-              Die Spülmaschine ist fertig durchgelaufen und kann ausgeräumt werden.
+              Die Spülmaschine hat ihr Programm beendet. Das Geschirr kann ausgeräumt werden.
             {% elif variant == 2 %}
               Kurzer Hinweis: Das Geschirr ist sauber und abholbereit.
             {% elif variant == 3 %}
-              Die Spülmaschine hat ihr Programm beendet.
+              Die Spülmaschine hat den Spülgang erfolgreich abgeschlossen.
             {% elif variant == 4 %}
-              Spülgang abgeschlossen, alles wieder blitzblank.
+              Spülgang abgeschlossen, alles wieder sauber.
             {% elif variant == 5 %}
-              Die Spülmaschine ist fertig, das saubere Geschirr wartet auf euch.
+              Die Spülmaschine ist fertig. Das saubere Geschirr kann ausgeräumt werden.
             {% elif variant == 6 %}
-              Kurzes Küchen-Update: Die Spülmaschine ist fertig.
+              Kurzes Küchen-Update: Die Spülmaschine ist durchgelaufen.
             {% elif variant == 7 %}
-              Alles sauber gespült, die Maschine kann ausgeräumt werden.
+              Alles sauber gespült, die Maschine ist bereit zum Ausräumen.
             {% else %}
-              Spülmaschine ist durch. Zeit fürs Ausräumen.
+              Spülmaschine ist fertig. Das saubere Geschirr steht bereit.
             {% endif %}
           message_zh: >-
             {% if variant == 1 %}
-              洗碗机已经洗完了，可以把干净餐具收起来啦。
+              洗碗机已完成清洗，餐具可以整理收纳。
             {% elif variant == 2 %}
-              厨房提醒：洗碗机程序结束，碗碟已经洗干净了。
+              厨房通知：洗碗机程序结束，餐具洁净。
             {% elif variant == 3 %}
-              洗碗机已完成清洗，随时可以打开通风或收纳。
+              洗碗机已完成清洗任务，随时可以取用餐具。
             {% elif variant == 4 %}
               洗碗程序已结束，餐具干爽洁净。
             {% elif variant == 5 %}
-              洗碗机洗好啦，有空可以把餐具整理一下。
+              洗碗机运转结束，可以开门通风或整理餐具。
             {% elif variant == 6 %}
-              通知：厨房洗碗机已完成工作。
+              厨房更新：洗碗机清洗已完成。
             {% elif variant == 7 %}
-              洗碗机运转结束，餐具已经洗好啦。
+              餐具清洗完毕，洗碗机已就绪。
             {% else %}
-              洗碗机完成清洗，碗碟洁净待取。
+              洗碗机清洗完成，餐具洁净待取。
             {% endif %}
 
       # Announce TTS message (German and optional Chinese)

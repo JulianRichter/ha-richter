@@ -611,9 +611,17 @@ views:
             card_layout: large
             sub_button:
               - entity: cover.living_room_curtain_group
-                icon: mdi:dots-horizontal
+                icon: mdi:curtains
                 tap_action:
                   action: toggle
+                hold_action:
+                  action: more-info
+            styles: >
+              ${subButtonIcon[0].setAttribute("icon",
+                hass.states['cover.living_room_curtain_group'] && hass.states['cover.living_room_curtain_group'].state === 'closed'
+                  ? 'mdi:curtains-closed'
+                  : 'mdi:curtains'
+              )}
         columns: 1
         view_layout:
           grid-area: cell1

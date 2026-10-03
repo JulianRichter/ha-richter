@@ -43,12 +43,12 @@ automation:
                         entity_id: light.baby_room_light
                         state: "off"
                     sequence:
-                      - color_temp_kelvin: 2700
+                      - action: light.turn_on
+                        target:
+                          entity_id: light.baby_room_light
                         data:
                           brightness: "{{ brightness_awake }}"
                           rgb_color: "{{ color_awake }}"
-                        target:
-                          entity_id: light.baby_room_light
 
                   # If light is already on at full brightness: toggle back to dim/warm ambient
                   - conditions:
