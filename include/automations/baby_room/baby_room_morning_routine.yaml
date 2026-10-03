@@ -64,9 +64,9 @@ automation:
           seconds: "{{ sunrise_time }}"
           target_brightness_pct: 40
 
-      # Wait until wake-up time (15 minutes after routine start)
+      # Hold at 40% gentle glow until alarm time (5m buffer, exactly 15m from routine start)
       - delay:
-          seconds: "{{ start_offset }}"
+          seconds: "{{ [start_offset - sunrise_time, 0] | max }}"
 
       # Open baby room roller blinds
       - action: cover.open_cover
