@@ -6,8 +6,11 @@
 # 1. Credentials, API Keys & Secrets
 secrets.yaml
 *.json
+!*.example.json
 .google.token*
+.ha_token*
 ip_bans.yaml
+dashboards/screenshots/
 
 # 2. Home Assistant Internal Storage (Contains Auth Tokens & Integrations Data)
 .storage/
