@@ -14,7 +14,7 @@ Rather than re-scanning dozens of package files, automations, or device registri
 | File | Purpose | When to Consult | When to Update |
 | :--- | :--- | :--- | :--- |
 | [`entities.md`](./entities.md) | Verified inventory of physical and logical entity IDs grouped by room and domain | Before writing any script, automation, or dashboard card (never guess IDs) | When adding, renaming, or retiring physical devices, integrations, or template helpers |
-| [`subsystems.md`](./subsystems.md) | Behavioral contracts for core house functions (Presence, Audio/TTS, Gemini AI Briefings, Anti-Blinding, Climate, etc.) | Before modifying automations that interact with sound, lights, heating, presence, or AI voice | When changing global rules or adding a new cross-room subsystem |
+| [`subsystems.md`](./subsystems.md) | Behavioral contracts for core house functions (Presence, Audio/TTS, Gemini AI Briefings, Anti-Blinding, Climate, Dashboards & Visual Testing, etc.) | Before modifying automations or dashboards that interact with sound, lights, heating, presence, UI themes, or AI voice | When changing global rules or adding a new cross-room subsystem |
 | [`architecture.md`](./architecture.md) | Architectural Decision Records (ADRs) and design patterns explaining *why* decisions were made | When questioning a pattern, considering a refactor, or adding architectural components | When making significant structural or architectural changes |
 
 ---

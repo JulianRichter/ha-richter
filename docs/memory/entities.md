@@ -82,7 +82,7 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 | **Sensor** | `sensor.baby_room_multi_sensor_temperature` | Ambient Temperature | Multi-sensor reading |
 | **Sensor** | `sensor.baby_room_multi_sensor_humidity` | Relative Humidity | Multi-sensor reading |
 | **Sensor** | `sensor.baby_room_humidity_change` | Rate of Humidity Change | Evaluates ventilation status |
-| **Sensor** | `sensor.baby_room_alarms` | Google Home Alarm Time | Triggers morning routine 15m prior |
+| **Sensor** | `sensor.kinderzimmer_alarms` | Google Home Alarm Time | Triggers morning routine 15m prior |
 | **Switch Event**| `event.baby_room_light_switch_action` | Wall Switch | Single: light / Hold: heater |
 | **Media** | `media_player.baby_room` | Baby Room Speaker | Audio playback |
 | **Media** | `media_player.baby_room_cast` | Baby Room Google Cast Target | TTS target |
@@ -137,6 +137,7 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 | **Media** | `media_player.bathroom_cast` | Bathroom Google Cast Target | Morning briefing & TTS announcements |
 | **Helper** | `input_boolean.bathroom_laundry` | Laundry Finished Reminder | Active when washer completes |
 | **Helper** | `input_boolean.bathroom_humidity_warning_active` | Shower Humidity Lock | Prevents repetitive TTS spam |
+| **Helper** | `input_boolean.bathroom_washer_humidity_warning_active` | Washer Drying Humidity Lock | Prevents repetitive TTS spam (2 stages) |
 | **Helper** | `input_boolean.vacuum_clean_bathroom` | Room Vacuum Clean Toggle | Dispatched by Robi schedule |
 
 ---
@@ -146,9 +147,13 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 ### Presence & Resident Tracking
 - `input_boolean.presence_home`: Master house state (`on` = home & awake, `off` = away or sleeping).
 - `switch.presence_away`: Interactive template switch (exact inverse of `presence_home`) for Bubble Card dashboard.
-- `group.residents`: Tracks GPS location for Julian and Xingyang.
-- `person.julian`: Julian's person tracker.
-- `person.xingyang`: Xingyang's person tracker.
+- `group.residents`: Tracks composite resident location for Julian and Xingyang (GPS + Wi-Fi).
+- `person.julian`: Julian's person tracker (GPS mobile app + `device_tracker.julian_wifi`).
+- `person.xingyang`: Xingyang's person tracker (GPS mobile app + `device_tracker.xingyang_wifi`).
+- `device_tracker.julian_wifi`: Julian's home Wi-Fi template tracker (`in_zones: zone.home` when connected to SSID `Nudelauflauf`).
+- `device_tracker.xingyang_wifi`: Xingyang's home Wi-Fi template tracker (`in_zones: zone.home` when connected to SSID `Nudelauflauf`).
+- `sensor.julian_wifi_connection`: Companion App Wi-Fi SSID sensor for Julian.
+- `sensor.xingyang_ssid`: Companion App Wi-Fi SSID sensor for Xingyang.
 - `binary_sensor.julian_is_charging`: Phone charging status (used in night routines).
 
 ### Audio, Voice & AI Notification Pipeline
@@ -165,6 +170,11 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 - `media_player.entrance_cast` / `media_player.minis_cast` / `media_player.wohnzimmer_kuche`: Speaker targets.
 - `script.play_media_tts_pixel_watch`: 8-variant randomized Jarvis reminder when Pixel Watch is charged.
 - `sensor.pixel_watch_3_battery_state` / `sensor.pixel_watch_3_battery_level`: Pixel Watch 3 battery sensors.
+
+### Fitness & Biometrics
+- `sensor.julian_daily_steps`: Julian's daily steps from Fitbit/Pixel Watch (resets at midnight).
+- `sensor.julian_sleep_duration`: Julian's sleep duration in minutes from Fitbit/Pixel Watch.
+- `input_number.julian_yesterday_steps`: Persisted total of Julian's previous day steps (archived at 23:59:45 or sensor reset by `automation.home_fitness_tracking_julian_steps`).
 
 ### Vacuum (Robi) Dispatch
 - `vacuum.robi`: Dreame robot vacuum cleaner.
@@ -189,9 +199,22 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 
 ### Global Lighting Presets & Anti-Blinding
 - `input_number.light_brightness_sleep`: Global sleep / nightlight brightness level (default: 5).
-- `input_number.light_brightness_awake`: Global awake / ambient warm brightness level (default: 126).
-- `input_number.light_brightness_high`: Global high / daytime brightness level (default: 255).
+- `input_number.light_brightness_awake`: Global awake / ambient warm brightness level used by wall switches (default: 126).
+- `input_number.light_brightness_high`: Global high / daytime brightness level used by wall switches & voice (default: 255).
+- `input_number.light_brightness_motion`: Global motion-triggered ambient brightness level (default: 200). Ensures motion clearance only shuts off motion-initiated lights, allowing manual switch/voice states to overrule.
 - `input_text.light_color_sleep`: Global sleep / night RGB color string (default: `"255,0,0"`).
 - `input_text.light_color_awake`: Global awake / ambient RGB color string (default: `"255,166,87"`).
 - `cover.living_room_curtain_group`: Living Room Curtains smart template cover (left + right) with window safety interlock, auto-opened during morning vacuum schedule.
+
+### Weather & Forecast Layer
+- `weather.home_open_meteo`: Core Open-Meteo integration entity providing raw daily & hourly data.
+- `sensor.weather_home_current_condition`: Resilient cached condition entity.
+- `sensor.weather_home_current_temperature`: Resilient cached outdoor temperature entity.
+- `sensor.weather_home_current_wind_speed`: Resilient cached outdoor wind speed entity.
+- `sensor.weather_home_current_precipitation`: Current precipitation probability/amount.
+- `sensor.weather_home_forecast`: Periodic 30m hourly forecast snapshot for briefing automations & ApexCharts line.
+- `sensor.weather_home_forecast_daily`: Periodic 30m daily forecast snapshot with past-day filtering.
+- `sensor.weather_home_forecast_at_midnight`: Daily snapshot for ApexCharts 24h precipitation area with self-healing recovery.
+- `weather.weather_home_mock`: Resilient mock weather entity feeding `clock-weather-card` with robust `forecast_daily_template` and `forecast_hourly_template`.
+
 

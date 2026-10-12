@@ -6,6 +6,8 @@
 - When writing templates, use standard Jinja2 syntax compatible with HA templating and always provide default filters (e.g. `| float(0)`, `| int(0)`).
 - Do not attempt to modify binary database files or files ignored by `.geminiignore`.
 - Workspace is on a remote SMB network mount without git: avoid slow recursive directory scans; target specific folders directly.
+- Execution Environment: Running on a developer client workstation. The `homeassistant` Python package is NOT installed here. NEVER attempt to run `python3 -c "import homeassistant"` or execute HA Python internals locally.
+- No automated SSH: Commands run sandboxed without local network access; do NOT attempt to run `ssh homeassistant` automatically. All automated verification is handled locally via `python3 tools/validate_config.py`.
 
 # Architecture & Directory Topology
 - Packages pattern: Core configuration dynamically loads packages via `homeassistant.packages: !include_dir_named include`.
@@ -16,16 +18,30 @@
   - Scripts: `include/scripts/<script_name>.yaml`
   - Template entities: `include/template/`
   - Sensors & Utility meters: `include/sensor/`, `include/utility_meter/`
-  - Themes & Dashboards: `themes/`, `dashboards/`
+  - Themes & Dashboards: `include/themes/`, `dashboards/`
+    - `dashboards/bubble_code/bubble_code.yaml`: Baseline reference dashboard (`tablet_grid_theme`).
+    - `dashboards/bubble_kiosk/bubble_kiosk.yaml`: Wall kiosk dashboard (`tablet_kiosk_theme`).
+    - `dashboards/bubble_nebula/bubble_nebula.yaml`: Dark purple cosmic glass edition (`tablet_nebula_purple_theme`).
+- Theme & Card CSS Scoping Invariants:
+  - Never set `ha-card-border-width: 1px` or global `ha-card-box-shadow` on the theme root; Bubble Card separator headers, markdown cards, and sidebar containers inherit `ha-card` and will render unwanted border outlines. Card borders must be applied to specific card containers via `bubble-border` or card-level `card_mod`.
+  - Active Button Badges: High-contrast dark badge (`rgba(0, 0, 0, 0.28)`) with white icon (`#ffffff`) on `.is-on .bubble-icon-container` prevents icon drowning on bright backgrounds.
+
 # Knowledge Base & Persistent Memory
 Before modifying, guessing entities, or scanning the workspace, always consult `docs/memory/`:
 - [`docs/memory/README.md`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/docs/memory/README.md): Memory repository overview and contributor conventions.
 - [`docs/memory/entities.md`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/docs/memory/entities.md): Verified entity catalog across rooms & domains. Always check here before creating automations/scripts.
-- [`docs/memory/subsystems.md`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/docs/memory/subsystems.md): Operational contracts (Presence, Audio/TTS & Gemini, Lighting, Climate, Roborock, Transit, Music Assistant).
+- [`docs/memory/subsystems.md`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/docs/memory/subsystems.md): Operational contracts (Presence, Audio/TTS & Gemini, Lighting, Climate, Roborock, Transit, Music Assistant, Dashboards).
 - [`docs/memory/architecture.md`](file:///run/user/1000/gvfs/smb-share:server=192.168.178.100,share=config/docs/memory/architecture.md): Architectural Decision Records (ADRs) and configuration patterns.
 
 # Developer Verification & Safety Tooling
-- Pre-Flight Validation: Before concluding any change, ALWAYS run `python3 tools/validate_config.py` to verify YAML syntax, secrets, scripts, and header consistency.
+- Pre-Flight Validation: Before concluding any change, ALWAYS run `python3 tools/validate_config.py` to verify YAML syntax, secrets, scripts, and header consistency. This runs locally on the workstation without requiring network access or the `homeassistant` Python package.
+- Live API Inspection & Frontend Reloading: Use `python3 tools/ha_api.py` to inspect live states, verify connectivity, and reload frontend themes. It uses the Long-Lived Access Token stored in `~/.ha_token` (or `HA_TOKEN` env var).
+  - Commands: `check`, `state <entity_id>`, `states [--domain <domain>] [--search <text>]`, `reload-lovelace`, `logs [--lines <n>]`.
+- Headless Dashboard Screenshot & Visual Testing: Use `python3 tools/screenshot_dashboard.py` to capture pixel-accurate previews of Lovelace dashboards across target hardware viewports without needing a physical screen.
+  - Device presets: `--preset tablet` (Huawei MediaPad M5 Kiosk: 1130×706 @ 1.7x), `--preset pc` (1854×959 @ 1.0x), `--preset phone` (Pixel 7 Pro: 412×828 @ 2.6x).
+  - Flags: `--path <dashboard/view>`, `--live` (captures physical kiosk screenshot from `image.huawei_mediapad_m5_lite_10_screenshot`), `--output <path>`.
+  - Enforces dark mode (`color_scheme="dark"`) and uses local Roboto font metrics matching the Android kiosk browser.
+- Live Host Verification (User Manual): The live instance runs Home Assistant OS reachable via `ssh homeassistant`. If live checks or reloads are needed, recommend the user run `ha core check` or `ha core reload` on their terminal, rather than executing automated SSH commands from the agent.
 - Safety Snapshot: Before performing large refactors across multiple files, run `bash tools/backup_config.sh`.
 
 # Core House Subsystem Contracts
