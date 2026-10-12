@@ -1,0 +1,148 @@
+# ====================================================================
+# Theme - Tablet Kiosk (Obsidian Glass / Ambient Luxury)
+# - Designed specifically for wall-mounted tablet in kiosk mode
+# - 100vh zero-scroll viewport with hardware-accelerated frosted glass
+# - Warm amber lighting glows, electric cyan accents, high legibility
+# ====================================================================
+
+frontend:
+  themes:
+    tablet_kiosk_theme:
+      # Ambient dark backdrop: deep midnight with subtle luminous atmosphere
+      lovelace-background: "radial-gradient(ellipse at 15% 15%, rgba(20, 35, 60, 0.45) 0%, transparent 60%), radial-gradient(ellipse at 85% 85%, rgba(35, 20, 50, 0.4) 0%, transparent 60%), #0c1017"
+
+      # Primary brand & luminous accents
+      primary-color: "#0ea5e9"
+      accent-color: "#0ea5e9"
+      active-color: "#0ea5e9"
+      state-active-color: "#0ea5e9"
+      state-icon-active-color: "#38bdf8"
+      state-light-active-color: "#f59e0b"
+      state-switch-active-color: "#0ea5e9"
+      state-climate-heat-color: "#f97316"
+      state-climate-cool-color: "#06b6d4"
+
+      # Frosted glass card surfaces
+      card-background-color: "rgba(20, 27, 41, 0.65)"
+      ha-card-background: "rgba(20, 27, 41, 0.65)"
+      ha-card-border-radius: "22px"
+      ha-card-border-width: "1px"
+      ha-card-border-color: "rgba(255, 255, 255, 0.08)"
+      ha-card-box-shadow: "0 8px 30px rgba(0, 0, 0, 0.35)"
+      ha-card-backdrop-filter: "blur(20px)"
+
+      # Typography & high contrast readability
+      primary-text-color: "#f8fafc"
+      secondary-text-color: "#94a3b8"
+      disabled-text-color: "#64748b"
+      divider-color: "rgba(255, 255, 255, 0.08)"
+      background-color: "rgba(255, 255, 255, 0.06)"
+      background-color-2: "rgba(255, 255, 255, 0.045)"
+
+      # Native Bubble Card styling tokens
+      bubble-border-radius: "20px"
+      bubble-button-border-radius: "20px"
+      bubble-card-type-border-radius: "20px"
+      bubble-accent-color: "#0ea5e9"
+      bubble-button-accent-color: "#0ea5e9"
+      bubble-button-background-color: "rgba(255, 255, 255, 0.05)"
+      bubble-secondary-background-color: "rgba(255, 255, 255, 0.05)"
+      bubble-main-background-color: "rgba(255, 255, 255, 0.05)"
+      bubble-icon-background-color: "rgba(255, 255, 255, 0.08)"
+      bubble-icon-color: "#f1f5f9"
+      bubble-button-active-icon-color: "#ffffff"
+      bubble-sub-button-background-color: "rgba(255, 255, 255, 0.08)"
+      bubble-sub-button-border-radius: "14px"
+      bubble-border: "1px solid rgba(255, 255, 255, 0.08)"
+      bubble-box-shadow: "0 4px 16px rgba(0, 0, 0, 0.25)"
+      bubble-backdrop-filter: "blur(16px)"
+      bubble-pop-up-background-color: "rgba(11, 15, 24, 0.96)"
+      bubble-pop-up-main-background-color: "rgba(18, 26, 40, 0.85)"
+      bubble-pop-up-border: "1px solid rgba(255, 255, 255, 0.1)"
+      bubble-pop-up-border-radius: "30px"
+      bubble-pop-up-content-border-radius: "30px"
+
+      # Spacing resets
+      ha-view-padding: 0px
+      masonry-view-card-margin: 0px
+      dashboard-header-font-size: 24px
+      dashboard-header-font-weight: 600
+
+      modes:
+        dark:
+          lovelace-background: "radial-gradient(ellipse at 15% 15%, rgba(20, 35, 60, 0.45) 0%, transparent 60%), radial-gradient(ellipse at 85% 85%, rgba(35, 20, 50, 0.4) 0%, transparent 60%), #0c1017"
+          primary-color: "#0ea5e9"
+          accent-color: "#0ea5e9"
+          active-color: "#0ea5e9"
+          state-active-color: "#0ea5e9"
+          state-light-active-color: "#f59e0b"
+          card-background-color: "rgba(20, 27, 41, 0.65)"
+          ha-card-background: "rgba(20, 27, 41, 0.65)"
+          ha-card-border-radius: "22px"
+          ha-card-border-width: "1px"
+          ha-card-border-color: "rgba(255, 255, 255, 0.08)"
+          ha-card-box-shadow: "0 8px 30px rgba(0, 0, 0, 0.35)"
+          ha-card-backdrop-filter: "blur(20px)"
+          primary-text-color: "#f8fafc"
+          secondary-text-color: "#94a3b8"
+          disabled-text-color: "#64748b"
+          divider-color: "rgba(255, 255, 255, 0.08)"
+          bubble-border-radius: "20px"
+          bubble-button-border-radius: "20px"
+          bubble-accent-color: "#0ea5e9"
+          bubble-button-accent-color: "#0ea5e9"
+          bubble-button-background-color: "rgba(255, 255, 255, 0.05)"
+          bubble-secondary-background-color: "rgba(255, 255, 255, 0.05)"
+          bubble-icon-background-color: "rgba(255, 255, 255, 0.08)"
+          bubble-icon-color: "#f1f5f9"
+          bubble-border: "1px solid rgba(255, 255, 255, 0.08)"
+          bubble-pop-up-background-color: "rgba(11, 15, 24, 0.96)"
+          bubble-pop-up-main-background-color: "rgba(18, 26, 40, 0.85)"
+          bubble-pop-up-border: "1px solid rgba(255, 255, 255, 0.1)"
+        light:
+          lovelace-background: "radial-gradient(ellipse at 15% 15%, rgba(20, 35, 60, 0.45) 0%, transparent 60%), radial-gradient(ellipse at 85% 85%, rgba(35, 20, 50, 0.4) 0%, transparent 60%), #0c1017"
+          primary-color: "#0ea5e9"
+          accent-color: "#0ea5e9"
+          card-background-color: "rgba(20, 27, 41, 0.65)"
+          ha-card-background: "rgba(20, 27, 41, 0.65)"
+          primary-text-color: "#f8fafc"
+          secondary-text-color: "#94a3b8"
+
+      # Card-Mod integration (matches theme name)
+      card-mod-theme: tablet_kiosk_theme
+
+      # Strict 100vh zero-scroll enforcement
+      card-mod-root-yaml: |
+        #view {
+          padding: 0 !important;
+          margin: 0 !important;
+          height: 100vh !important;
+          max-height: 100vh !important;
+          overflow: hidden !important;
+          box-sizing: border-box !important;
+        }
+
+      card-mod-view-yaml: |
+        .: |
+          :host {
+            padding: 0 !important;
+            margin: 0 !important;
+            height: 100vh !important;
+            max-height: 100vh !important;
+            overflow: hidden !important;
+            box-sizing: border-box !important;
+          }
+        grid-layout$:
+          .: |
+            :host {
+              height: 100vh !important;
+              max-height: 100vh !important;
+              overflow: hidden !important;
+              box-sizing: border-box !important;
+            }
+            #root {
+              height: 100vh !important;
+              max-height: 100vh !important;
+              overflow: hidden !important;
+              box-sizing: border-box !important;
+            }

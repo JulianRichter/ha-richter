@@ -41,7 +41,11 @@ template:
                 {%- set rm = (m-60*h)|int -%}
                 <br>&nbsp {{ '{:02}'.format(h) }}:{{ '{:02}'.format(rm) }} h
               {%- endif -%}
-              &nbsp ({{ '{:+.2f}'.format(deriv) }} %)
+              {%- if deriv <= -1.0 -%}
+                &nbsp; <ha-icon icon="mdi:trending-down" style="--mdc-icon-size: 16px; color: #42a5f5; vertical-align: middle;"></ha-icon>
+              {%- else -%}
+                &nbsp; <ha-icon icon="mdi:trending-neutral" style="--mdc-icon-size: 16px; opacity: 0.6; vertical-align: middle;"></ha-icon>
+              {%- endif -%}
             {%- endfor -%}
             </p>
             {%- endif -%}

@@ -1,0 +1,173 @@
+# ====================================================================
+# Theme - Tablet Nebula Purple (Dark Purple Cloudy Glass / Ice Edition)
+# - Designed for wall-mounted tablet with rich cosmic violet ambiance
+# - Frosted ice glass surfaces, translucent violet refractions, crystal accents
+# ====================================================================
+
+frontend:
+  themes:
+    tablet_nebula_purple_theme:
+      # Luminous cosmic dark nebula backdrop (rich purples, indigo dust, frosted clouds)
+      lovelace-background: "radial-gradient(circle at 10% 15%, rgba(139, 92, 246, 0.28) 0%, transparent 45%), radial-gradient(circle at 85% 20%, rgba(192, 132, 252, 0.22) 0%, transparent 50%), radial-gradient(circle at 50% 80%, rgba(99, 102, 241, 0.25) 0%, transparent 60%), radial-gradient(circle at 80% 85%, rgba(168, 85, 247, 0.2) 0%, transparent 45%), linear-gradient(135deg, #090514 0%, #110926 40%, #0d061a 100%)"
+
+      # Color Palette & Accents
+      primary-color: "#a855f7"
+      accent-color: "#c084fc"
+      active-color: "#38bdf8"
+      state-active-color: "#a855f7"
+      state-icon-active-color: "#c084fc"
+      state-light-active-color: "#fbbf24"
+      state-switch-active-color: "#38bdf8"
+      state-climate-heat-color: "#f97316"
+      state-climate-cool-color: "#38bdf8"
+
+      # Glass & Ice Card Surfaces
+      card-background-color: "rgba(22, 13, 41, 0.65)"
+      ha-card-background: "rgba(22, 13, 41, 0.65)"
+      ha-card-border-radius: "22px"
+      ha-card-border-width: "0px"
+      ha-card-border-color: "transparent"
+      ha-card-box-shadow: "none"
+      ha-card-backdrop-filter: "blur(24px)"
+
+      # Typography & Readability
+      primary-text-color: "#f8fafc"
+      secondary-text-color: "#cbd5e1"
+      disabled-text-color: "#64748b"
+      divider-color: "rgba(216, 180, 254, 0.1)"
+      background-color: "rgba(255, 255, 255, 0.05)"
+      background-color-2: "rgba(255, 255, 255, 0.04)"
+
+      # Bubble Card Styling Tokens
+      bubble-border-radius: "20px"
+      bubble-button-border-radius: "20px"
+      bubble-card-type-border-radius: "20px"
+      bubble-accent-color: "#a855f7"
+      bubble-button-accent-color: "#a855f7"
+      bubble-button-background-color: "rgba(255, 255, 255, 0.05)"
+      bubble-secondary-background-color: "rgba(255, 255, 255, 0.05)"
+      bubble-main-background-color: "rgba(255, 255, 255, 0.05)"
+      bubble-icon-background-color: "rgba(255, 255, 255, 0.08)"
+      bubble-icon-color: "#f1f5f9"
+      bubble-button-active-icon-color: "#ffffff"
+      bubble-sub-button-background-color: "rgba(255, 255, 255, 0.08)"
+      bubble-sub-button-border-radius: "14px"
+      bubble-border: "1px solid rgba(216, 180, 254, 0.12)"
+      bubble-box-shadow: "0 4px 20px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+      bubble-backdrop-filter: "blur(20px)"
+      bubble-line-background-color: "rgba(216, 180, 254, 0.18)"
+      bubble-name-color: "#f8fafc"
+      bubble-state-color: "rgba(248, 250, 252, 0.7)"
+      bubble-pop-up-background-color: "rgba(14, 8, 28, 0.96)"
+      bubble-pop-up-main-background-color: "rgba(22, 13, 44, 0.88)"
+      bubble-pop-up-border: "1px solid rgba(216, 180, 254, 0.16)"
+      bubble-pop-up-border-radius: "30px"
+      bubble-pop-up-content-border-radius: "30px"
+
+      # Layout & Spacing Resets
+      ha-view-padding: 0px
+      masonry-view-card-margin: 0px
+      dashboard-header-font-size: 26px
+      dashboard-header-font-weight: 600
+
+      modes:
+        dark:
+          lovelace-background: "radial-gradient(circle at 10% 15%, rgba(139, 92, 246, 0.28) 0%, transparent 45%), radial-gradient(circle at 85% 20%, rgba(192, 132, 252, 0.22) 0%, transparent 50%), radial-gradient(circle at 50% 80%, rgba(99, 102, 241, 0.25) 0%, transparent 60%), radial-gradient(circle at 80% 85%, rgba(168, 85, 247, 0.2) 0%, transparent 45%), linear-gradient(135deg, #090514 0%, #110926 40%, #0d061a 100%)"
+          primary-color: "#a855f7"
+          accent-color: "#c084fc"
+          active-color: "#38bdf8"
+          state-active-color: "#a855f7"
+          state-icon-active-color: "#c084fc"
+          card-background-color: "rgba(22, 13, 41, 0.65)"
+          ha-card-background: "rgba(22, 13, 41, 0.65)"
+          primary-text-color: "#f8fafc"
+          secondary-text-color: "#cbd5e1"
+        light:
+          lovelace-background: "radial-gradient(circle at 10% 15%, rgba(139, 92, 246, 0.28) 0%, transparent 45%), radial-gradient(circle at 85% 20%, rgba(192, 132, 252, 0.22) 0%, transparent 50%), radial-gradient(circle at 50% 80%, rgba(99, 102, 241, 0.25) 0%, transparent 60%), radial-gradient(circle at 80% 85%, rgba(168, 85, 247, 0.2) 0%, transparent 45%), linear-gradient(135deg, #090514 0%, #110926 40%, #0d061a 100%)"
+          primary-color: "#a855f7"
+          accent-color: "#c084fc"
+          card-background-color: "rgba(22, 13, 41, 0.65)"
+          ha-card-background: "rgba(22, 13, 41, 0.65)"
+          primary-text-color: "#f8fafc"
+          secondary-text-color: "#cbd5e1"
+
+      # Card-Mod Integration
+      card-mod-theme: tablet_nebula_purple_theme
+
+      card-mod-root-yaml: |
+        #view {
+          padding: 0 !important;
+          margin: 0 !important;
+          height: 100vh !important;
+          max-height: 100vh !important;
+          box-sizing: border-box !important;
+        }
+
+      card-mod-view-yaml: |
+        .: |
+          :host {
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+        grid-layout$:
+          .: |
+            :host {
+              --sidebar-width: var(--grid-column-width-1);
+              --layout-margin: 0 !important;
+              --layout-padding: 0 !important;
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+            #root {
+              margin: 0 !important;
+              padding: 0 !important;
+              height: 100vh !important;
+            }
+            #root > * {
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+        grid-layout$hui-vertical-stack-card$: |
+          :host {
+            background-color: rgba(0, 0, 0, 0.06) !important;
+            border-right: 1px solid rgba(192, 132, 252, 0.15) !important;
+            height: 100% !important;
+            min-height: 100vh !important;
+            display: block !important;
+            box-sizing: border-box !important;
+          }
+          #root {
+            gap: 0 !important;
+            height: 100% !important;
+            min-height: 100vh !important;
+          }
+          hui-card, ha-card, .bubble-button-card-container, .bubble-button-background {
+            background: transparent !important;
+            background-color: transparent !important;
+            box-shadow: none !important;
+            border: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+          }
+        grid-layout$ hui-card hui-vertical-stack-card$: |
+          :host {
+            background-color: rgba(0, 0, 0, 0.06) !important;
+            border-right: 1px solid rgba(192, 132, 252, 0.15) !important;
+            height: 100% !important;
+            min-height: 100vh !important;
+            display: block !important;
+            box-sizing: border-box !important;
+          }
+          #root {
+            gap: 0 !important;
+            height: 100% !important;
+            min-height: 100vh !important;
+          }
+          hui-card, ha-card, .bubble-button-card-container, .bubble-button-background {
+            background: transparent !important;
+            background-color: transparent !important;
+            box-shadow: none !important;
+            border: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+          }

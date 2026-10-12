@@ -1,0 +1,1668 @@
+# ====================================================================
+# Dashboard - Bubble Kiosk Edition
+# - Modern single-viewport (100vh) zero-scroll tablet dashboard
+# - 4-room column layout with 1-tap everyday controls for the family
+# - Top status & master scene chips, bottom glance & media bar
+# ====================================================================
+
+title: Bubble Kiosk
+kiosk_mode:
+  user_settings:
+    - users:
+        - tablet
+      hide_header: true
+      hide_sidebar: true
+      hide_settings: true
+      hide_overflow: true
+
+views:
+  - type: custom:grid-layout
+    title: Home
+    path: Home
+    theme: tablet_kiosk_theme
+    layout:
+      margin: 0
+      padding: 1.2vh 1.4vw
+      card_margin: 0
+      grid-gap: 1.4vh 1.2vw
+      grid-template-columns: 1fr 1fr 1fr 1fr
+      grid-template-rows: auto 1fr auto
+      grid-template-areas: |
+        "topbar   topbar   topbar   topbar"
+        "room1    room2    room3    room4"
+        "glance   glance   glance   glance"
+      mediaquery:
+        "(max-width: 900px)":
+          grid-template-columns: 1fr 1fr
+          grid-template-rows: auto auto auto auto
+          grid-template-areas: |
+            "topbar topbar"
+            "room1  room2"
+            "room3  room4"
+            "glance glance"
+    cards:
+      # ==============================================================
+      # TOPBAR: Clock, Weather, Master Scenes, Family & Tram
+      # ==============================================================
+      - type: horizontal-stack
+        view_layout:
+          grid-area: topbar
+        card_mod:
+          style: |
+            :host {
+              background: rgba(18, 24, 38, 0.72) !important;
+              backdrop-filter: blur(24px) !important;
+              -webkit-backdrop-filter: blur(24px) !important;
+              border: 1px solid rgba(255, 255, 255, 0.08) !important;
+              border-radius: 24px !important;
+              box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35) !important;
+              padding: 0.6vh 1.0vw !important;
+              box-sizing: border-box !important;
+            }
+            #root {
+              align-items: center !important;
+              justify-content: space-between !important;
+              gap: 1.0vw !important;
+            }
+        cards:
+          # --- Left: Clock & Weather Chip ---
+          - type: horizontal-stack
+            cards:
+              - type: custom:bubble-card
+                card_type: button
+                entity: sensor.template_tablet_sidebar_time
+                name: Zeit
+                show_icon: false
+                show_name: false
+                show_attribute: true
+                attribute: sidebar_html_text
+                tap_action:
+                  action: navigate
+                  navigation_path: "#bubble_calendar_popup"
+                styles: |
+                  ha-card {
+                    background: transparent !important;
+                    box-shadow: none !important;
+                    border: none !important;
+                  }
+                  .bubble-button-card-container {
+                    background: transparent !important;
+                    height: 44px !important;
+                  }
+                  .time {
+                    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Roboto, sans-serif;
+                    font-size: 30px;
+                    font-weight: 700;
+                    letter-spacing: -0.5px;
+                    color: #ffffff;
+                    text-shadow: 0 2px 10px rgba(0,0,0,0.4);
+                  }
+                  .time-colon {
+                    opacity: 0.8;
+                  }
+
+              - type: custom:bubble-card
+                card_type: button
+                entity: sensor.weather_home_current_temperature
+                name: Wetter
+                icon: mdi:weather-partly-cloudy
+                show_state: true
+                show_name: false
+                tap_action:
+                  action: navigate
+                  navigation_path: "#bubble_climate_popup"
+                styles: |
+                  ha-card {
+                    background: rgba(255, 255, 255, 0.06) !important;
+                    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                    border-radius: 18px !important;
+                  }
+                  .bubble-button-card-container {
+                    background: transparent !important;
+                    height: 44px !important;
+                  }
+                  .bubble-state {
+                    font-size: 14px !important;
+                    font-weight: 600 !important;
+                    color: #f1f5f9 !important;
+                  }
+                  ${(() => {
+                    const temp = hass.states['sensor.weather_home_current_temperature']?.state || '--';
+                    const cond = hass.states['sensor.weather_home_current_condition']?.state || '';
+                    const el = card.querySelector('.bubble-state');
+                    if (el) el.innerHTML = temp + '°C · ' + cond;
+                  })()}
+
+          # --- Center: 4 Master Quick Action Chips ---
+          - type: horizontal-stack
+            cards:
+              # 1. Gute Nacht (All Lights Off)
+              - type: custom:bubble-card
+                card_type: button
+                name: "Gute Nacht"
+                icon: mdi:weather-night
+                button_type: name
+                tap_action:
+                  action: perform-action
+                  perform_action: light.turn_off
+                  target:
+                    entity_id:
+                      - light.living_room_light_group
+                      - light.bedroom_light_group
+                      - light.bedroom_light_sphere
+                      - light.baby_room_light
+                      - light.kitchen_light_group
+                      - light.bathroom_light
+                styles: |
+                  ha-card {
+                    background: rgba(255, 255, 255, 0.05) !important;
+                    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                    border-radius: 18px !important;
+                  }
+                  .bubble-button-card-container {
+                    background: transparent !important;
+                    height: 44px !important;
+                  }
+                  .bubble-icon {
+                    color: #a78bfa !important;
+                  }
+                  .bubble-name {
+                    font-weight: 600 !important;
+                    font-size: 13px !important;
+                  }
+
+              # 2. Master Presence (Zuhause)
+              - type: custom:bubble-card
+                card_type: button
+                entity: input_boolean.presence_home
+                name: "Zuhause"
+                icon: mdi:home-heart
+                button_type: switch
+                tap_action:
+                  action: toggle
+                styles: |
+                  ha-card {
+                    border-radius: 18px !important;
+                  }
+                  .bubble-button-card-container {
+                    height: 44px !important;
+                  }
+                  .bubble-name {
+                    font-weight: 600 !important;
+                    font-size: 13px !important;
+                  }
+
+              # 3. 1-Click Spotify Resume (Musik)
+              - type: custom:bubble-card
+                card_type: button
+                name: "Musik"
+                icon: mdi:music-circle
+                button_type: name
+                tap_action:
+                  action: perform-action
+                  perform_action: script.media_resume_last_played
+                styles: |
+                  ha-card {
+                    background: rgba(255, 255, 255, 0.05) !important;
+                    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                    border-radius: 18px !important;
+                  }
+                  .bubble-button-card-container {
+                    background: transparent !important;
+                    height: 44px !important;
+                  }
+                  .bubble-icon {
+                    color: #10b981 !important;
+                  }
+                  .bubble-name {
+                    font-weight: 600 !important;
+                    font-size: 13px !important;
+                  }
+
+              # 4. Robi Saugen
+              - type: custom:bubble-card
+                card_type: button
+                entity: vacuum.robi
+                name: "Robi"
+                icon: mdi:robot-vacuum
+                button_type: switch
+                tap_action:
+                  action: perform-action
+                  perform_action: vacuum.start_pause
+                  target:
+                    entity_id: vacuum.robi
+                hold_action:
+                  action: navigate
+                  navigation_path: "#bubble_vacuum_popup"
+                styles: |
+                  ha-card {
+                    border-radius: 18px !important;
+                  }
+                  .bubble-button-card-container {
+                    height: 44px !important;
+                  }
+                  .bubble-name {
+                    font-weight: 600 !important;
+                    font-size: 13px !important;
+                  }
+
+          # --- Right: Family Presence & Tram Pill ---
+          - type: horizontal-stack
+            cards:
+              - type: custom:bubble-card
+                card_type: button
+                entity: person.julian
+                name: Julian
+                show_state: false
+                button_type: state
+                styles: |
+                  ha-card {
+                    background: rgba(255, 255, 255, 0.05) !important;
+                    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                    border-radius: 18px !important;
+                  }
+                  .bubble-button-card-container {
+                    background: transparent !important;
+                    height: 44px !important;
+                    padding-right: 10px !important;
+                  }
+                  .bubble-name {
+                    font-size: 13px !important;
+                    font-weight: 600 !important;
+                  }
+
+              - type: custom:bubble-card
+                card_type: button
+                entity: person.xingyang
+                name: Xingyang
+                show_state: false
+                button_type: state
+                styles: |
+                  ha-card {
+                    background: rgba(255, 255, 255, 0.05) !important;
+                    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                    border-radius: 18px !important;
+                  }
+                  .bubble-button-card-container {
+                    background: transparent !important;
+                    height: 44px !important;
+                    padding-right: 10px !important;
+                  }
+                  .bubble-name {
+                    font-size: 13px !important;
+                    font-weight: 600 !important;
+                  }
+
+              - type: custom:bubble-card
+                card_type: button
+                entity: sensor.augsburg_curtiusstrasse_koenigsplatz
+                name: Tram
+                icon: mdi:tram
+                show_state: true
+                show_name: false
+                tap_action:
+                  action: navigate
+                  navigation_path: "#bubble_tram_popup"
+                styles: |
+                  ha-card {
+                    background: rgba(14, 165, 233, 0.12) !important;
+                    border: 1px solid rgba(14, 165, 233, 0.3) !important;
+                    border-radius: 18px !important;
+                  }
+                  .bubble-button-card-container {
+                    background: transparent !important;
+                    height: 44px !important;
+                  }
+                  .bubble-icon {
+                    color: #38bdf8 !important;
+                  }
+                  .bubble-state {
+                    font-size: 13px !important;
+                    font-weight: 600 !important;
+                    color: #38bdf8 !important;
+                  }
+                  ${(() => {
+                    const s = hass.states['sensor.augsburg_curtiusstrasse_koenigsplatz'];
+                    let m = s?.attributes?.next_departure_minutes ?? s?.attributes?.departures?.[0]?.minutes_until_departure ?? s?.state;
+                    const el = card.querySelector('.bubble-state');
+                    if (el) el.innerHTML = (m && m !== 'unavailable' ? m + 'm' : '--');
+                  })()}
+
+      # ==============================================================
+      # ROOM 1: WOHNZIMMER
+      # ==============================================================
+      - type: vertical-stack
+        view_layout:
+          grid-area: room1
+        card_mod:
+          style: |
+            :host {
+              background: rgba(18, 24, 38, 0.72) !important;
+              backdrop-filter: blur(24px) !important;
+              -webkit-backdrop-filter: blur(24px) !important;
+              border: 1px solid rgba(255, 255, 255, 0.08) !important;
+              border-radius: 24px !important;
+              box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35) !important;
+              padding: 1.2vh 0.8vw !important;
+              box-sizing: border-box !important;
+              height: 100% !important;
+            }
+            #root {
+              gap: 1.0vh !important;
+              height: 100% !important;
+              display: flex !important;
+              flex-direction: column !important;
+              justify-content: space-between !important;
+            }
+        cards:
+          - type: custom:bubble-card
+            card_type: separator
+            name: Wohnzimmer
+            icon: mdi:sofa
+            sub_button:
+              - entity: sensor.living_room_multi_sensor_temperature
+                show_state: true
+                show_icon: false
+              - entity: sensor.living_room_multi_sensor_humidity
+                show_state: true
+                show_icon: false
+            styles: |
+              ha-card {
+                padding: 0 !important;
+              }
+              .bubble-name {
+                font-size: 18px !important;
+                font-weight: 700 !important;
+                color: #ffffff !important;
+              }
+              .bubble-sub-button {
+                background: rgba(255, 255, 255, 0.07) !important;
+                font-weight: 600 !important;
+                font-size: 12px !important;
+                color: #94a3b8 !important;
+                border-radius: 12px !important;
+              }
+
+          - type: custom:bubble-card
+            card_type: button
+            entity: light.living_room_light_group
+            name: Deckenlicht
+            icon: mdi:ceiling-light
+            show_state: true
+            card_layout: large
+            button_type: switch
+            sub_button:
+              - entity: switch.living_room_spot_lights
+                icon: mdi:dots-horizontal
+                tap_action:
+                  action: toggle
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+
+          - type: custom:bubble-card
+            card_type: button
+            entity: switch.living_room_tv
+            name: Fernseher
+            icon: mdi:television
+            show_state: true
+            card_layout: large
+            button_type: switch
+            sub_button:
+              - entity: switch.living_room_nintendo
+                icon: mdi:nintendo-switch
+                tap_action:
+                  action: toggle
+            tap_action:
+              action: toggle
+
+          - type: custom:bubble-card
+            card_type: button
+            entity: cover.living_room_curtain_group
+            name: Vorhänge
+            icon: mdi:curtains
+            show_state: true
+            card_layout: large
+            button_type: switch
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+
+          - type: custom:bubble-card
+            card_type: button
+            entity: switch.living_room_desktop
+            name: Computer
+            icon: mdi:laptop
+            show_state: true
+            card_layout: large
+            button_type: switch
+            tap_action:
+              action: toggle
+
+      # ==============================================================
+      # ROOM 2: SCHLAFZIMMER
+      # ==============================================================
+      - type: vertical-stack
+        view_layout:
+          grid-area: room2
+        card_mod:
+          style: |
+            :host {
+              background: rgba(18, 24, 38, 0.72) !important;
+              backdrop-filter: blur(24px) !important;
+              -webkit-backdrop-filter: blur(24px) !important;
+              border: 1px solid rgba(255, 255, 255, 0.08) !important;
+              border-radius: 24px !important;
+              box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35) !important;
+              padding: 1.2vh 0.8vw !important;
+              box-sizing: border-box !important;
+              height: 100% !important;
+            }
+            #root {
+              gap: 1.0vh !important;
+              height: 100% !important;
+              display: flex !important;
+              flex-direction: column !important;
+              justify-content: space-between !important;
+            }
+        cards:
+          - type: custom:bubble-card
+            card_type: separator
+            name: Schlafzimmer
+            icon: mdi:bed
+            sub_button:
+              - entity: sensor.bedroom_multi_sensor_temperature
+                show_state: true
+                show_icon: false
+              - entity: sensor.bedroom_multi_sensor_humidity
+                show_state: true
+                show_icon: false
+            styles: |
+              ha-card {
+                padding: 0 !important;
+              }
+              .bubble-name {
+                font-size: 18px !important;
+                font-weight: 700 !important;
+                color: #ffffff !important;
+              }
+              .bubble-sub-button {
+                background: rgba(255, 255, 255, 0.07) !important;
+                font-weight: 600 !important;
+                font-size: 12px !important;
+                color: #94a3b8 !important;
+                border-radius: 12px !important;
+              }
+
+          - type: custom:bubble-card
+            card_type: button
+            entity: light.bedroom_light_group
+            name: Deckenlicht
+            icon: mdi:ceiling-light
+            show_state: true
+            card_layout: large
+            button_type: switch
+            sub_button:
+              - entity: light.bedroom_light_left
+                icon: mdi:lamp
+                tap_action:
+                  action: toggle
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+
+          - type: custom:bubble-card
+            card_type: button
+            entity: light.bedroom_light_sphere
+            name: Kugellampe
+            icon: mdi:globe-light
+            show_state: true
+            card_layout: large
+            button_type: switch
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+
+          - type: custom:bubble-card
+            card_type: button
+            entity: cover.bedroom_roller_blinds
+            name: Rollos
+            icon: mdi:window-shutter
+            show_state: true
+            card_layout: large
+            button_type: switch
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+
+          - type: custom:bubble-card
+            card_type: button
+            entity: climate.bedroom_thermostat
+            name: Heizung
+            icon: mdi:radiator
+            show_state: true
+            card_layout: large
+            tap_action:
+              action: navigate
+              navigation_path: "#bubble_climate_popup"
+            styles: |
+              ${(() => {
+                const s = hass.states['climate.bedroom_thermostat'];
+                const target = s?.attributes?.temperature ? s.attributes.temperature + '°C' : (s?.state || '--');
+                const el = card.querySelector('.bubble-state');
+                if (el) el.innerHTML = target + ' Ziel';
+              })()}
+
+      # ==============================================================
+      # ROOM 3: KINDERZIMMER
+      # ==============================================================
+      - type: vertical-stack
+        view_layout:
+          grid-area: room3
+        card_mod:
+          style: |
+            :host {
+              background: rgba(18, 24, 38, 0.72) !important;
+              backdrop-filter: blur(24px) !important;
+              -webkit-backdrop-filter: blur(24px) !important;
+              border: 1px solid rgba(255, 255, 255, 0.08) !important;
+              border-radius: 24px !important;
+              box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35) !important;
+              padding: 1.2vh 0.8vw !important;
+              box-sizing: border-box !important;
+              height: 100% !important;
+            }
+            #root {
+              gap: 1.0vh !important;
+              height: 100% !important;
+              display: flex !important;
+              flex-direction: column !important;
+              justify-content: space-between !important;
+            }
+        cards:
+          - type: custom:bubble-card
+            card_type: separator
+            name: Kinderzimmer
+            icon: mdi:baby-carriage
+            sub_button:
+              - entity: sensor.baby_room_multi_sensor_temperature
+                show_state: true
+                show_icon: false
+              - entity: sensor.baby_room_multi_sensor_humidity
+                show_state: true
+                show_icon: false
+            styles: |
+              ha-card {
+                padding: 0 !important;
+              }
+              .bubble-name {
+                font-size: 18px !important;
+                font-weight: 700 !important;
+                color: #ffffff !important;
+              }
+              .bubble-sub-button {
+                background: rgba(255, 255, 255, 0.07) !important;
+                font-weight: 600 !important;
+                font-size: 12px !important;
+                color: #94a3b8 !important;
+                border-radius: 12px !important;
+              }
+
+          - type: custom:bubble-card
+            card_type: button
+            entity: light.baby_room_light
+            name: Deckenlicht
+            icon: mdi:ceiling-light
+            show_state: true
+            card_layout: large
+            button_type: switch
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+
+          - type: custom:bubble-card
+            card_type: button
+            entity: switch.baby_room_heater
+            name: Wandheizung
+            icon: mdi:radiator
+            show_state: true
+            card_layout: large
+            button_type: switch
+            tap_action:
+              action: toggle
+
+          - type: custom:bubble-card
+            card_type: button
+            entity: cover.baby_room_roller_blinds
+            name: Rollos
+            icon: mdi:window-shutter
+            show_state: true
+            card_layout: large
+            button_type: switch
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+
+          - type: custom:bubble-card
+            card_type: button
+            entity: climate.baby_room_thermostat
+            name: Thermostat
+            icon: mdi:thermometer
+            show_state: true
+            card_layout: large
+            tap_action:
+              action: navigate
+              navigation_path: "#bubble_climate_popup"
+            styles: |
+              ${(() => {
+                const s = hass.states['climate.baby_room_thermostat'];
+                const target = s?.attributes?.temperature ? s.attributes.temperature + '°C' : (s?.state || '--');
+                const el = card.querySelector('.bubble-state');
+                if (el) el.innerHTML = target + ' Ziel';
+              })()}
+
+      # ==============================================================
+      # ROOM 4: KÜCHE & BAD
+      # ==============================================================
+      - type: vertical-stack
+        view_layout:
+          grid-area: room4
+        card_mod:
+          style: |
+            :host {
+              background: rgba(18, 24, 38, 0.72) !important;
+              backdrop-filter: blur(24px) !important;
+              -webkit-backdrop-filter: blur(24px) !important;
+              border: 1px solid rgba(255, 255, 255, 0.08) !important;
+              border-radius: 24px !important;
+              box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35) !important;
+              padding: 1.2vh 0.8vw !important;
+              box-sizing: border-box !important;
+              height: 100% !important;
+            }
+            #root {
+              gap: 1.0vh !important;
+              height: 100% !important;
+              display: flex !important;
+              flex-direction: column !important;
+              justify-content: space-between !important;
+            }
+        cards:
+          - type: custom:bubble-card
+            card_type: separator
+            name: Küche & Bad
+            icon: mdi:silverware-fork-knife
+            sub_button:
+              - entity: sensor.kitchen_multi_sensor_temperature
+                show_state: true
+                show_icon: false
+              - entity: sensor.bathroom_multi_sensor_temperature
+                show_state: true
+                show_icon: false
+            styles: |
+              ha-card {
+                padding: 0 !important;
+              }
+              .bubble-name {
+                font-size: 18px !important;
+                font-weight: 700 !important;
+                color: #ffffff !important;
+              }
+              .bubble-sub-button {
+                background: rgba(255, 255, 255, 0.07) !important;
+                font-weight: 600 !important;
+                font-size: 12px !important;
+                color: #94a3b8 !important;
+                border-radius: 12px !important;
+              }
+              # [DEBUG] Uncomment to inspect viewport & screen resolution on a new device:
+              # ${(() => {
+              #   const el = card.querySelector('.bubble-name');
+              #   if (el) {
+              #     const w = window.innerWidth;
+              #     const h = window.innerHeight;
+              #     const sw = window.screen.width;
+              #     const sh = window.screen.height;
+              #     const dpr = Math.round((window.devicePixelRatio || 1) * 10) / 10;
+              #     el.innerText = `${w}x${h} (Scr: ${sw}x${sh} @${dpr}x)`;
+              #   }
+              # })()}
+
+          - type: custom:bubble-card
+            card_type: button
+            entity: light.kitchen_light_group
+            name: Küche Licht
+            icon: mdi:ceiling-light
+            show_state: true
+            card_layout: large
+            button_type: switch
+            sub_button:
+              - entity: light.kitchen_light_left
+                icon: mdi:lightbulb-outline
+                tap_action:
+                  action: toggle
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+
+          - type: custom:bubble-card
+            card_type: button
+            entity: light.bathroom_light
+            name: Bad Licht
+            icon: mdi:shower
+            show_state: true
+            card_layout: large
+            button_type: switch
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+
+          - type: custom:bubble-card
+            card_type: button
+            entity: binary_sensor.kitchen_dishwasher
+            name: Spülmaschine
+            icon: mdi:dishwasher
+            show_state: true
+            card_layout: large
+            button_type: state
+            sub_button:
+              - entity: input_boolean.kitchen_dishwasher_done
+                icon: mdi:check-circle-outline
+                show_state: false
+                tap_action:
+                  action: toggle
+            styles: |
+              ${(() => {
+                const isDone = hass.states['input_boolean.kitchen_dishwasher_done']?.state === 'on';
+                const isActive = hass.states['binary_sensor.kitchen_dishwasher']?.state === 'on';
+                const el = card.querySelector('.bubble-state');
+                if (el) {
+                  if (isDone) {
+                    el.innerHTML = '<span style="color:#34d399;font-weight:700;">Fertig! ✓</span>';
+                  } else if (isActive) {
+                    el.innerHTML = '<span style="color:#38bdf8;font-weight:600;">Läuft...</span>';
+                  } else {
+                    el.innerHTML = 'Bereit';
+                  }
+                }
+              })()}
+
+          - type: custom:bubble-card
+            card_type: button
+            entity: binary_sensor.template_bathroom_washer
+            name: Waschmaschine
+            icon: mdi:washing-machine
+            show_state: true
+            card_layout: large
+            button_type: state
+            sub_button:
+              - entity: input_boolean.bathroom_laundry
+                icon: mdi:check-circle-outline
+                show_state: false
+                tap_action:
+                  action: toggle
+            styles: |
+              ${(() => {
+                const isDone = hass.states['input_boolean.bathroom_laundry']?.state === 'on';
+                const isActive = hass.states['binary_sensor.template_bathroom_washer']?.state === 'on';
+                const el = card.querySelector('.bubble-state');
+                if (el) {
+                  if (isDone) {
+                    el.innerHTML = '<span style="color:#34d399;font-weight:700;">Fertig! ✓</span>';
+                  } else if (isActive) {
+                    el.innerHTML = '<span style="color:#38bdf8;font-weight:600;">Läuft...</span>';
+                  } else {
+                    el.innerHTML = 'Bereit';
+                  }
+                }
+              })()}
+
+      # ==============================================================
+      # GLANCE BAR: Media Player, Household Energy & Live Tram
+      # ==============================================================
+      - type: horizontal-stack
+        view_layout:
+          grid-area: glance
+        card_mod:
+          style: |
+            :host {
+              background: rgba(18, 24, 38, 0.72) !important;
+              backdrop-filter: blur(24px) !important;
+              -webkit-backdrop-filter: blur(24px) !important;
+              border: 1px solid rgba(255, 255, 255, 0.08) !important;
+              border-radius: 24px !important;
+              box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35) !important;
+              padding: 0.6vh 1.0vw !important;
+              box-sizing: border-box !important;
+            }
+            #root {
+              align-items: center !important;
+              gap: 1.0vw !important;
+            }
+        cards:
+          # Media Player (Music Assistant)
+          - type: custom:bubble-card
+            card_type: media-player
+            entity: media_player.living_room
+            name: Wohnzimmer Musik
+            icon: mdi:speaker
+            show_state: true
+            tap_action:
+              action: navigate
+              navigation_path: "#bubble_media_popup"
+            sub_button:
+              - entity: script.media_resume_last_played
+                icon: mdi:play-circle-outline
+                tap_action:
+                  action: perform-action
+                  perform_action: script.media_resume_last_played
+            styles: |
+              ha-card {
+                background: rgba(255, 255, 255, 0.04) !important;
+                border: 1px solid rgba(255, 255, 255, 0.07) !important;
+                border-radius: 18px !important;
+              }
+
+          # Household & Energy Status
+          - type: custom:bubble-card
+            card_type: button
+            entity: sensor.home_total_power
+            name: Energie & Haus
+            icon: mdi:flash
+            show_state: true
+            tap_action:
+              action: navigate
+              navigation_path: "#bubble_energy_popup"
+            sub_button:
+              - entity: vacuum.robi
+                icon: mdi:robot-vacuum
+                tap_action:
+                  action: navigate
+                  navigation_path: "#bubble_vacuum_popup"
+            styles: |
+              ha-card {
+                background: rgba(255, 255, 255, 0.04) !important;
+                border: 1px solid rgba(255, 255, 255, 0.07) !important;
+                border-radius: 18px !important;
+              }
+              ${(() => {
+                const p = hass.states['sensor.home_total_power']?.state || '--';
+                const el = card.querySelector('.bubble-state');
+                if (el) el.innerHTML = Math.round(parseFloat(p) || 0) + ' W Gesamtlast';
+              })()}
+
+          # Augsburg Tram Live Board
+          - type: custom:bubble-card
+            card_type: button
+            entity: sensor.augsburg_curtiusstrasse_koenigsplatz
+            name: Tram Curtiusstraße
+            icon: mdi:tram
+            show_state: true
+            tap_action:
+              action: navigate
+              navigation_path: "#bubble_tram_popup"
+            styles: |
+              ha-card {
+                background: rgba(255, 255, 255, 0.04) !important;
+                border: 1px solid rgba(255, 255, 255, 0.07) !important;
+                border-radius: 18px !important;
+              }
+              ${(() => {
+                const sKp = hass.states['sensor.augsburg_curtiusstrasse_koenigsplatz'];
+                const sLh = hass.states['sensor.augsburg_curtiusstrasse_lechh_n_ostfriedh'];
+                const getM = (s) => s?.attributes?.next_departure_minutes ?? s?.attributes?.departures?.[0]?.minutes_until_departure ?? s?.state ?? '--';
+                const el = card.querySelector('.bubble-state');
+                if (el) el.innerHTML = 'Kö: ' + getM(sKp) + 'm  |  Ost: ' + getM(sLh) + 'm';
+              })()}
+
+      - type: custom:bubble-card
+        card_type: pop-up
+        hash: "#bubble_vacuum_popup"
+        name: ""
+        show_header: false
+        button_type: name
+        cards:
+          - type: custom:bubble-card
+            card_type: separator
+            name: Staubsauger – Robi
+            icon: mdi:robot-vacuum
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: button
+            entity: vacuum.robi
+            name: Robi
+            icon: mdi:robot-vacuum
+            show_state: true
+            card_layout: large
+            sub_button:
+              - entity: vacuum.robi
+                tap_action:
+                  action: perform-action
+                  perform_action: dreame_vacuum.select_select_next
+                  target:
+                    entity_id: select.robi_suction_level
+              - entity: vacuum.robi
+                tap_action:
+                  action: perform-action
+                  perform_action: input_boolean.toggle
+                  target:
+                    entity_id: input_boolean.vacuum_mopping_enabled
+              - entity: vacuum.robi
+                icon: mdi:play-pause
+                tap_action:
+                  action: perform-action
+                  perform_action: vacuum.start_pause
+                  target:
+                    entity_id: vacuum.robi
+              - entity: vacuum.robi
+                icon: mdi:home-import-outline
+                tap_action:
+                  action: perform-action
+                  perform_action: vacuum.return_to_base
+                  target:
+                    entity_id: vacuum.robi
+            styles: |
+              ${(() => {
+                const sIcon = hass.states['select.robi_suction_level']?.attributes?.icon;
+                if (sIcon && subButtonIcon[0]) subButtonIcon[0].setAttribute("icon", sIcon);
+                const mIcon = hass.states['binary_sensor.template_vacuum_mopping_enabled']?.attributes?.icon;
+                if (mIcon && subButtonIcon[1]) subButtonIcon[1].setAttribute("icon", mIcon);
+
+                const vac = hass.states['vacuum.robi'];
+                const idle = hass.states['sensor.template_vacuum_idle_time'];
+                if (!vac) return;
+                const statusMap = {
+                  docked: 'Angedockt',
+                  cleaning: 'Reinigt',
+                  paused: 'Pausiert',
+                  returning: 'Fährt zur Station',
+                  idle: 'Bereit',
+                  error: 'Fehler'
+                };
+                const status = statusMap[vac.state] || vac.state;
+                const batt = vac.attributes.battery_level != null ? `${vac.attributes.battery_level}%` : '';
+                const lastClean = (idle && idle.state && idle.state !== 'Unbekannt') ? idle.state : '';
+                let text = status;
+                if (batt) text += ` · ${batt}`;
+                if (lastClean && vac.state === 'docked') text += ` · ${lastClean}`;
+                const el = card.querySelector('.bubble-state');
+                if (el) el.innerHTML = text;
+              })()}
+            grid_options:
+              columns: 12
+          - type: picture-elements
+            elements:
+              - type: image
+                image:
+                  media_content_id: /local/image/vacuum_room_selection/entrance_full.png
+                  media_content_type: ""
+                  metadata:
+                    navigateIds:
+                      - {}
+                      - media_content_type: ""
+                        media_content_id: __MANUAL_ENTRY__
+                entity: input_boolean.vacuum_clean_entrance
+                tap_action:
+                  action: none
+                style:
+                  width: 100%
+                  top: 50%
+                  left: 50%
+                state_filter:
+                  "on": opacity(50%)
+                  "off": opacity(0%)
+              - type: image
+                image:
+                  media_content_id: /local/image/vacuum_room_selection/living_room_full.png
+                  media_content_type: ""
+                  metadata:
+                    navigateIds:
+                      - {}
+                      - media_content_type: ""
+                        media_content_id: __MANUAL_ENTRY__
+                entity: input_boolean.vacuum_clean_living_room
+                tap_action:
+                  action: none
+                style:
+                  width: 100%
+                  top: 50%
+                  left: 50%
+                state_filter:
+                  "on": opacity(50%)
+                  "off": opacity(0%)
+              - type: image
+                image:
+                  media_content_id: /local/image/vacuum_room_selection/bedroom_full.png
+                  media_content_type: ""
+                  metadata:
+                    navigateIds:
+                      - {}
+                      - media_content_type: ""
+                        media_content_id: __MANUAL_ENTRY__
+                entity: input_boolean.vacuum_clean_bedroom
+                tap_action:
+                  action: none
+                style:
+                  width: 100%
+                  top: 50%
+                  left: 50%
+                state_filter:
+                  "on": opacity(50%)
+                  "off": opacity(0%)
+              - type: image
+                image:
+                  media_content_id: /local/image/vacuum_room_selection/baby_room_full.png
+                  media_content_type: ""
+                  metadata:
+                    navigateIds:
+                      - {}
+                      - media_content_type: ""
+                        media_content_id: __MANUAL_ENTRY__
+                entity: input_boolean.vacuum_clean_kidroom
+                tap_action:
+                  action: none
+                style:
+                  width: 100%
+                  top: 50%
+                  left: 50%
+                state_filter:
+                  "on": opacity(50%)
+                  "off": opacity(0%)
+              - type: image
+                image:
+                  media_content_id: /local/image/vacuum_room_selection/bathroom_full.png
+                  media_content_type: ""
+                  metadata:
+                    navigateIds:
+                      - {}
+                      - media_content_type: ""
+                        media_content_id: __MANUAL_ENTRY__
+                entity: input_boolean.vacuum_clean_bathroom
+                tap_action:
+                  action: none
+                style:
+                  width: 100%
+                  top: 50%
+                  left: 50%
+                state_filter:
+                  "on": opacity(50%)
+                  "off": opacity(0%)
+              - type: image
+                image:
+                  media_content_id: /local/image/vacuum_room_selection/kitchen_2_full.png
+                  media_content_type: ""
+                  metadata:
+                    navigateIds:
+                      - {}
+                      - media_content_type: ""
+                        media_content_id: __MANUAL_ENTRY__
+                entity: input_boolean.vacuum_clean_kitchen
+                tap_action:
+                  action: none
+                style:
+                  width: 100%
+                  top: 50%
+                  left: 50%
+                state_filter:
+                  "on": opacity(50%)
+                  "off": opacity(0%)
+              - type: image
+                image:
+                  media_content_id: /local/image/vacuum_room_selection/kitchen_toggle.png
+                  media_content_type: ""
+                  metadata:
+                    navigateIds:
+                      - {}
+                      - media_content_type: ""
+                        media_content_id: __MANUAL_ENTRY__
+                entity: input_boolean.vacuum_clean_kitchen
+                tap_action:
+                  action: toggle
+                style:
+                  width: 30%
+                  top: 77%
+                  left: 85%
+                  opacity: 0
+              - type: image
+                image:
+                  media_content_id: /local/image/vacuum_room_selection/entrance_toggle.png
+                  media_content_type: ""
+                  metadata:
+                    navigateIds:
+                      - {}
+                      - media_content_type: ""
+                        media_content_id: __MANUAL_ENTRY__
+                entity: input_boolean.vacuum_clean_entrance
+                tap_action:
+                  action: toggle
+                style:
+                  width: 24%
+                  top: 83%
+                  left: 58%
+                  opacity: 0
+              - type: image
+                image:
+                  media_content_id: /local/image/vacuum_room_selection/living_room_toggle.png
+                  media_content_type: ""
+                  metadata:
+                    navigateIds:
+                      - {}
+                      - media_content_type: ""
+                        media_content_id: __MANUAL_ENTRY__
+                entity: input_boolean.vacuum_clean_living_room
+                tap_action:
+                  action: toggle
+                style:
+                  width: 63%
+                  top: 33%
+                  left: 59%
+                  opacity: 0
+              - type: image
+                image:
+                  media_content_id: /local/image/vacuum_room_selection/bathroom_toggle.png
+                  media_content_type: ""
+                  metadata:
+                    navigateIds:
+                      - {}
+                      - media_content_type: ""
+                        media_content_id: __MANUAL_ENTRY__
+                entity: input_boolean.vacuum_clean_bathroom
+                tap_action:
+                  action: toggle
+                style:
+                  width: 16%
+                  top: 82%
+                  left: 36%
+                  opacity: 0
+              - type: image
+                image:
+                  media_content_id: /local/image/vacuum_room_selection/baby_room_toggle.png
+                  media_content_type: ""
+                  metadata:
+                    navigateIds:
+                      - {}
+                      - media_content_type: ""
+                        media_content_id: __MANUAL_ENTRY__
+                entity: input_boolean.vacuum_clean_kidroom
+                tap_action:
+                  action: toggle
+                style:
+                  width: 27%
+                  top: 73%
+                  left: 14%
+                  opacity: 0
+              - type: image
+                image:
+                  media_content_id: /local/image/vacuum_room_selection/bedroom_toggle.png
+                  media_content_type: ""
+                  metadata:
+                    navigateIds:
+                      - {}
+                      - media_content_type: ""
+                        media_content_id: __MANUAL_ENTRY__
+                entity: input_boolean.vacuum_clean_bedroom
+                tap_action:
+                  action: toggle
+                style:
+                  width: 42%
+                  top: 25%
+                  left: 21%
+                  opacity: 0
+            image: /local/image/vacuum_room_selection/map.png
+            card_mod:
+              style: |
+                ha-card {
+                  border: none !important;
+                  box-shadow: none !important;
+                  background: transparent !important;
+                }
+            grid_options:
+              columns: 12
+              rows: auto
+          - type: custom:bubble-card
+            card_type: separator
+            name: Steuerung & Aktionen
+            icon: mdi:play-circle-outline
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: button
+            entity: script.vacuum_start
+            name: Reinigung starten
+            icon: mdi:play
+            tap_action:
+              action: perform-action
+              perform_action: script.vacuum_start
+            button_action:
+              tap_action:
+                action: perform-action
+                perform_action: script.vacuum_start
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: button
+            entity: vacuum.robi
+            name: Zurück zur Station
+            icon: mdi:home-import-outline
+            tap_action:
+              action: perform-action
+              perform_action: vacuum.return_to_base
+              target:
+                entity_id: vacuum.robi
+            button_action:
+              tap_action:
+                action: perform-action
+                perform_action: vacuum.return_to_base
+                target:
+                  entity_id: vacuum.robi
+            grid_options:
+              columns: 6
+      - type: custom:bubble-card
+        card_type: pop-up
+        hash: "#bubble_energy_popup"
+        show_header: false
+        button_type: name
+        cards:
+          - type: custom:bubble-card
+            card_type: separator
+            name: Energieübersicht
+            icon: mdi:lightning-bolt
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: button
+            entity: sensor.home_total_power
+            name: Haus Gesamtverbrauch
+            icon: mdi:transmission-tower
+            show_state: true
+            card_layout: large
+            sub_button:
+              - entity: sensor.total_power_kwh_daily
+                show_state: true
+                show_icon: true
+                icon: mdi:calendar-today
+              - entity: sensor.total_power_kwh_monthly
+                show_state: true
+                show_icon: true
+                icon: mdi:calendar-month
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: separator
+            name: Aktive Großverbraucher
+            icon: mdi:power-plug
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: button
+            entity: sensor.bathroom_washer_power
+            name: Waschmaschine
+            icon: mdi:washing-machine
+            show_state: true
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: button
+            entity: sensor.kitchen_dish_washer_power
+            name: Geschirrspüler
+            icon: mdi:dishwasher
+            show_state: true
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: button
+            entity: sensor.kitchen_fridge_power
+            name: Kühlschrank
+            icon: mdi:fridge
+            show_state: true
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: button
+            entity: sensor.kitchen_sink_power
+            name: Untertischboiler
+            icon: mdi:water-boiler
+            show_state: true
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: button
+            entity: sensor.living_room_tv_power
+            name: Fernseher
+            icon: mdi:television
+            show_state: true
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: button
+            entity: sensor.living_room_desktop_power
+            name: Desktop PC
+            icon: mdi:desktop-tower
+            show_state: true
+            grid_options:
+              columns: 6
+      - type: custom:bubble-card
+        card_type: pop-up
+        hash: "#bubble_media_popup"
+        show_header: false
+        button_type: name
+        cards:
+          - type: custom:bubble-card
+            card_type: separator
+            name: Musik & Medien
+            icon: mdi:music
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: media-player
+            entity: media_player.spotify_julian
+            name: Spotify
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: button
+            entity: sensor.last_played_media_info
+            name: Zuletzt gehört fortsetzen
+            icon: mdi:play-circle
+            show_state: true
+            card_layout: large
+            tap_action:
+              action: perform-action
+              perform_action: script.media_resume_last_played
+            button_action:
+              tap_action:
+                action: perform-action
+                perform_action: script.media_resume_last_played
+            styles: |
+              .bubble-name {
+                font-weight: 600;
+              }
+              .bubble-state {
+                font-size: 11px;
+                opacity: 0.85;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              }
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: separator
+            name: Lautsprecher & Räume
+            icon: mdi:speaker-multiple
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: media-player
+            entity: media_player.living_room
+            name: Wohnzimmer
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: media-player
+            entity: media_player.kitchen
+            name: Küche
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: media-player
+            entity: media_player.bedroom
+            name: Schlafzimmer
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: media-player
+            entity: media_player.bathroom
+            name: Badezimmer
+            grid_options:
+              columns: 12
+      - type: custom:bubble-card
+        card_type: pop-up
+        hash: "#bubble_climate_popup"
+        show_header: false
+        button_type: name
+        cards:
+          - type: custom:bubble-card
+            card_type: separator
+            name: Raumtemperaturen (letzte 24h)
+            icon: mdi:thermometer
+            grid_options:
+              columns: 12
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.living_room_multi_sensor_temperature
+                name: Wohnz.
+                color: "#ffa726"
+              - entity: sensor.bedroom_multi_sensor_temperature
+                name: Schlafz.
+                color: "#ef5350"
+              - entity: sensor.baby_room_multi_sensor_temperature
+                name: Kinderz.
+                color: "#ab47bc"
+              - entity: sensor.kitchen_multi_sensor_temperature
+                name: Küche
+                color: "#26a69a"
+              - entity: sensor.bathroom_multi_sensor_temperature
+                name: Bad
+                color: "#42a5f5"
+            hour24: true
+            hours_to_show: 24
+            points_per_hour: 4
+            line_width: 3
+            font_size: 70
+            height: 120
+            show:
+              name: false
+              icon: false
+              state: false
+              legend: true
+              points: false
+            card_mod:
+              style: |
+                ha-card {
+                  border: none !important;
+                  background: rgba(255, 255, 255, 0.045) !important;
+                  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                  border-radius: var(--bubble-border-radius, 24px) !important;
+                }
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: separator
+            name: Raumklima
+            icon: mdi:radiator
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: climate
+            name: Wohnzimmer
+            entity: climate.living_room_thermostat
+            show_state: true
+            sub_button:
+              - name: HVAC modes menu
+                select_attribute: hvac_modes
+                state_background: false
+                show_arrow: false
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: climate
+            name: Schlafzimmer
+            entity: climate.bedroom_thermostat
+            show_state: true
+            sub_button:
+              - name: HVAC modes menu
+                select_attribute: hvac_modes
+                state_background: false
+                show_arrow: false
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: climate
+            name: Kinderzimmer
+            entity: climate.baby_room_thermostat
+            show_state: true
+            sub_button:
+              - name: HVAC modes menu
+                select_attribute: hvac_modes
+                state_background: false
+                show_arrow: false
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: climate
+            name: Küche
+            entity: climate.kitchen_thermostat
+            show_state: true
+            sub_button:
+              - name: HVAC modes menu
+                select_attribute: hvac_modes
+                state_background: false
+                show_arrow: false
+            grid_options:
+              columns: 12
+      - type: custom:bubble-card
+        card_type: pop-up
+        hash: "#bubble_tram_popup"
+        show_header: false
+        button_type: name
+        cards:
+          - type: custom:bubble-card
+            card_type: separator
+            name: Tram 1 – Curtiusstraße
+            icon: mdi:tram
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: button
+            entity: sensor.augsburg_curtiusstrasse_koenigsplatz
+            name: Königsplatz / Göggingen
+            icon: mdi:city
+            show_state: true
+            sub_button:
+              - entity: sensor.tram_1_konigsplatz_walk_status
+                show_state: true
+                show_icon: true
+                icon: mdi:walk
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: button
+            entity: sensor.augsburg_curtiusstrasse_lechh_n_ostfriedh
+            name: Lechhausen Neuer Ostfriedhof
+            icon: mdi:compass-outline
+            show_state: true
+            sub_button:
+              - entity: sensor.tram_1_lechhausen_walk_status
+                show_state: true
+                show_icon: true
+                icon: mdi:walk
+            grid_options:
+              columns: 12
+          - type: markdown
+            card_mod:
+              style: |
+                ha-card {
+                  border: none !important;
+                  background: transparent !important;
+                  box-shadow: none !important;
+                }
+            content: |
+              **Königsplatz / Göggingen (Bstg. e)**
+              {% set kp_deps = state_attr('sensor.augsburg_curtiusstrasse_koenigsplatz', 'departures') %}
+              {%- if kp_deps and kp_deps | length > 0 -%}
+              {%- for dep in kp_deps -%}
+              {%- set dest = dep.destination | replace('Augsburg, ', '') | replace('Augsburg ', '') -%}
+              {%- set parts = dep.departure_time.split(':') if ':' in dep.departure_time else ['0', '0'] -%}
+              {%- set h = parts[0] | int -%}
+              {%- set m = parts[1] | int -%}
+              {%- set arr_m = m + 25 -%}
+              {%- set arr_h = (h + (arr_m // 60)) % 24 -%}
+              {%- set arr_m = arr_m % 60 -%}
+              {%- set arr_time = '%02d:%02d' | format(arr_h, arr_m) -%}
+              {%- set dep_m = dep.minutes_until_departure | int(0) -%}
+              {%- if dep_m >= 60 -%}
+                {%- set dep_str = (dep_m // 60) ~ 'h' -%}
+              {%- else -%}
+                {%- set dep_str = dep_m ~ ' min' -%}
+              {%- endif -%}
+              - **Abfahrt:** {{ dep.departure_time }} (in {{ dep_str }}) → **{{ dest }}:** ~{{ arr_time }}{% if dep.delay and dep.delay > 0 %} <span style="color: #ef5350;">(+{{ dep.delay }}m)</span>{% endif %}
+              {% endfor -%}
+              {%- else -%}
+              - Keine Abfahrtsdaten verfügbar
+              {%- endif %}
+
+              <br>
+
+              **Lechhausen Neuer Ostfriedhof (Bstg. a)**
+              {% set lh_deps = state_attr('sensor.augsburg_curtiusstrasse_lechh_n_ostfriedh', 'departures') %}
+              {%- if lh_deps and lh_deps | length > 0 -%}
+              {%- for dep in lh_deps -%}
+              {%- set dest = dep.destination | replace('Augsburg, ', '') | replace('Augsburg ', '') -%}
+              {%- set parts = dep.departure_time.split(':') if ':' in dep.departure_time else ['0', '0'] -%}
+              {%- set h = parts[0] | int -%}
+              {%- set m = parts[1] | int -%}
+              {%- set arr_m = m + 10 -%}
+              {%- set arr_h = (h + (arr_m // 60)) % 24 -%}
+              {%- set arr_m = arr_m % 60 -%}
+              {%- set arr_time = '%02d:%02d' | format(arr_h, arr_m) -%}
+              {%- set dep_m = dep.minutes_until_departure | int(0) -%}
+              {%- if dep_m >= 60 -%}
+                {%- set dep_str = (dep_m // 60) ~ 'h' -%}
+              {%- else -%}
+                {%- set dep_str = dep_m ~ ' min' -%}
+              {%- endif -%}
+              - **Abfahrt:** {{ dep.departure_time }} (in {{ dep_str }}) → **{{ dest }}:** ~{{ arr_time }}{% if dep.delay and dep.delay > 0 %} <span style="color: #ef5350;">(+{{ dep.delay }}m)</span>{% endif %}
+              {% endfor -%}
+              {%- else -%}
+              - Keine Abfahrtsdaten verfügbar
+              {%- endif %}
+            grid_options:
+              columns: 12
+      - type: custom:bubble-card
+        card_type: pop-up
+        hash: "#bubble_calendar_popup"
+        show_header: false
+        button_type: name
+        cards:
+          - type: custom:bubble-card
+            card_type: separator
+            name: Kalender & Termine
+            icon: mdi:calendar-month
+            grid_options:
+              columns: 12
+          - type: calendar
+            entities:
+              - calendar.familie
+              - calendar.julian_all
+              - calendar.keno
+              - calendar.leo
+              - calendar.german_holidays_all
+              - calendar.family_birthday
+              - calendar.family_anniversary
+            initial_view: dayGridMonth
+            views:
+              - dayGridMonth
+              - listWeek
+              - timeGridDay
+            card_mod:
+              style: |
+                ha-card {
+                  border: none !important;
+                  background: rgba(255, 255, 255, 0.045) !important;
+                  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                  border-radius: var(--bubble-border-radius, 24px) !important;
+                  padding: 8px !important;
+                }
+            grid_options:
+              columns: 12

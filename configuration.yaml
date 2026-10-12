@@ -44,6 +44,18 @@ lovelace:
       icon: mdi:view-dashboard
       show_in_sidebar: true
       filename: dashboards/bubble_code/bubble_code.yaml
+    bubble-kiosk-dashboard:
+      mode: yaml
+      title: Bubble Kiosk
+      icon: mdi:tablet-dashboard
+      show_in_sidebar: true
+      filename: dashboards/bubble_kiosk/bubble_kiosk.yaml
+    bubble-nebula-dashboard:
+      mode: yaml
+      title: Bubble Nebula
+      icon: mdi:creation
+      show_in_sidebar: true
+      filename: dashboards/bubble_nebula/bubble_nebula.yaml
   # # Load custom resources # (Storage mode uses ressources in dashboard ui)
   # resources:
   #   - type: css
