@@ -42,6 +42,7 @@ Before modifying, guessing entities, or scanning the workspace, always consult `
   - Flags: `--path <dashboard/view>`, `--live` (captures physical kiosk screenshot from `image.huawei_mediapad_m5_lite_10_screenshot`), `--output <path>`.
   - Enforces dark mode (`color_scheme="dark"`) and uses local Roboto font metrics matching the Android kiosk browser.
 - Live Host Verification (User Manual): The live instance runs Home Assistant OS reachable via `ssh homeassistant`. If live checks or reloads are needed, recommend the user run `ha core check` or `ha core reload` on their terminal, rather than executing automated SSH commands from the agent.
+- Entity Integrity Auditing: Use `python3 tools/audit_entities.py` on-demand after entity renames or automation refactors to cross-reference YAML entity IDs against live HA state and declared templates.
 - Safety Snapshot: Before performing large refactors across multiple files, run `bash tools/backup_config.sh`.
 
 # Core House Subsystem Contracts
