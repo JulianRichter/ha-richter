@@ -1,14 +1,15 @@
 automation:
   # ====================================================================
-  # Bathroom - Humidity Warning
-  # - Warns via TTS when humidity rises above 80% once someone enters
+  # Bathroom - Shower Humidity
+  # - Warns via TTS when shower humidity rises above 80% once someone enters
   # - Notifies via TTS when humidity falls back below 60%
   # - Uses input_boolean.bathroom_humidity_warning_active to prevent repeats
+  # - Resets washer drying humidity warning so shower takes precedence
   # - Announces in German and optionally in Chinese via play_media_tts_shower_warning
   # ====================================================================
 
-  - id: "bathroom_humidity_warning"
-    alias: "Bathroom - Humidity Warning"
+  - id: "bathroom_shower_humidity"
+    alias: "Bathroom - Shower Humidity"
     mode: single
     trigger:
       # Humidity rises above 80% while warning is not yet active
@@ -51,6 +52,11 @@ automation:
                 target:
                   entity_id: input_boolean.bathroom_humidity_warning_active
 
+              # Reset washer humidity warning if it was active so shower takes priority
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.bathroom_washer_humidity_warning_active
+
           # Low humidity notification to close window
           - conditions:
               - condition: trigger
@@ -70,3 +76,4 @@ automation:
               - action: input_boolean.turn_off
                 target:
                   entity_id: input_boolean.bathroom_humidity_warning_active
+

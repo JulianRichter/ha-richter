@@ -10,3 +10,16 @@ input_boolean:
   dashboard_sport_xingyang:
     name: Dashboard - Sport Xingyang
     icon: mdi:check-bold
+
+input_number:
+  ######################################################################
+  # Fitness & Step History
+  ######################################################################
+
+  julian_yesterday_steps:
+    name: "Julian Yesterday Steps"
+    icon: mdi:walk
+    min: 0
+    max: 100000
+    step: 1
+    mode: box

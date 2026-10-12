@@ -2,25 +2,24 @@ automation:
   # ====================================================================
   # Baby Room - Motion Sensor
   # - Controls baby room lighting based on occupancy and presence state
-  # - After sunset & home (awake): Turns on warm ambient light (brightness 126)
-  # - After sunset & away (sleeping): Turns on ultra-dim red night light (brightness 5)
-  # - Motion cleared: Smoothly turns off light via light_low_before_off
+  # - Turns on motion brightness (200) after dark when awake, dim red when sleeping
+  # - Motion cleared: Turns off light only if currently at motion or sleep brightness
+  # - Manual switch or voice command overrules motion automation
   # ====================================================================
 
   - id: "baby_room_motion_sensor"
     alias: "Baby Room - Motion Sensor"
-    mode: single
+    mode: restart
 
     variables:
       brightness_sleep: "{{ states('input_number.light_brightness_sleep') | int(5) }}"
-      brightness_awake: "{{ states('input_number.light_brightness_awake') | int(126) }}"
+      brightness_motion: "{{ states('input_number.light_brightness_motion') | int(200) }}"
       color_sleep: >-
         {% set raw = states('input_text.light_color_sleep') %}
         {{ raw.split(',') | map('int') | list if (raw not in ['unknown', 'unavailable', '', 'none'] and ',' in raw) else [255, 0, 0] }}
       color_awake: >-
         {% set raw = states('input_text.light_color_awake') %}
         {{ raw.split(',') | map('int') | list if (raw not in ['unknown', 'unavailable', '', 'none'] and ',' in raw) else [255, 166, 87] }}
-
 
     trigger:
       # Occupancy state changed
@@ -31,19 +30,7 @@ automation:
           - "on"
           - "off"
 
-    condition:
-      # Light is low or off
-      - condition: template
-        value_template: |
-          {% set brightness = state_attr('light.baby_room_light', 'brightness') %}
-          {% if brightness == None %}
-            {{ true }}
-          {% else %}
-            {{
-              brightness | int <= brightness_sleep or
-              brightness | int == brightness_awake
-            }}
-          {% endif %}
+    condition: []
 
     action:
       - choose:
@@ -53,14 +40,21 @@ automation:
           - conditions:
               - condition: template
                 value_template: "{{ trigger.to_state.state == 'on' }}"
+              - condition: state
+                entity_id: sun.sun
+                state: "below_horizon"
+              - condition: state
+                entity_id: input_boolean.presence_home
+                state: "on"
+              # Light is off, or low dimmed (<= sleep) recovering from clearance fade
               - condition: template
-                value_template: "{{ states('sun.sun') == 'below_horizon' }}"
-              - condition: template
-                value_template: "{{ states('input_boolean.presence_home') == 'on' }}"
+                value_template: >-
+                  {% set b = state_attr('light.baby_room_light', 'brightness') | default(0, true) | int(0) %}
+                  {{ is_state('light.baby_room_light', 'off') or b <= brightness_sleep }}
             sequence:
               - action: light.turn_on
                 data:
-                  brightness: "{{ brightness_awake }}"
+                  brightness: "{{ brightness_motion }}"
                   rgb_color: "{{ color_awake }}"
                 target:
                   entity_id: light.baby_room_light
@@ -71,10 +65,16 @@ automation:
           - conditions:
               - condition: template
                 value_template: "{{ trigger.to_state.state == 'on' }}"
-              - condition: template
-                value_template: "{{ states('sun.sun') == 'below_horizon' }}"
-              - condition: template
-                value_template: "{{ states('input_boolean.presence_home') == 'off' }}"
+              - condition: state
+                entity_id: sun.sun
+                state: "below_horizon"
+              - condition: state
+                entity_id: input_boolean.presence_home
+                state: "off"
+              # Only turn on if light is currently off
+              - condition: state
+                entity_id: light.baby_room_light
+                state: "off"
             sequence:
               - action: light.turn_on
                 data:
@@ -89,10 +89,22 @@ automation:
           - conditions:
               - condition: template
                 value_template: "{{ trigger.to_state.state == 'off' }}"
+              - condition: state
+                entity_id: binary_sensor.baby_room_motion_sensor_occupancy
+                state: "off"
+              - condition: state
+                entity_id: light.baby_room_light
+                state: "on"
+              # Light is at sleep brightness or motion brightness (manual switch/voice overrides)
+              - condition: template
+                value_template: >-
+                  {% set b = state_attr('light.baby_room_light', 'brightness') | default(0, true) | int(0) %}
+                  {{ b <= brightness_sleep or b == brightness_motion }}
             sequence:
               - action: script.light_low_before_off
                 data:
                   entity_id: light.baby_room_light
+                  transition: "{{ 1 if (state_attr('light.baby_room_light', 'brightness') | default(0, true) | int(0) <= brightness_sleep) else 15 }}"
 
         default: []
 

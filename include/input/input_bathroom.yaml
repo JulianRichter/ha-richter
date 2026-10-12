@@ -13,3 +13,8 @@ input_boolean:
   bathroom_humidity_warning_active:
     name: Bathroom - Humidity Warning Active
     icon: mdi:water-percent-alert
+
+  # Helper to track washer drying humidity notifications (prevents repeats)
+  bathroom_washer_humidity_warning_active:
+    name: Bathroom - Washer Humidity Warning Active
+    icon: mdi:water-boiler-alert

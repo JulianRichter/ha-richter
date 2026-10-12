@@ -95,8 +95,23 @@ script:
       - delay:
           milliseconds: "{{ (trans * 1000 + 500) | int if trans > 0 else 500 }}"
 
-      # Turn off target lights
-      - action: light.turn_off
-        target:
-          entity_id: "{{ lights_on }}"
+      # Turn off target lights only if they haven't been re-brightened or turned back on
+      - variables:
+          target_off: >-
+            {% set ns = namespace(entities=[]) %}
+            {% for l in expand(lights_on) | selectattr('state', 'equalto', 'on') %}
+              {% set b = state_attr(l.entity_id, 'brightness') %}
+              {% if b is none or b <= sleep_bright %}
+                {% set ns.entities = ns.entities + [l.entity_id] %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.entities }}
+
+      - if:
+          - condition: template
+            value_template: "{{ target_off | count > 0 }}"
+        then:
+          - action: light.turn_off
+            target:
+              entity_id: "{{ target_off }}"
 

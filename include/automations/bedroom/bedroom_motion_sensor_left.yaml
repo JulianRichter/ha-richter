@@ -3,26 +3,25 @@ automation:
   # Bedroom - Motion Sensor Left
   # - Controls left bedside light and air purifier LED based on occupancy
   # - Motion on: Dims air purifier display for 10s then turns off
-  # - Sun down & home (awake): Turns on warm ambient light (brightness 126)
+  # - Sun down & home (awake): Turns on motion brightness (200)
   # - Sun down & away (sleeping): Turns on ultra-dim red night light (brightness 5)
-  # - Motion cleared: Smoothly turns off light if set by automation
+  # - Motion cleared: Turns off light only if currently at motion or sleep brightness
+  # - Bedside switch or voice command overrules motion automation
   # ====================================================================
 
   - id: "bedroom_motion_sensor_left"
     alias: "Bedroom - Motion Sensor Left"
-    mode: parallel
-    max: 10
+    mode: restart
 
     variables:
       brightness_sleep: "{{ states('input_number.light_brightness_sleep') | int(5) }}"
-      brightness_awake: "{{ states('input_number.light_brightness_awake') | int(126) }}"
+      brightness_motion: "{{ states('input_number.light_brightness_motion') | int(200) }}"
       color_sleep: >-
         {% set raw = states('input_text.light_color_sleep') %}
         {{ raw.split(',') | map('int') | list if (raw not in ['unknown', 'unavailable', '', 'none'] and ',' in raw) else [255, 0, 0] }}
       color_awake: >-
         {% set raw = states('input_text.light_color_awake') %}
         {{ raw.split(',') | map('int') | list if (raw not in ['unknown', 'unavailable', '', 'none'] and ',' in raw) else [255, 166, 87] }}
-
 
     trigger:
       # Motion detected
@@ -79,10 +78,13 @@ automation:
                               - condition: state
                                 entity_id: input_boolean.presence_home
                                 state: "off"
-                              - condition: template
-                                value_template: >-
-                                  {% set brightness = state_attr('light.bedroom_light_left', 'brightness') %}
-                                  {{ brightness is none or brightness | int <= brightness_sleep or brightness | int == brightness_awake }}
+                              # Only turn on if bedside lamp is off AND sphere lamp is off
+                              - condition: state
+                                entity_id: light.bedroom_light_left
+                                state: "off"
+                              - condition: state
+                                entity_id: light.bedroom_light_sphere
+                                state: "off"
                             sequence:
                               - action: light.turn_on
                                 target:
@@ -101,16 +103,20 @@ automation:
                               - condition: state
                                 entity_id: input_boolean.presence_home
                                 state: "on"
+                              # Sphere lamp must be off, and bedside lamp off or recovering from fade
+                              - condition: state
+                                entity_id: light.bedroom_light_sphere
+                                state: "off"
                               - condition: template
                                 value_template: >-
-                                  {% set brightness = state_attr('light.bedroom_light_left', 'brightness') %}
-                                  {{ brightness is none or brightness | int <= brightness_sleep or brightness | int == brightness_awake }}
+                                  {% set b = state_attr('light.bedroom_light_left', 'brightness') | default(0, true) | int(0) %}
+                                  {{ is_state('light.bedroom_light_left', 'off') or b <= brightness_sleep }}
                             sequence:
                               - action: light.turn_on
                                 target:
                                   entity_id: light.bedroom_light_left
                                 data:
-                                  brightness: "{{ brightness_awake }}"
+                                  brightness: "{{ brightness_motion }}"
                                   rgb_color: "{{ color_awake }}"
 
           # ============================================================
@@ -121,19 +127,20 @@ automation:
                 id: motion_cleared
             sequence:
               - choose:
-                  # Turn off light only if currently on and set by automation
+                  # Turn off light only if currently on and set by motion
                   - conditions:
                       - condition: state
                         entity_id: light.bedroom_light_left
                         state: "on"
                       - condition: template
                         value_template: >-
-                          {% set brightness = state_attr('light.bedroom_light_left', 'brightness') %}
-                          {{ brightness | int <= brightness_sleep or brightness | int == brightness_awake }}
+                          {% set b = state_attr('light.bedroom_light_left', 'brightness') | default(0, true) | int(0) %}
+                          {{ b <= brightness_sleep or b == brightness_motion }}
                     sequence:
                       - action: script.light_low_before_off
                         data:
                           entity_id: light.bedroom_light_left
+                          transition: "{{ 1 if (state_attr('light.bedroom_light_left', 'brightness') | default(0, true) | int(0) <= brightness_sleep) else 15 }}"
 
         default: []
 

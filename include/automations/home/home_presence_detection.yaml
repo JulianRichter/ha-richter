@@ -132,7 +132,7 @@ automation:
                           message: Guten Morgen!
                           message_chinese: 早上好！
 
-                  # GPS arrival greeting
+                  # Resident arrival greeting
                   - conditions:
                       - condition: trigger
                         id: home_gps
@@ -141,7 +141,7 @@ automation:
                       - action: script.play_media_tts_message
                         data:
                           entity_id: media_player.minis
-                          message: Willkommen zu Hause! GPS wurde erkannt.
+                          message: Willkommen zu Hause!
 
           # ============================================================
           # Away / Night Scene
@@ -194,7 +194,7 @@ automation:
                           message: Gute Nacht!
                           message_chinese: 晚安！
 
-                  # GPS departure: announce and start vacuuming
+                  # Resident departure: announce and start vacuuming
                   - conditions:
                       - condition: trigger
                         id: away_gps
@@ -203,7 +203,7 @@ automation:
                       - action: script.play_media_tts_message
                         data:
                           entity_id: media_player.minis
-                          message: Viel Spaß draußen! GPS erkannt.
+                          message: Viel Spaß draußen!
                       # Set vacuum to sweeping mode and start
                       - action: select.select_option
                         target:

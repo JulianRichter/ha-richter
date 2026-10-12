@@ -94,10 +94,10 @@ script:
             {%- else -%}
               
             {%- endif -%}
-          sanitized_speech: >-
+          sanitized_speech: |
             {{ raw_speech | replace('**', '') | replace('*', '') | replace('`', '') | replace('#', '') | replace('"', '') | trim }}
-          final_message: >-
-            {{ sanitized_speech if sanitized_speech != '' else fallback_msg }}
+          final_message: |
+            {{ sanitized_speech if sanitized_speech | trim != '' else fallback_msg }}
 
       # Play announcement via TTS message script
       - action: script.play_media_tts_message

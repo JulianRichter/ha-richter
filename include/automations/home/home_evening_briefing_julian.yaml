@@ -1,11 +1,13 @@
 automation:
   # ====================================================================
   # Evening Briefing - Julian
-  # - Triggers daily at 18:00
-  # - Fetches weather forecast, tomorrow's calendar events, and open todos
-  # - Passes assembled prompt to play_media_tts_gemini script
-  # - Plays briefing on living room speaker
-  # - Runs only once per day (last_triggered check)
+  # - Triggers daily at 18:00 when Julian is home (once per day)
+  # - Spoken current time at the beginning without redundant "am Abend"
+  # - Weather outlook for tomorrow + separate clothing recommendation sentence
+  # - Full schedule overview: remaining events tonight + tomorrow's appointments
+  #   with individual sentences (no rushed run-on text)
+  # - Conditional Smart Home notices: open windows, offline/stale sensors
+  # - Understated, elegant finishing sentence in JARVIS style
   # ====================================================================
 
   - id: "evening_briefing_julian"
@@ -39,7 +41,7 @@ automation:
     # ------------------------------------------------------------------
     action:
 
-      # -- Step 1: Fetch tomorrow's calendar events --
+      # -- Step 1: Fetch calendar events from now until end of tomorrow --
       - action: calendar.get_events
         target:
           entity_id:
@@ -49,149 +51,269 @@ automation:
             - calendar.keno
             - calendar.leo
         data:
-          start_date_time: >
-            {{ (now() + timedelta(days=1)).strftime('%Y-%m-%d') + 'T00:00:00' }}
-          end_date_time: >
-            {{ (now() + timedelta(days=1)).strftime('%Y-%m-%d') + 'T23:59:59' }}
-        response_variable: calendar_events_tomorrow
+          start_date_time: "{{ now().isoformat() }}"
+          end_date_time: "{{ (today_at('23:59:59') + timedelta(days=1)).isoformat() }}"
+        response_variable: calendar_events
 
-      # -- Step 2: Fetch open todo items --
-      - action: todo.get_items
-        target:
-          entity_id: todo.julian_google_tasks
-        data:
-          status: needs_action
-        response_variable: todo_items
+      # -- Step 2: Fetch open todo items (only if integration is available) --
+      - if:
+          - condition: template
+            value_template: >-
+              {{ states('todo.julian_google_tasks') not in ['unavailable', 'unknown'] }}
+        then:
+          - action: todo.get_items
+            target:
+              entity_id: todo.julian_google_tasks
+            data:
+              status: needs_action
+            response_variable: todo_items
 
       # -- Step 3: Generate and play evening briefing via Gemini TTS script --
       - action: script.play_media_tts_gemini
         data:
           entity_id: media_player.living_room
-          prompt: >
+          prompt: |
+            {#- ---------- Weather: tomorrow ---------- -#}
             {%- set cond_map = {
-              'clear-night': 'klar',
-              'cloudy': 'bewölkt',
-              'fog': 'neblig',
-              'hail': 'Hagel',
-              'lightning': 'Gewitter',
-              'lightning-rainy': 'Gewitter mit Regen',
-              'partlycloudy': 'teilweise bewölkt',
-              'pouring': 'starker Regen',
-              'rainy': 'Regen',
-              'snowy': 'Schnee',
-              'snowy-rainy': 'Schneeregen',
-              'sunny': 'sonnig',
-              'windy': 'windig',
-              'windy-variant': 'windig'
+              'clear-night': 'klar', 'cloudy': 'bewölkt', 'fog': 'neblig',
+              'hail': 'Hagel', 'lightning': 'Gewitter', 'lightning-rainy': 'Gewitter mit Regen',
+              'partlycloudy': 'teilweise bewölkt', 'pouring': 'starker Regen', 'rainy': 'Regen',
+              'snowy': 'Schnee', 'snowy-rainy': 'Schneeregen', 'sunny': 'sonnig',
+              'windy': 'windig', 'windy-variant': 'windig'
             } -%}
-            {%- set cur_temp = states('sensor.weather_home_current_temperature') | float(0) | round(0) | int -%}
-            {%- set cur_cond_raw = states('sensor.weather_home_current_condition') -%}
-            {%- set cur_cond = cond_map.get(cur_cond_raw, cur_cond_raw) -%}
             {%- set dt = state_attr('sensor.weather_home_forecast', 'datetime') | default([], true) -%}
             {%- set temp = state_attr('sensor.weather_home_forecast', 'temperature') | default([], true) -%}
             {%- set precip = state_attr('sensor.weather_home_forecast', 'precipitation') | default([], true) -%}
             {%- set cond = state_attr('sensor.weather_home_forecast', 'condition') | default([], true) -%}
-            {%- set tomorrow = (now() + timedelta(days=1)).strftime('%Y-%m-%d') -%}
-            {%- set ns_weather = namespace(temps=[], rain_times=[], conditions=[]) -%}
+            {%- set tomorrow_date = (now() + timedelta(days=1)).date() -%}
+            {%- set wx = namespace(all=[], morn=[], aft=[], eve=[], rain_times=[], conditions=[]) -%}
             {%- if dt and temp and cond and dt is iterable -%}
               {%- for i in range(dt | length) -%}
-                {%- if dt[i][:10] == tomorrow -%}
-                  {%- set ns_weather.temps = ns_weather.temps + [temp[i] | float(0)] -%}
-                  {%- if precip[i] | float(0) >= 0.2 -%}
-                    {%- set ns_weather.rain_times = ns_weather.rain_times + [dt[i][11:13] ~ ' Uhr'] -%}
+                {%- set f_dt = dt[i] | as_datetime -%}
+                {%- if f_dt is not none and (f_dt | as_local).date() == tomorrow_date -%}
+                  {%- set f_local = f_dt | as_local -%}
+                  {%- set t_val = temp[i] | float(0) -%}
+                  {%- set hr = f_local.hour -%}
+                  {%- set wx.all = wx.all + [t_val] -%}
+                  {%- if hr >= 6 and hr <= 10 -%}{%- set wx.morn = wx.morn + [t_val] -%}{%- endif -%}
+                  {%- if hr >= 12 and hr <= 17 -%}{%- set wx.aft = wx.aft + [t_val] -%}{%- endif -%}
+                  {%- if hr >= 18 and hr <= 23 -%}{%- set wx.eve = wx.eve + [t_val] -%}{%- endif -%}
+                  {%- if precip[i] | default(0) | float(0) >= 0.2 -%}
+                    {%- set wx.rain_times = wx.rain_times + [hr ~ ' Uhr'] -%}
                   {%- endif -%}
                   {%- set c_name = cond_map.get(cond[i], cond[i]) -%}
-                  {%- if c_name not in ns_weather.conditions -%}
-                    {%- set ns_weather.conditions = ns_weather.conditions + [c_name] -%}
+                  {%- if c_name not in wx.conditions -%}
+                    {%- set wx.conditions = wx.conditions + [c_name] -%}
                   {%- endif -%}
                 {%- endif -%}
               {%- endfor -%}
             {%- endif -%}
-            {%- set cal_items = namespace(list=[]) -%}
-            {%- if calendar_events_tomorrow is defined and calendar_events_tomorrow -%}
-              {%- for cal_id, cal_data in calendar_events_tomorrow.items() -%}
-                {%- if cal_data.events | length > 0 -%}
-                  {%- for event in cal_data.events -%}
-                    {%- set time_str = '' -%}
-                    {%- if event.start is defined -%}
-                      {%- if 'T' in event.start -%}
-                        {%- set time_str = ' um ' ~ event.start[11:16] ~ ' Uhr' -%}
-                      {%- else -%}
-                        {%- set time_str = ' (ganztägig)' -%}
-                      {%- endif -%}
-                    {%- endif -%}
-                    {%- set cal_items.list = cal_items.list + [event.summary ~ time_str] -%}
-                  {%- endfor -%}
+            {%- set morn_t = (wx.morn | sum / wx.morn | length) | round(0) | int if wx.morn else (wx.all | min | round(0) | int if wx.all else 15) -%}
+            {%- set aft_t = (wx.aft | max) | round(0) | int if wx.aft else (wx.all | max | round(0) | int if wx.all else 20) -%}
+            {%- set eve_t = (wx.eve | sum / wx.eve | length) | round(0) | int if wx.eve else (wx.all | min | round(0) | int if wx.all else 15) -%}
+            {#- ---------- Calendar: remaining tonight vs tomorrow ---------- -#}
+            {%- set cal_tonight = namespace(items=[]) -%}
+            {%- set cal_tomorrow = namespace(items=[]) -%}
+            {%- for cal_id, cal_data in (calendar_events | default({}, true)).items() -%}
+              {%- for event in cal_data.events | default([], true) -%}
+                {%- if 'T' in event.start -%}
+                  {%- set start_dt = as_datetime(event.start) | as_local -%}
+                  {%- if start_dt.date() == now().date() and start_dt > now() -%}
+                    {%- set cal_tonight.items = cal_tonight.items + [{'sort': start_dt.strftime('%H:%M'), 'text': event.summary ~ ' um ' ~ start_dt.strftime('%H:%M') ~ ' Uhr'}] -%}
+                  {%- elif start_dt.date() == tomorrow_date -%}
+                    {%- set cal_tomorrow.items = cal_tomorrow.items + [{'sort': start_dt.strftime('%H:%M'), 'text': event.summary ~ ' um ' ~ start_dt.strftime('%H:%M') ~ ' Uhr'}] -%}
+                  {%- endif -%}
+                {%- else -%}
+                  {%- set start_d = as_datetime(event.start) | as_local -%}
+                  {%- if start_d.date() == tomorrow_date -%}
+                    {%- set cal_tomorrow.items = cal_tomorrow.items + [{'sort': '00:00', 'text': event.summary ~ ' (ganztägig)'}] -%}
+                  {%- endif -%}
                 {%- endif -%}
               {%- endfor -%}
-            {%- endif -%}
-            {%- set todo_items_list = namespace(list=[]) -%}
+            {%- endfor -%}
+            {#- ---------- Tasks ---------- -#}
+            {%- set today_str = now().strftime('%Y-%m-%d') -%}
+            {%- set tomorrow_str = tomorrow_date.strftime('%Y-%m-%d') -%}
+            {%- set tasks = namespace(items=[]) -%}
             {%- if todo_items is defined and todo_items and 'todo.julian_google_tasks' in todo_items -%}
-              {%- set raw_todos = todo_items['todo.julian_google_tasks']['items'] | default([]) -%}
-              {%- for item in raw_todos -%}
+              {%- for item in todo_items['todo.julian_google_tasks']['items'] | default([], true) -%}
                 {%- if item.due is defined and item.due -%}
-                  {%- if item.due[:10] == tomorrow -%}
-                    {%- set todo_items_list.list = todo_items_list.list + [item.summary ~ ' (morgen fällig)'] -%}
-                  {%- elif item.due[:10] <= now().strftime('%Y-%m-%d') -%}
-                    {%- set todo_items_list.list = todo_items_list.list + [item.summary ~ ' (überfällig)'] -%}
+                  {%- if item.due[:10] == tomorrow_str -%}
+                    {%- set tasks.items = tasks.items + [item.summary ~ ' (morgen fällig)'] -%}
+                  {%- elif item.due[:10] <= today_str -%}
+                    {%- set tasks.items = tasks.items + [item.summary ~ ' (überfällig)'] -%}
                   {%- endif -%}
                 {%- endif -%}
               {%- endfor -%}
             {%- endif -%}
-            Du bist JARVIS – der hochentwickelte, loyale und kultivierte persönliche KI-Assistent von Julian (inspiriert vom intelligenten, britisch-trockenen JARVIS aus Iron Man).
-            Sprich ruhig, pointiert, geistreich und souverän auf Deutsch.
-            Absolut keine künstliche Euphorie ("Was für ein Feierabend!"), keine banalen Floskeln ("Lass die Seele baumeln!"), kein Radio-Moderatorenton und kein geschwätziges Coaching.
-            Höchste Informationsdichte: Jedes Wort sitzt. Bring die Fakten elegant, klar und treffsicher auf den Punkt (ca. 4 bis 5 geschliffene Sätze, Dauer: ca. 30 Sekunden).
+            {#- ---------- Smart Home Notices (Conditional) ---------- -#}
+            {%- set notices = namespace(list=[]) -%}
+            {#- 1. Open Windows -#}
+            {%- if is_state('binary_sensor.template_tablet_sidebar_window_contacts', 'on') -%}
+              {%- set open_wins = [] -%}
+              {%- if is_state('binary_sensor.kitchen_window_contact', 'on') -%}{%- set open_wins = open_wins + ['Küche'] -%}{%- endif -%}
+              {%- if is_state('binary_sensor.living_room_window_contact', 'on') -%}{%- set open_wins = open_wins + ['Wohnzimmer'] -%}{%- endif -%}
+              {%- if is_state('binary_sensor.bedroom_window_contact', 'on') -%}{%- set open_wins = open_wins + ['Schlafzimmer'] -%}{%- endif -%}
+              {%- if is_state('binary_sensor.baby_room_window_contact', 'on') -%}{%- set open_wins = open_wins + ['Kinderzimmer'] -%}{%- endif -%}
+              {%- if open_wins | length > 0 -%}
+                {%- set notices.list = notices.list + ['Offenes Fenster im Bereich: ' ~ (open_wins | join(', '))] -%}
+              {%- endif -%}
+            {%- endif -%}
+            {#- 2. Offline / Unresponsive Sensors -#}
+            {%- set monitored = [
+              ('binary_sensor.kitchen_window_contact', 'Küchenfenster-Kontakt'),
+              ('binary_sensor.living_room_window_contact', 'Wohnzimmerfenster-Kontakt'),
+              ('binary_sensor.bedroom_window_contact', 'Schlafzimmerfenster-Kontakt'),
+              ('binary_sensor.baby_room_window_contact', 'Kinderzimmerfenster-Kontakt'),
+              ('sensor.kitchen_multi_sensor_temperature', 'Küchen-Sensor'),
+              ('sensor.living_room_multi_sensor_temperature', 'Wohnzimmer-Sensor'),
+              ('sensor.bedroom_multi_sensor_temperature', 'Schlafzimmer-Sensor'),
+              ('sensor.baby_room_multi_sensor_temperature', 'Kinderzimmer-Sensor'),
+              ('sensor.bathroom_multi_sensor_temperature', 'Badezimmer-Sensor'),
+              ('sensor.garden_multi_sensor_temperature', 'Garten-Sensor'),
+              ('binary_sensor.kitchen_motion_sensor_occupancy', 'Küchen-Bewegungssensor'),
+              ('binary_sensor.living_room_motion_sensor_occupancy', 'Wohnzimmer-Bewegungssensor'),
+              ('binary_sensor.bedroom_motion_sensor_left_occupancy', 'Schlafzimmer-Bewegungssensor links'),
+              ('binary_sensor.bedroom_motion_sensor_right_occupancy', 'Schlafzimmer-Bewegungssensor rechts'),
+              ('binary_sensor.baby_room_motion_sensor_occupancy', 'Kinderzimmer-Bewegungssensor'),
+              ('binary_sensor.bathroom_motion_sensor_occupancy', 'Badezimmer-Bewegungssensor')
+            ] -%}
+            {%- set ns_stale = namespace(sensors=[]) -%}
+            {%- for s_id, s_name in monitored -%}
+              {%- if states(s_id) in ['unavailable', 'unknown'] -%}
+                {%- set ns_stale.sensors = ns_stale.sensors + [s_name ~ ' (offline)'] -%}
+              {%- elif states[s_id] is defined and states[s_id].last_updated is defined and (as_timestamp(now()) - as_timestamp(states[s_id].last_updated)) > 86400 -%}
+                {%- set ns_stale.sensors = ns_stale.sensors + [s_name ~ ' (keine Rückmeldung seit mehreren Tagen)'] -%}
+              {%- endif -%}
+            {%- endfor -%}
+            {%- if ns_stale.sensors | length > 0 -%}
+              {%- set notices.list = notices.list + ['Sensor-Status: ' ~ (ns_stale.sensors | join(', '))] -%}
+            {%- endif -%}
+            {#- 3. Birthdays & Anniversaries -#}
+            {%- if is_state('calendar.family_birthday', 'on') -%}
+              {%- set bday_msg = state_attr('calendar.family_birthday', 'message') | default('', true) -%}
+              {%- if bday_msg -%}
+                {%- set notices.list = notices.list + ['Besonderer Anlass: ' ~ bday_msg] -%}
+              {%- endif -%}
+            {%- endif -%}
+            {%- if is_state('calendar.family_anniversary', 'on') -%}
+              {%- set anniv_msg = state_attr('calendar.family_anniversary', 'message') | default('', true) -%}
+              {%- if anniv_msg -%}
+                {%- set notices.list = notices.list + ['Besonderer Anlass: ' ~ anniv_msg] -%}
+              {%- endif -%}
+            {%- endif -%}
+            {#- ---------- Fitness & Biometrics ---------- -#}
+            {%- set t_steps_raw = states('sensor.julian_daily_steps') | float(0) | int -%}
+            {%- set t_steps = (((t_steps_raw + 250) // 500) * 500) | int -%}
+            Du bist JARVIS, ein britisch-eleganter, loyaler und diskreter persönlicher Assistent wie JARVIS aus Iron Man.
+            Du sprichst ein ruhiges, intelligentes und hochwertiges Abendbriefing über den Lautsprecher im Wohnzimmer.
+            Tonalität: ruhig, kultiviert, gelassen und auf den Punkt. Sprich mit angenehmer Sprachmelodie, niemals gehetzt.
 
-            === HINTERGRUND-INFOS FÜR DEN ABEND ===
-            Wochentag: {{ ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'][now().weekday()] }}
-            Morgen ist: {{ ['Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag','Montag'][now().weekday()] }}
-            Aktuelle Uhrzeit: {{ now().strftime('%H:%M') }}
-            Aktuelles Wetter: {{ cur_temp }} Grad, {{ cur_cond }}
+            WICHTIGE REGELN FÜR ENTSPANNTE SPRACHPAUSEN:
+            1. Formatiere den Text in getrennte Absätze (durch eine Leerzeile getrennt).
+            2. Mache kurze, klare Sätze. JEDER Termin oder Gedanke erhält einen EIGENEN Satz mit einem Punkt am Ende.
+            3. NIEMALS mehrere Termine oder Uhrzeiten mit Kommas in einen langen Schachtelsatz stopfen!
+            4. Die Uhrzeit immer schlicht nennen – NIEMALS "am Abend" anhängen, wenn die Begrüßung das bereits enthält!
+               - RICHTIG: "Guten Abend. Es ist jetzt achtzehn Uhr."
+               - FALSCH: "Guten Abend. Es ist jetzt achtzehn Uhr am Abend."
 
-            Wetter morgen:
-            {%- if ns_weather.temps %}
-            - Höchstwert morgen: ca. {{ ns_weather.temps | max | round(0) | int }} Grad (Tiefstwert: {{ ns_weather.temps | min | round(0) | int }} Grad)
-            - Verlauf: {{ ns_weather.conditions | join(', ') }}
-            - Regen: {{ ('Regen erwartet ab ca. ' ~ ns_weather.rain_times[0]) if ns_weather.rain_times else 'Kein Regen in Sicht' }}
+            AUFBAU DES BRIEFINGS:
+            Absatz 1 (Begrüßung & Uhrzeit):
+            - Begrüßung ("Guten Abend.") und schlichte Nennung der aktuellen Uhrzeit in Worten (z.B. "Es ist jetzt achtzehn Uhr." oder "Es ist kurz nach sechs.").
+
+            Absatz 2 (Temperaturverlauf & Kleidung morgen in zwei bis drei geschliffenen Sätzen):
+            - Satz 1 (Verlauf): Morgentemperatur zur Orientierung, Nachmittagshöchstwert mit Himmel/Sonne, und die Abkühlung am Abend (z.B. "Morgen früh starten wir frisch bei acht Grad. Am Nachmittag klettert das Thermometer bei sonnigem Himmel auf milde einundzwanzig Grad, ehe es abends auf dreizehn Grad absinkt.").
+              * Bei geringem Unterschied (unter 4 Grad): Schlicht als beständigen Tag zusammenfassen (z.B. "Morgen bleibt es den ganzen Tag über kühl bei sieben bis neun Grad und verhangenem Himmel.").
+            - Satz 2 (Niederschlag): Nur erwähnen, falls Regen droht oder explizit trocken bleibt (z.B. "Regen droht morgen nicht." oder "Ab vierzehn Uhr setzt Regen ein.").
+            - Satz 3: Eine konkrete, abgestimmte Kleidungsempfehlung für morgen, die diesen Tagesverlauf berücksichtigt (z.B. "Für den Vormittag empfiehlt sich eine Übergangsjacke, später reicht ein Sakko." bzw. "Eine wetterfeste Jacke ist angeraten.").
+
+            Absatz 3 (Fitness & Tagesaktivität - NUR falls in den Daten vorhanden):
+            - Nenne kurz und dezent die bisherigen Schritte des heutigen Tages, gerundet auf 500er (z.B. "Heute stehen bislang rund siebeneinhalbtausend Schritte zu Buche." oder "Bislang hast du heute knapp siebentausendfünfhundert Schritte absolviert.").
+            - Schrittzahl IMMER gerundet auf halbe Tausender nennen – NIEMALS exakte oder krumme Zahlen sprechen.
+            - Liegen keine Schrittdaten vor: Diesen Absatz komplett weglassen!
+            - Wichtig: Niemals motivierend oder belehrend wie ein Fitnesstrainer klingen. Sachlich und dezent im JARVIS-Stil.
+
+            Absatz 4 (Termine & Tagesplan):
+            - Falls für heute Abend noch Termine anstehen: Nenne sie kurz in einem Satz.
+            - Morgen anstehende Termine: Nenne die morgigen Termine ruhig nacheinander in kurzen Einzelsätzen. Wenn morgen keine Termine anstehen: Trocken erwähnen, dass der Kalender morgen komplett frei ist.
+            - Falls Aufgaben vorliegen: Kurz und beiläufig in einem Satz erwähnen.
+
+            Absatz 5 (Smart-Home-Hinweise - NUR falls in den Daten vorhanden):
+            - Falls offene Fenster oder Offline-Sensoren vorliegen: Binde dies ruhig und beiläufig in einem Satz ein (besonders offene Fenster am Abend sind wichtig).
+            - Liegen keine Hinweise vor: Diesen Absatz komplett weglassen!
+
+            Absatz 6 (Stilvoller Abschluss):
+            - Ein kurzer, vornehmer Feierabend-Abschluss (z.B. "Einen entspannten Feierabend." oder "Einen angenehmen und ruhigen Abend.").
+
+            STRENG VERBOTEN:
+            - Niemals einen Namen nennen (weder Julian noch Sir). Sprich direkt in der Du-Form, niemals mit Sie.
+            - Keine Roboterfloskeln ("Die Systeme laufen im Hintergrund", "Statusbericht").
+            - Keine übertriebenen Motivations- oder Feierabendfloskeln ("Lass die Seele baumeln").
+            - Keine exakten oder krummen Schrittzahlen nennen – stets auf 500er runden (z.B. "rund siebentausendfünfhundert Schritte" oder "rund siebeneinhalbtausend Schritte" statt exakter Zahlen).
+            - Keine Doppelpunkte, keine Aufzählungszeichen, kein Markdown. Uhrzeiten immer in Worten ("um neun Uhr", "halb zehn").
+
+            BEISPIEL:
+            Guten Abend. Es ist jetzt achtzehn Uhr.
+
+            Morgen früh starten wir frisch bei acht Grad. Am Nachmittag klettert das Thermometer bei sonnigem Himmel auf einundzwanzig Grad, bevor es zum Abend auf dreizehn Grad absinkt. Für den Vormittag empfiehlt sich eine Übergangsjacke, später reicht ein Sakko.
+
+            Heute stehen bislang rund siebeneinhalbtausend Schritte zu Buche.
+
+            Morgen hat Ole Geburtstag. Die Termine starten um acht Uhr mit dem Kindergarten. Um halb drei steht die Abholung an, und um halb fünf folgt der Sportkurs.
+
+            Das Fenster im Schlafzimmer steht aktuell noch offen.
+
+            Einen entspannten Feierabend.
+
+            AKTUELLE DATEN:
+            - Uhrzeit jetzt: {{ now().strftime('%H:%M') }} Uhr, {{ ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'][now().weekday()] }}
+            - Morgen ist: {{ ['Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag','Montag'][now().weekday()] }}
+            - Temperaturverlauf & Wetter morgen:
+            {%- if wx.all %}
+              * Start am Morgen: ca. {{ morn_t }} Grad
+              * Nachmittag (Höchstwert): bis zu {{ aft_t }} Grad, {{ wx.conditions | join(', ') }}
+              * Abkühlung am Abend: ca. {{ eve_t }} Grad
+              * Niederschlag: {{ ('Regen ab etwa ' ~ wx.rain_times[0] ~ '.') if wx.rain_times else 'Kein Regen erwartet.' }}
             {%- else %}
-            Keine Vorhersagedaten für morgen verfügbar.
+              * Keine Vorhersagedaten verfügbar (Absatz weglassen).
             {%- endif %}
-
-            Kalender morgen:
-            {%- if cal_items.list | length > 0 %}
-            {%- for ev in cal_items.list %}
-            - {{ ev }}
+            - Fitness & Aktivität heute:
+            {%- if t_steps >= 500 %}
+              * Schritte heute bisher: rund {{ t_steps }} Schritte (bereits auf 500er gerundet)
+            {%- else %}
+              * Keine Daten (Absatz weglassen).
+            {%- endif %}
+            - Noch anstehende Termine heute Abend:
+            {%- for ev in cal_tonight.items | sort(attribute='sort') %}
+              * {{ ev.text }}
+            {%- else %}
+              * Keine weiteren Termine heute Abend.
+            {%- endfor %}
+            - Termine morgen:
+            {%- for ev in cal_tomorrow.items | sort(attribute='sort') %}
+              * {{ ev.text }}
+            {%- else %}
+              * Morgen keine Termine (Kalender ist frei).
+            {%- endfor %}
+            - Aufgaben:
+            {%- if todo_items is not defined %}
+              * Aufgabenliste derzeit nicht erreichbar.
+            {%- else %}
+            {%- for td in tasks.items %}
+              * {{ td }}
+            {%- else %}
+              * Keine fälligen Aufgaben für morgen.
+            {%- endfor %}
+            {%- endif %}
+            - Smart-Home-Hinweise:
+            {%- if notices.list | length > 0 %}
+            {%- for n in notices.list %}
+              * {{ n }}
             {%- endfor %}
             {%- else %}
-            Keine Termine morgen eingetragen (Tag ist komplett frei).
+              * Keine Auffälligkeiten (nicht erwähnen).
             {%- endif %}
 
-            Aufgaben für morgen:
-            {%- if todo_items_list.list | length > 0 %}
-            {%- for td in todo_items_list.list %}
-            - {{ td }}
-            {%- endfor %}
-            {%- else %}
-            Keine fälligen Aufgaben für morgen.
-            {%- endif %}
+            Gib ausschließlich den gesprochenen Text mit Leerzeilen zwischen den Absätzen aus:
+          error_message: "Guten Abend. Das Abend-Briefing konnte gerade nicht geladen werden."
 
-            === REGELN FÜR DIE SPRACHAUSGABE (TTS) ===
-            1. JARVIS-Tonalität & Aufbau:
-               - Stilvoller Auftakt: "Guten Abend, Julian."
-               - Wetter für morgen prägnant zusammenfassen (Höchsttemperatur und ob Regen droht).
-               - Morgen anstehende Termine präzise erwähnen. Wenn frei: Trocken und positiv anmerken, dass der Kalender morgen unberührt ist.
-               - Aufgaben: Nur erwähnen, wenn konkrete Aufgaben für morgen vorliegen. Wenn die Liste leer ist: Das Thema Aufgaben NIEMALS erwähnen.
-               - Souveräner Abschluss ohne Floskeln (z.B. "Die Systeme laufen im Hintergrund. Einen angenehmen Feierabend, Julian.").
-            2. Streng verbotene Phrasen:
-               - Keine Moderationsfloskeln ("Lass uns mal schauen", "Werfen wir einen Blick").
-               - Keine Motivationstrainer-Sprüche oder kitschige Phrasen ("Genieß den wohlverdienten Feierabend").
-               - Keine Assistenten-Höflichkeitsfloskeln ("Sag Bescheid wenn du was brauchst", "Lass mich wissen").
-               - Niemals die Höflichkeitsform "Sie" oder "Ihnen" verwenden, sondern Julian immer direkt mit "Julian" oder "du" ansprechen.
-            3. Perfekte Formatierung für Google Cloud TTS:
-               - Reiner Fließtext: KEINE Markdown-Zeichen (keine **, keine #, keine Aufzählungsstriche -).
-               - KEINE Emojis und keine Anführungszeichen.
-               - Verwende NUR Punkte und Kommas für natürliche Sprechpausen. KEINE Doppelpunkte (:), keine Schrägstriche, keine Klammern.
-               - Uhrzeiten und Zahlen umgangssprachlich ausschreiben (z.B. "um halb drei", "um zehn Uhr", "achtzehn Grad"). NIEMALS "14:30 Uhr" schreiben!
-            4. Ausgabe:
-               - Gib AUSSCHLIESSLICH den reinen Text zum Vorlesen aus, ohne Vorwort, Einleitung der KI oder Formatierung.

@@ -1,0 +1,148 @@
+script:
+  # ====================================================================
+  # Play Media - TTS Washer Humidity Warning
+  # - Plays an intelligent, witty Jarvis-style TTS announcement when washer drying causes high humidity
+  # - Notifies when humidity exceeds 60% during cycle, and provides a final reminder after 20 minutes
+  # - Randomly selects from 8 witty Jarvis-style variations per stage to prevent repetitive phrasing
+  # - Announces in German and optionally in Chinese via play_media_tts_message
+  # ====================================================================
+
+  play_media_tts_washer_humidity:
+    alias: "Play Media - TTS Washer Humidity Warning"
+    mode: queued
+    max: 5
+    icon: mdi:tumble-dryer
+
+    fields:
+      entity_id:
+        name: Speaker
+        description: "Entity ID of the media player to announce on (default: media_player.minis)."
+        example: media_player.minis
+        required: false
+        selector:
+          entity:
+            domain: media_player
+
+      media_player:
+        name: Speaker (Alternative)
+        description: "Alternative entity ID of the media player to announce on."
+        example: media_player.minis
+        required: false
+        selector:
+          entity:
+            domain: media_player
+
+      status:
+        name: Status
+        description: "Warning stage: initial (first alert at >60%) or reminder (final alert after 20 minutes)."
+        example: "initial"
+        required: true
+        selector:
+          select:
+            options:
+              - "initial"
+              - "reminder"
+
+      humidity_sensor:
+        name: Humidity Sensor
+        description: "Optional entity ID of the bathroom humidity sensor."
+        example: sensor.bathroom_multi_sensor_humidity
+        required: false
+        selector:
+          entity:
+            domain: sensor
+            device_class: humidity
+
+    sequence:
+      # Prepare TTS text variables with 8 witty Jarvis-style variations per stage
+      - variables:
+          target_player: "{{ media_player | default(entity_id | default('media_player.minis', true), true) }}"
+          h_sensor: "{{ humidity_sensor | default('sensor.bathroom_multi_sensor_humidity', true) }}"
+          has_humidity: "{{ h_sensor != '' and states(h_sensor) not in ['unavailable', 'unknown', ''] }}"
+          humidity: "{{ states(h_sensor) | float(0) | round if h_sensor != '' else 60 }}"
+          variant: "{{ [1, 2, 3, 4, 5, 6, 7, 8] | random }}"
+          is_reminder: "{{ status in ['reminder', 'final', 'second'] }}"
+          message_de: >-
+            {% if is_reminder %}
+              {% if variant == 1 %}
+                Letzter Hinweis zur Bad-Atmosphäre: 20 Minuten später liegt die Feuchtigkeit immer noch bei {{ humidity }} Prozent. Ich werde nicht weiter drängeln, aber die Wäsche würde sich über ein offenes Fenster freuen.
+              {% elif variant == 2 %}
+                Zweites und finales Update: Der Trockner schwitzt weiterhin bei {{ humidity }} Prozent Luftfeuchte. Ein kurzes Lüften wäre immer noch ratsam, danach schweige ich zu diesem Thema.
+              {% elif variant == 3 %}
+                Abschließender Hinweis: Die Luftfeuchtigkeit im Bad verharrt bei {{ humidity }} Prozent. Falls keine Sauna im Badezimmer geplant ist, wäre jetzt die letzte Gelegenheit zum Durchlüften.
+              {% elif variant == 4 %}
+                Höfliche Schlusserinnerung: Seit 20 Minuten kämpft der Trockner mit {{ humidity }} Prozent Feuchtigkeit. Ein kurzes Fensteröffnen beschleunigt das Ganze. Ich halte mich ab jetzt diskret zurück.
+              {% elif variant == 5 %}
+                Letzter Appell aus dem Badezimmer: {{ humidity }} Prozent Luftfeuchte nach 20 Minuten. Frische Luft würde der Wäsche guttun. Weitere Störungen meinerseits sind ausgeschlossen.
+              {% elif variant == 6 %}
+                Finale Meldung zur Trocknungsphase: Die Badfeuchte bleibt stur bei {{ humidity }} Prozent. Wenn gelüftet wird, trocknet es deutlich flotter. Mehr werde ich dazu nicht sagen.
+              {% elif variant == 7 %}
+                Abschließende Statusmeldung: Auch nach 20 Minuten stehen wir bei {{ humidity }} Prozent Luftfeuchte im Bad. Ein Stoßlüften wäre fabelhaft, andernfalls lasse ich die Physik ihren Lauf nehmen.
+              {% else %}
+                Letzte Durchsage zur Wäsche: Die Feuchtigkeit verweilt bei {{ humidity }} Prozent. Für maximale Trocknungsleistung empfiehlt sich Frischluft. Das war mein letzter Hinweis.
+              {% endif %}
+            {% else %}
+              {% if variant == 1 %}
+                Der Waschtrockner leistet ganze Arbeit, allerdings verwandelt sich das Bad bei {{ humidity }} Prozent Luftfeuchtigkeit gerade in ein tropisches Biotop. Ein kurzes Stoßlüften würde der Wäsche sehr beim Trocknen helfen.
+              {% elif variant == 2 %}
+                Eine atmosphärische Durchsage: Der Trockner gibt alles, aber die Luftfeuchte im Bad hat {{ humidity }} Prozent erreicht. Etwas Frischluft würde die Trocknungszeit spürbar verkürzen, andernfalls züchten wir bald Nebel.
+              {% elif variant == 3 %}
+                Kurzes Physik-Update: Trockene Wäsche erfordert trockene Luft. Bei aktuell {{ humidity }} Prozent Feuchtigkeit im Bad schwitzt der Trockner mehr als er trocknet. Zeit für eine Runde Durchlüften.
+              {% elif variant == 4 %}
+                Protokollhinweis: Der Waschtrockner meldet subtropische Arbeitsbedingungen bei {{ humidity }} Prozent Luftfeuchte. Ein kleiner Luftaustausch würde die Trocknungseffizienz drastisch steigern.
+              {% elif variant == 5 %}
+                Eine kurze Bemerkung zur Thermodynamik: Bei {{ humidity }} Prozent Luftfeuchtigkeit im Bad braucht die Wäsche doppelt so lange. Ein geöffnetes Fenster würde der Wäsche sehr guttun.
+              {% elif variant == 6 %}
+                Statusbericht aus dem Maschinenraum: Die Wäsche dämpft vor sich hin, die Feuchtigkeit liegt bei {{ humidity }} Prozent. Wenn kurz gelüftet wird, wird die Kleidung deutlich schneller trocken.
+              {% elif variant == 7 %}
+                Die Sensoren schlagen an: {{ humidity }} Prozent Luftfeuchte im Bad während des Trockenvorgangs. Ein gezielter Stoß Frischluft würde dem Trockner den nötigen Freiraum verschaffen.
+              {% else %}
+                Der Trockner kämpft gegen seine eigene Verdunstung bei {{ humidity }} Prozent Feuchtigkeit. Frische Luft von draußen wäre die eleganteste Lösung zur Beschleunigung.
+              {% endif %}
+            {% endif %}
+          message_zh: >-
+            {% if is_reminder %}
+              {% if variant == 1 %}
+                浴室环境最终提醒：20分钟过去了，湿度依然保持在 {{ humidity }}%。我不会再过多唠叨，不过开窗通风确实能让衣物干得更快。
+              {% elif variant == 2 %}
+                第二次也是最后一次通报：浴室湿度仍停留在 {{ humidity }}%。建议适当开窗换气，此后我将保持安静。
+              {% elif variant == 3 %}
+                最终提示：浴室湿度依然处于 {{ humidity }}%。如果没打算将浴室当成桑拿房，现在开窗通风最为理想。
+              {% elif variant == 4 %}
+                礼貌的最后提醒：烘干机已在 {{ humidity }}% 的湿度下坚持了20分钟。开窗换气能加速干燥，接下来我将不再打扰。
+              {% elif variant == 5 %}
+                浴室最终通知：20分钟后湿度仍为 {{ humidity }}%。新鲜空气有助烘干，这保证是我最后一次提醒。
+              {% elif variant == 6 %}
+                烘干阶段最终汇报：浴室湿度依然高居 {{ humidity }}%。开窗能更快干衣，汇报完毕，不再叨扰。
+              {% elif variant == 7 %}
+                最终状态报告：20分钟后浴室湿度依然达到 {{ humidity }}%。此时通风效果最佳，否则只能任由烘干机慢慢运转了。
+              {% else %}
+                衣物烘干最后通告：湿度仍停在 {{ humidity }}%。为获得最佳烘干效果建议通风。这是最后一条提醒。
+              {% endif %}
+            {% else %}
+              {% if variant == 1 %}
+                洗烘机运转正常，不过浴室湿度已达到 {{ humidity }}%，宛如热带温室。建议开窗通风，助衣物更快干透。
+              {% elif variant == 2 %}
+                气象通报：烘干程序全力进行中，浴室湿度已升至 {{ humidity }}%。此时通风换气能显著缩短烘干时间，避免水汽积聚。
+              {% elif variant == 3 %}
+                物理小常识：干燥的空气才能让衣物更快干透。目前浴室湿度达 {{ humidity }}%，烘干机正在受阻，建议开窗通风换气。
+              {% elif variant == 4 %}
+                系统提示：洗烘机检测到浴室湿度达到 {{ humidity }}%。适当开窗通风可以大幅提升烘干效率与速度。
+              {% elif variant == 5 %}
+                容我提醒一句：浴室空气湿度已达 {{ humidity }}%，这会让烘干过程变慢。打开窗户换换空气会有极大改善。
+              {% elif variant == 6 %}
+                浴室运行简报：烘干水汽正在上升，环境湿度已达 {{ humidity }}%。短时间通风能让衣物干得更快更清爽。
+              {% elif variant == 7 %}
+                传感器警报：烘干过程中浴室湿度已升至 {{ humidity }}%。给浴室补充新鲜干燥空气，能让烘干机事半功倍。
+              {% else %}
+                烘干机正受困于自身散发的水汽中，当前湿度 {{ humidity }}%。开窗通风是加速烘干的最优雅方案。
+              {% endif %}
+            {% endif %}
+
+      # Announce TTS message (German and optional Chinese)
+      - action: script.play_media_tts_message
+        data:
+          entity_id: "{{ target_player }}"
+          message: "{{ message_de }}"
+          message_chinese: "{{ message_zh }}"
+

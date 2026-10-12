@@ -2,8 +2,9 @@ automation:
   # ====================================================================
   # Kitchen - Light Switch
   # - Controls kitchen lighting via wall switch button events
-  # - Single press up when off: Turns on dim/warm light first
-  # - Single press up when on: Steps up to full brightness (or toggles back to dim)
+  # - Acts as manual fallback for motion lighting with shared brightness (brightness_high)
+  # - Single press up when off: Turns on kitchen light to shared full brightness
+  # - Single press up when on: Toggles between full and dim/warm setting
   # - Down single click: Turns off kitchen light smoothly via light_low_before_off
   # ====================================================================
 
@@ -32,7 +33,7 @@ automation:
                 value_template: "{{ trigger.to_state.attributes.event_type == 'on' }}"
             sequence:
               - choose:
-                  # If kitchen light is off: always start with dim/warm setting first
+                  # If kitchen light is off: turn on to shared full brightness (fallback for motion)
                   - conditions:
                       - condition: state
                         entity_id: light.kitchen_light_group
@@ -42,10 +43,10 @@ automation:
                         target:
                           entity_id: light.kitchen_light_group
                         data:
-                          brightness: "{{ brightness_awake }}"
+                          brightness: "{{ brightness_high }}"
                           color_temp_kelvin: 2000
 
-                  # If already at full brightness: toggle back to dim/warm setting
+                  # If already at full brightness: toggle to dim/warm setting
                   - conditions:
                       - condition: template
                         value_template: "{{ state_attr('light.kitchen_light_group', 'brightness') | default(0, true) | int(0) == brightness_high }}"
@@ -57,7 +58,7 @@ automation:
                           brightness: "{{ brightness_awake }}"
                           color_temp_kelvin: 2000
 
-                # If already at dim/warm: step up to full brightness
+                # If already at dim/warm: step back up to full brightness
                 default:
                   - action: light.turn_on
                     target:

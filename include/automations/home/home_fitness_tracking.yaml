@@ -1,0 +1,71 @@
+automation:
+  # ====================================================================
+  # Home - Fitness & Step Tracking (Julian)
+  # - Tracks daily step counts and archives yesterday's total before midnight reset
+  # - Scheduled snapshot at 23:59:45 daily
+  # - Resilient fallback: captures from_state whenever sensor.julian_daily_steps
+  #   drops significantly (detecting a midnight or delayed sync reset)
+  # ====================================================================
+
+  - id: "home_fitness_tracking_julian_steps"
+    alias: "Home - Fitness Tracking Julian Steps"
+    mode: single
+
+    # ------------------------------------------------------------------
+    # Trigger: scheduled pre-midnight snapshot or sudden sensor reset
+    # ------------------------------------------------------------------
+    trigger:
+      # Primary: Snapshot right before midnight
+      - trigger: time
+        at: "23:59:45"
+        id: "midnight_snapshot"
+
+      # Fallback: Detection of sensor reset (drops from high value to near 0)
+      - trigger: state
+        entity_id: sensor.julian_daily_steps
+        id: "sensor_reset"
+
+    # ------------------------------------------------------------------
+    # Condition: ensure we only record meaningful positive step counts
+    # ------------------------------------------------------------------
+    condition:
+      - condition: or
+        conditions:
+          # Case 1: Scheduled snapshot before midnight if steps are present
+          - condition: and
+            conditions:
+              - condition: trigger
+                id: "midnight_snapshot"
+              - condition: template
+                value_template: >-
+                  {{ states('sensor.julian_daily_steps') | float(0) > 100 }}
+
+          # Case 2: State dropped significantly (indicating a daily reset)
+          - condition: and
+            conditions:
+              - condition: trigger
+                id: "sensor_reset"
+              - condition: template
+                value_template: >-
+                  {{ trigger.from_state is not none
+                     and trigger.from_state.state not in ['unavailable', 'unknown']
+                     and trigger.to_state is not none
+                     and trigger.to_state.state not in ['unavailable', 'unknown']
+                     and (trigger.from_state.state | float(0)) > 500
+                     and (trigger.to_state.state | float(0)) < (trigger.from_state.state | float(0) * 0.5) }}
+
+    # ------------------------------------------------------------------
+    # Action: update helper with yesterday's final step count
+    # ------------------------------------------------------------------
+    action:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.julian_yesterday_steps
+        data:
+          value: >-
+            {% if trigger.id == 'midnight_snapshot' %}
+              {{ states('sensor.julian_daily_steps') | float(0) | round(0) | int }}
+            {% else %}
+              {{ trigger.from_state.state | float(0) | round(0) | int }}
+            {% endif %}
+

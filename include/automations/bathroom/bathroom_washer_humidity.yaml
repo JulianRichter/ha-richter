@@ -1,0 +1,160 @@
+automation:
+  # ====================================================================
+  # Bathroom - Washer Humidity Warning
+  # - Tracks washing machine cycle via binary_sensor.template_bathroom_washer
+  # - Warns via Jarvis-style TTS when washer is running and humidity rises above 60%
+  # - Sends a 2nd final reminder after 20 minutes if humidity remains high
+  # - Uses input_boolean.bathroom_washer_humidity_warning_active to track state and limit to 2 alerts
+  # - Strictly interlocked with shower warning to prevent alert collisions
+  # - Announces in German and optionally in Chinese via play_media_tts_washer_humidity
+  # ====================================================================
+
+  - id: "bathroom_washer_humidity"
+    alias: "Bathroom - Washer Humidity"
+    mode: restart
+    trigger:
+      # 1. Humidity rises above 60%
+      - trigger: numeric_state
+        entity_id: sensor.bathroom_multi_sensor_humidity
+        above: 60
+        id: humidity_high
+
+      # 2. Washer starts while humidity is already above 60%
+      - trigger: state
+        entity_id: binary_sensor.template_bathroom_washer
+        to: "on"
+        id: washer_on
+
+      # 3. Presence home turns on while washer is running and humidity is high
+      - trigger: state
+        entity_id: input_boolean.presence_home
+        to: "on"
+        id: presence_on
+
+      # 4. 20-minute follow-up reminder if warning has been active for 20 minutes
+      - trigger: state
+        entity_id: input_boolean.bathroom_washer_humidity_warning_active
+        to: "on"
+        for:
+          minutes: 20
+        id: reminder_20m
+
+      # 5. Washer cycle completed or stopped
+      - trigger: state
+        entity_id: binary_sensor.template_bathroom_washer
+        to: "off"
+        id: washer_off
+
+      # 6. Humidity dropped back below 60%
+      - trigger: numeric_state
+        entity_id: sensor.bathroom_multi_sensor_humidity
+        below: 60
+        id: humidity_low
+
+      # 7. Shower warning activated (shower takes precedence)
+      - trigger: state
+        entity_id: input_boolean.bathroom_humidity_warning_active
+        to: "on"
+        id: shower_warning_started
+
+    condition: []
+
+    action:
+      - choose:
+          # ==========================================================
+          # CASE 1: Initial warning when washer is running and humidity > 60%
+          # ==========================================================
+          - conditions:
+              - condition: or
+                conditions:
+                  - condition: trigger
+                    id: humidity_high
+                  - condition: trigger
+                    id: washer_on
+                  - condition: trigger
+                    id: presence_on
+              - condition: state
+                entity_id: binary_sensor.template_bathroom_washer
+                state: "on"
+              - condition: numeric_state
+                entity_id: sensor.bathroom_multi_sensor_humidity
+                above: 60
+                below: 80
+              - condition: state
+                entity_id: input_boolean.bathroom_washer_humidity_warning_active
+                state: "off"
+              - condition: state
+                entity_id: input_boolean.bathroom_humidity_warning_active
+                state: "off"
+              - condition: state
+                entity_id: binary_sensor.bathroom_shower_motion_sensor_occupancy
+                state: "off"
+              - condition: state
+                entity_id: input_boolean.presence_home
+                state: "on"
+            sequence:
+              # Mark washer humidity warning active first (starts 20-minute timer)
+              - action: input_boolean.turn_on
+                target:
+                  entity_id: input_boolean.bathroom_washer_humidity_warning_active
+
+              # Announce initial witty Jarvis reminder via TTS
+              - action: script.play_media_tts_washer_humidity
+                data:
+                  entity_id: media_player.minis
+                  status: initial
+                  humidity_sensor: sensor.bathroom_multi_sensor_humidity
+
+          # ==========================================================
+          # CASE 2: 20-minute follow-up final reminder
+          # ==========================================================
+          - conditions:
+              - condition: trigger
+                id: reminder_20m
+              - condition: state
+                entity_id: binary_sensor.template_bathroom_washer
+                state: "on"
+              - condition: numeric_state
+                entity_id: sensor.bathroom_multi_sensor_humidity
+                above: 60
+                below: 80
+              - condition: state
+                entity_id: input_boolean.bathroom_washer_humidity_warning_active
+                state: "on"
+              - condition: state
+                entity_id: input_boolean.bathroom_humidity_warning_active
+                state: "off"
+              - condition: state
+                entity_id: binary_sensor.bathroom_shower_motion_sensor_occupancy
+                state: "off"
+              - condition: state
+                entity_id: input_boolean.presence_home
+                state: "on"
+            sequence:
+              # Announce second and final witty Jarvis reminder via TTS
+              - action: script.play_media_tts_washer_humidity
+                data:
+                  entity_id: media_player.minis
+                  status: reminder
+                  humidity_sensor: sensor.bathroom_multi_sensor_humidity
+
+          # ==========================================================
+          # CASE 3: Reset warning state (washer off, humidity low, or shower active)
+          # ==========================================================
+          - conditions:
+              - condition: or
+                conditions:
+                  - condition: trigger
+                    id: washer_off
+                  - condition: trigger
+                    id: humidity_low
+                  - condition: trigger
+                    id: shower_warning_started
+              - condition: state
+                entity_id: input_boolean.bathroom_washer_humidity_warning_active
+                state: "on"
+            sequence:
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.bathroom_washer_humidity_warning_active
+

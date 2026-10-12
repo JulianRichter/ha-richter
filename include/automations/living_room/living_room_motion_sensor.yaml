@@ -2,17 +2,18 @@ automation:
   # ====================================================================
   # Living Room - Motion Sensor
   # - Controls living room light group and tablet screen based on motion
-  # - Turns on full/warm light after dark if home (awake)
-  # - Turns on dim red light after dark if away (sleeping)
-  # - Smoothly turns off lights when motion clears
+  # - Turns on motion brightness (200) after dark when awake, dim red when sleeping
+  # - Motion cleared: Turns off light only if currently at motion or sleep brightness
+  # - Manual switch or voice command overrules motion automation
   # ====================================================================
 
   - id: "living_room_motion_sensor"
     alias: "Living Room - Motion Sensor"
-    mode: single
+    mode: restart
+
     variables:
       brightness_sleep: "{{ states('input_number.light_brightness_sleep') | int(5) }}"
-      brightness_awake: "{{ states('input_number.light_brightness_awake') | int(126) }}"
+      brightness_motion: "{{ states('input_number.light_brightness_motion') | int(200) }}"
       color_sleep: >-
         {% set raw = states('input_text.light_color_sleep') %}
         {{ raw.split(',') | map('int') | list if (raw not in ['unknown', 'unavailable', '', 'none'] and ',' in raw) else [255, 0, 0] }}
@@ -28,16 +29,11 @@ automation:
           - "on"
           - "off"
 
-    condition:
-      # Light is low, off, or in awake ambient state
-      - condition: template
-        value_template: >
-          {% set brightness = state_attr('light.living_room_light_group', 'brightness') %}
-          {{ brightness is none or brightness | int <= brightness_sleep or brightness | int == brightness_awake }}
+    condition: []
 
     action:
       - choose:
-          # Motion detected (not sleeping, below horizon)
+          # Motion detected (awake, below horizon)
           - conditions:
               - condition: state
                 entity_id: binary_sensor.living_room_motion_sensor_occupancy
@@ -54,13 +50,22 @@ automation:
                 target:
                   entity_id: switch.living_room_tablet_screen
 
-              # Turn on warm ambient light
-              - action: light.turn_on
-                target:
-                  entity_id: light.living_room_light_group
-                data:
-                  brightness: "{{ brightness_awake }}"
-                  rgb_color: "{{ color_awake }}"
+              # Turn on motion light only if spot relay is off AND light group is off or recovering from fade
+              - if:
+                  - condition: state
+                    entity_id: switch.living_room_spot_lights
+                    state: "off"
+                  - condition: template
+                    value_template: >-
+                      {% set b = state_attr('light.living_room_light_group', 'brightness') | default(0, true) | int(0) %}
+                      {{ is_state('light.living_room_light_group', 'off') or b <= brightness_sleep }}
+                then:
+                  - action: light.turn_on
+                    target:
+                      entity_id: light.living_room_light_group
+                    data:
+                      brightness: "{{ brightness_motion }}"
+                      rgb_color: "{{ color_awake }}"
 
           # Motion detected (sleeping, below horizon)
           - conditions:
@@ -79,20 +84,52 @@ automation:
                 target:
                   entity_id: switch.living_room_tablet_screen
 
-              # Turn on night red light
-              - action: light.turn_on
-                target:
-                  entity_id: light.living_room_light_group
-                data:
-                  brightness: "{{ brightness_sleep }}"
-                  rgb_color: "{{ color_sleep }}"
+              # Turn on night red light only if spot relay is off AND light group is off
+              - if:
+                  - condition: state
+                    entity_id: switch.living_room_spot_lights
+                    state: "off"
+                  - condition: state
+                    entity_id: light.living_room_light_group
+                    state: "off"
+                then:
+                  - action: light.turn_on
+                    target:
+                      entity_id: light.living_room_light_group
+                    data:
+                      brightness: "{{ brightness_sleep }}"
+                      rgb_color: "{{ color_sleep }}"
 
-          # Motion cleared: turn off light smoothly
+          # Motion detected (daytime, above horizon)
+          - conditions:
+              - condition: state
+                entity_id: binary_sensor.living_room_motion_sensor_occupancy
+                state: "on"
+              - condition: state
+                entity_id: sun.sun
+                state: "above_horizon"
+            sequence:
+              # Wake tablet screen
+              - action: switch.turn_on
+                target:
+                  entity_id: switch.living_room_tablet_screen
+
+          # Motion cleared: turn off light only if set by motion (sleep or motion brightness)
           - conditions:
               - condition: state
                 entity_id: binary_sensor.living_room_motion_sensor_occupancy
                 state: "off"
+              - condition: state
+                entity_id: light.living_room_light_group
+                state: "on"
+              - condition: template
+                value_template: >-
+                  {% set b = state_attr('light.living_room_light_group', 'brightness') | default(0, true) | int(0) %}
+                  {{ b <= brightness_sleep or b == brightness_motion }}
             sequence:
               - action: script.light_low_before_off
                 data:
                   entity_id: light.living_room_light_group
+                  transition: "{{ 1 if (state_attr('light.living_room_light_group', 'brightness') | default(0, true) | int(0) <= brightness_sleep) else 15 }}"
+
+        default: []

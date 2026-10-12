@@ -19,3 +19,24 @@ template:
           action: input_boolean.turn_on
           target:
             entity_id: input_boolean.presence_home
+
+  # ====================================================================
+  # Presence - Resident Wi-Fi Device Trackers
+  # - Instant stationary presence detection based on home Wi-Fi SSID
+  # - Added to person.julian and person.xingyang in Home Assistant UI
+  # - Fast arrival trigger when entering home network range
+  # ====================================================================
+
+  - device_tracker:
+      - name: "Julian WiFi"
+        unique_id: julian_wifi
+        icon: mdi:wifi-check
+        in_zones: >-
+          {{ ['zone.home'] if 'Nudelauflauf' in (states('sensor.julian_wifi_connection') | string) else [] }}
+
+      - name: "Xingyang WiFi"
+        unique_id: xingyang_wifi
+        icon: mdi:wifi-check
+        in_zones: >-
+          {{ ['zone.home'] if 'Nudelauflauf' in (states('sensor.xingyang_ssid') | string) else [] }}
+

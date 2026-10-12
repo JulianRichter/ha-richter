@@ -32,6 +32,15 @@ input_number:
     initial: 255
     mode: box
 
+  light_brightness_motion:
+    name: "Lighting - Brightness Motion"
+    icon: mdi:motion-sensor
+    min: 1
+    max: 255
+    step: 1
+    initial: 200
+    mode: box
+
 input_text:
   light_color_sleep:
     name: "Lighting - Color Sleep (RGB)"

@@ -40,10 +40,12 @@ template:
               entity_id: cover.bedroom_roller_blinds
 
   # ====================================================================
-  # Living Room Curtains (Smart Window Safety)
+  # Living Room Curtains (Smart Window Safety & Drift Compensation)
   # - Controls left and right living room curtains together as a group
   # - Protects left curtain from closing when living room window is open
   # - Reflects intended closed state via right curtain when window is open
+  # - Compensates for motor slippage / end-stop drift with 5% threshold
+  # - Uses hardware motor_state and running sensors to prevent stuck states
   # ====================================================================
   - cover:
       - unique_id: living_room_curtain_group
@@ -52,16 +54,32 @@ template:
         availability: >
           {{ has_value('cover.living_room_curtain_left') and has_value('cover.living_room_curtain_right') }}
         state: >
-          {% set left = states('cover.living_room_curtain_left') %}
-          {% set right = states('cover.living_room_curtain_right') %}
           {% set win_open = is_state('binary_sensor.living_room_window_contact', 'on') %}
-          {% if left == 'opening' or right == 'opening' %}
+          {% set left_pos = state_attr('cover.living_room_curtain_left', 'current_position') | default(0, true) | int(0) %}
+          {% set right_pos = state_attr('cover.living_room_curtain_right', 'current_position') | default(0, true) | int(0) %}
+
+          {# Check if motors are stopped via Aqara hardware sensors #}
+          {% set left_stopped = is_state('sensor.living_room_curtain_left_motor_state', 'stopped') or is_state('binary_sensor.living_room_curtain_left_running', 'off') %}
+          {% set right_stopped = is_state('sensor.living_room_curtain_right_motor_state', 'stopped') or is_state('binary_sensor.living_room_curtain_right_running', 'off') %}
+
+          {# Active motion flags: only opening/closing if motor is not confirmed stopped #}
+          {% set left_opening = is_state('sensor.living_room_curtain_left_motor_state', 'opening') or (is_state('cover.living_room_curtain_left', 'opening') and not left_stopped) %}
+          {% set right_opening = is_state('sensor.living_room_curtain_right_motor_state', 'opening') or (is_state('cover.living_room_curtain_right', 'opening') and not right_stopped) %}
+
+          {% set left_closing = is_state('sensor.living_room_curtain_left_motor_state', 'closing') or (is_state('cover.living_room_curtain_left', 'closing') and not left_stopped) %}
+          {% set right_closing = is_state('sensor.living_room_curtain_right_motor_state', 'closing') or (is_state('cover.living_room_curtain_right', 'closing') and not right_stopped) %}
+
+          {# Tolerant closed state: motor position <= 5% compensates for physical slip #}
+          {% set left_closed = is_state('cover.living_room_curtain_left', 'closed') or left_pos <= 5 %}
+          {% set right_closed = is_state('cover.living_room_curtain_right', 'closed') or right_pos <= 5 %}
+
+          {% if left_opening or right_opening %}
             opening
-          {% elif left == 'closing' or right == 'closing' %}
+          {% elif left_closing or right_closing %}
             closing
-          {% elif win_open and right in ['closed', 'closing'] %}
+          {% elif win_open and right_closed %}
             closed
-          {% elif left == 'closed' and right == 'closed' %}
+          {% elif left_closed and right_closed %}
             closed
           {% else %}
             open
@@ -70,9 +88,17 @@ template:
           {% set left_pos = state_attr('cover.living_room_curtain_left', 'current_position') | default(0, true) | int(0) %}
           {% set right_pos = state_attr('cover.living_room_curtain_right', 'current_position') | default(0, true) | int(0) %}
           {% if is_state('binary_sensor.living_room_window_contact', 'on') %}
-            {{ right_pos }}
+            {% set pos = right_pos %}
           {% else %}
-            {{ ((left_pos + right_pos) / 2) | round(0) | int(0) }}
+            {% set pos = ((left_pos + right_pos) / 2) | round(0) | int(0) %}
+          {% endif %}
+          {# Snap near-limit positions to 0% and 100% to ensure clean UI state and toggle reliability #}
+          {% if pos <= 5 %}
+            0
+          {% elif pos >= 95 %}
+            100
+          {% else %}
+            {{ pos }}
           {% endif %}
         open_cover:
           # Open both left and right curtains
@@ -117,7 +143,7 @@ template:
                     entity_id: binary_sensor.living_room_window_contact
                     state: "off"
                   - condition: template
-                    value_template: "{{ position | int(0) == 100 }}"
+                    value_template: "{{ position | int(0) >= 95 }}"
             then:
               - action: cover.set_cover_position
                 data:

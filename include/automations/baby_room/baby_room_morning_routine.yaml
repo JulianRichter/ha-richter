@@ -17,7 +17,7 @@ automation:
       # Google Home alarm: trigger 15 minutes before the next scheduled alarm
       - trigger: template
         value_template: >
-          {% set alarm_dt = states('sensor.baby_room_alarms') | as_datetime %}
+          {% set alarm_dt = states('sensor.kinderzimmer_alarms') | as_datetime %}
           {% if alarm_dt is not none and alarm_dt > now() %}
             {{ (now() + timedelta(minutes=15)).strftime('%Y-%m-%d %H:%M') == (alarm_dt | as_local).strftime('%Y-%m-%d %H:%M') }}
           {% else %}
@@ -27,7 +27,7 @@ automation:
       # Manual alarm: trigger 15 minutes before scheduled alarm time (used if Google alarm is unset)
       - trigger: template
         value_template: >
-          {% set google_alarm_dt = states('sensor.baby_room_alarms') | as_datetime %}
+          {% set google_alarm_dt = states('sensor.kinderzimmer_alarms') | as_datetime %}
           {% if google_alarm_dt is none or google_alarm_dt < now() %}
             {% set alarm = states('input_datetime.baby_room_alarm_time') %}
             {% if alarm not in ['unknown', 'unavailable', 'none', ''] %}

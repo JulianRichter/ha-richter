@@ -53,7 +53,7 @@ template:
           {% endif %}
 
   # ----------------------------------------------------------------------------
-  # Hourly Forecast & Precipitation (Periodic query with cache fallback)
+  # Hourly & Daily Forecast & Precipitation (Periodic query with cache fallback)
   # ----------------------------------------------------------------------------
   - trigger:
       - trigger: homeassistant
@@ -68,6 +68,13 @@ template:
         target:
           entity_id: weather.home_open_meteo
         response_variable: hourly
+      - action: weather.get_forecasts
+        continue_on_error: true
+        data:
+          type: daily
+        target:
+          entity_id: weather.home_open_meteo
+        response_variable: daily
     sensor:
       - name: Weather Home - Current Precipitation
         unique_id: weather_home_current_precipitation
@@ -138,6 +145,34 @@ template:
               {{ this.attributes.condition }}
             {% else %}[]{% endif %}
 
+      - name: Weather Home - Forecast Daily
+        unique_id: weather_home_forecast_daily
+        state: "{{ now() }}"
+        attributes:
+          forecast: >
+            {% set f = daily.get('weather.home_open_meteo', {}).get('forecast') if daily is defined and daily else none %}
+            {% set has_new = f is not none and f is iterable and f|length > 0 %}
+            {% set cache = this.attributes.forecast if (this is defined and this and 'forecast' in this.attributes and this.attributes.forecast is iterable) else [] %}
+            {% set raw = f if has_new else cache %}
+            {% set items = namespace(list=[]) %}
+            {% if raw is iterable and raw|length > 0 %}
+              {% for d in raw %}
+                {% set item_dt = as_datetime(d.datetime) %}
+                {% if item_dt is not none and as_local(item_dt).date() >= now().date() %}
+                  {% set local_dt = as_local(item_dt) %}
+                  {% set items.list = items.list + [{
+                    "datetime": local_dt.isoformat(),
+                    "temperature": d.temperature | float(0),
+                    "templow": d.templow | float(0),
+                    "condition": d.condition | string,
+                    "precipitation": d.precipitation | float(0) if d.precipitation is defined else 0,
+                    "precipitation_probability": d.precipitation_probability | int(0) if d.precipitation_probability is defined else 0
+                  }] %}
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+            {{ items.list }}
+
   # ----------------------------------------------------------------------------
   # Midnight Forecast (Daily snapshot with fallback and startup recovery)
   # ----------------------------------------------------------------------------
@@ -146,6 +181,8 @@ template:
         at: "00:00:00"
       - trigger: homeassistant
         event: start
+      - trigger: time_pattern
+        minutes: /30
     action:
       - action: weather.get_forecasts
         continue_on_error: true
@@ -157,69 +194,85 @@ template:
     sensor:
       - name: Weather Home - Forecast at Midnight
         unique_id: weather_home_forecast_at_midnight
-        state: "{{ now() }}"
+        state: >
+          {% set has_today_snapshot = this is defined and this.state not in ['unavailable', 'unknown', ''] and as_local(as_datetime(this.state)).date() == now().date() %}
+          {% if trigger.platform == 'time' %}
+            {{ now() }}
+          {% elif has_today_snapshot %}
+            {{ this.state }}
+          {% else %}
+            {{ now() }}
+          {% endif %}
         attributes:
           datetime: >
             {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
-            {% set has_cache = this is defined and 'datetime' in this.attributes and this.attributes.datetime and this.attributes.datetime != '[]' %}
-            {% if trigger.platform == 'homeassistant' and has_cache %}
+            {% set has_today_cache = this is defined and 'datetime' in this.attributes and this.attributes.datetime and this.attributes.datetime != '[]' and this.state not in ['unavailable', 'unknown', ''] and as_local(as_datetime(this.state)).date() == now().date() %}
+            {% if trigger.platform != 'time' and has_today_cache %}
               {{ this.attributes.datetime }}
             {% elif f and f|length > 0 %}
-              [
+              {% set items = namespace(list=[]) %}
               {% for h in f %}
-                "{{ h.datetime }}"
-                {% if not loop.last %},{% endif %}
+                {% set item_dt = as_datetime(h.datetime) %}
+                {% if item_dt is not none and as_local(item_dt).date() >= now().date() %}
+                  {% set items.list = items.list + [h.datetime] %}
+                {% endif %}
               {% endfor %}
-              ]
-            {% elif has_cache %}
+              {{ items.list }}
+            {% elif this is defined and 'datetime' in this.attributes and this.attributes.datetime %}
               {{ this.attributes.datetime }}
             {% else %}[]{% endif %}
 
           temperature: >
             {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
-            {% set has_cache = this is defined and 'temperature' in this.attributes and this.attributes.temperature and this.attributes.temperature != '[]' %}
-            {% if trigger.platform == 'homeassistant' and has_cache %}
+            {% set has_today_cache = this is defined and 'temperature' in this.attributes and this.attributes.temperature and this.attributes.temperature != '[]' and this.state not in ['unavailable', 'unknown', ''] and as_local(as_datetime(this.state)).date() == now().date() %}
+            {% if trigger.platform != 'time' and has_today_cache %}
               {{ this.attributes.temperature }}
             {% elif f and f|length > 0 %}
-              [
+              {% set items = namespace(list=[]) %}
               {% for h in f %}
-                {{ h.temperature | float(0) }}
-                {% if not loop.last %},{% endif %}
+                {% set item_dt = as_datetime(h.datetime) %}
+                {% if item_dt is not none and as_local(item_dt).date() >= now().date() %}
+                  {% set items.list = items.list + [h.temperature | float(0)] %}
+                {% endif %}
               {% endfor %}
-              ]
-            {% elif has_cache %}
+              {{ items.list }}
+            {% elif this is defined and 'temperature' in this.attributes and this.attributes.temperature %}
               {{ this.attributes.temperature }}
             {% else %}[]{% endif %}
 
           precipitation: >
             {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
-            {% set has_cache = this is defined and 'precipitation' in this.attributes and this.attributes.precipitation and this.attributes.precipitation != '[]' %}
-            {% if trigger.platform == 'homeassistant' and has_cache %}
+            {% set has_today_cache = this is defined and 'precipitation' in this.attributes and this.attributes.precipitation and this.attributes.precipitation != '[]' and this.state not in ['unavailable', 'unknown', ''] and as_local(as_datetime(this.state)).date() == now().date() %}
+            {% if trigger.platform != 'time' and has_today_cache %}
               {{ this.attributes.precipitation }}
             {% elif f and f|length > 0 %}
-              [
+              {% set items = namespace(list=[]) %}
               {% for h in f %}
-                {{ h.precipitation | float(0) }}
-                {% if not loop.last %},{% endif %}
+                {% set item_dt = as_datetime(h.datetime) %}
+                {% if item_dt is not none and as_local(item_dt).date() >= now().date() %}
+                  {% set items.list = items.list + [h.precipitation | float(0)] %}
+                {% endif %}
               {% endfor %}
-              ]
-            {% elif has_cache %}
+              {{ items.list }}
+            {% elif this is defined and 'precipitation' in this.attributes and this.attributes.precipitation %}
               {{ this.attributes.precipitation }}
             {% else %}[]{% endif %}
 
           condition: >
             {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
-            {% set has_cache = this is defined and 'condition' in this.attributes and this.attributes.condition and this.attributes.condition != '[]' %}
-            {% if trigger.platform == 'homeassistant' and has_cache %}
+            {% set has_today_cache = this is defined and 'condition' in this.attributes and this.attributes.condition and this.attributes.condition != '[]' and this.state not in ['unavailable', 'unknown', ''] and as_local(as_datetime(this.state)).date() == now().date() %}
+            {% if trigger.platform != 'time' and has_today_cache %}
               {{ this.attributes.condition }}
             {% elif f and f|length > 0 %}
-              [
+              {% set items = namespace(list=[]) %}
               {% for h in f %}
-                "{{ h.condition }}"
-                {% if not loop.last %},{% endif %}
+                {% set item_dt = as_datetime(h.datetime) %}
+                {% if item_dt is not none and as_local(item_dt).date() >= now().date() %}
+                  {% set items.list = items.list + [h.condition | string] %}
+                {% endif %}
               {% endfor %}
-              ]
-            {% elif has_cache %}
+              {{ items.list }}
+            {% elif this is defined and 'condition' in this.attributes and this.attributes.condition %}
               {{ this.attributes.condition }}
             {% else %}[]{% endif %}
 
@@ -236,22 +289,56 @@ template:
         temperature_template: "{{ states('sensor.weather_home_current_temperature') | float(0) }}"
         temperature_unit: "°C"
         humidity_template: "{{ 0.0 | float(0) }}"
-        forecast_hourly_template: >
-          {% set dt = state_attr('sensor.weather_home_forecast_at_midnight','datetime') %}
-          {% set temp = state_attr('sensor.weather_home_forecast_at_midnight','temperature') %}
-          {% set prec = state_attr('sensor.weather_home_forecast_at_midnight','precipitation') %}
-          {% set cond = state_attr('sensor.weather_home_forecast_at_midnight','condition') %}
+        forecast_daily_template: >
+          {% set f = state_attr('sensor.weather_home_forecast_daily', 'forecast') %}
           {% set valid = ['clear-night', 'cloudy', 'exceptional', 'fog', 'hail', 'lightning-rainy', 'lightning', 'partlycloudy', 'pouring', 'rainy', 'snowy-rainy', 'snowy', 'sunny', 'windy-variant', 'windy'] %}
-          {% if dt and temp and cond and dt|length > 0 %}
-            [
-            {% for i in range(dt|length) %}
-              {
-                "datetime": "{{ dt[i] }}",
-                "temperature": {{ temp[i] | float(0) }},
-                "precipitation": {{ prec[i] | float(0) if (prec is defined and prec[i] is defined) else 0 }},
-                "condition": "{{ cond[i] if cond[i] in valid else 'cloudy' }}"
-              }
-              {% if not loop.last %},{% endif %}
+          {% set items = namespace(list=[]) %}
+          {% if f is not none and f is iterable and f|length > 0 %}
+            {% for d in f %}
+              {% set item_dt = as_datetime(d.datetime) %}
+              {% if item_dt is not none and as_local(item_dt).date() >= now().date() %}
+                {% set items.list = items.list + [{
+                  "datetime": (as_local(item_dt)).isoformat(),
+                  "temperature": d.temperature | float(0),
+                  "templow": d.templow | float(0),
+                  "condition": d.condition if d.condition in valid else 'cloudy',
+                  "precipitation": d.precipitation | float(0) if d.precipitation is defined else 0,
+                  "precipitation_probability": d.precipitation_probability | int(0) if d.precipitation_probability is defined else 0
+                }] %}
+              {% endif %}
             {% endfor %}
-            ]
-          {% else %}[]{% endif %}
+          {% endif %}
+          {% if items.list|length == 0 %}
+            {% set cur_temp = states('sensor.weather_home_current_temperature') | float(0) %}
+            {% set cur_cond = states('sensor.weather_home_current_condition') %}
+            {% set items.list = [{
+              "datetime": now().replace(hour=0, minute=0, second=0, microsecond=0).isoformat(),
+              "temperature": cur_temp,
+              "templow": cur_temp,
+              "condition": cur_cond if cur_cond in valid else 'cloudy',
+              "precipitation": 0,
+              "precipitation_probability": 0
+            }] %}
+          {% endif %}
+          {{ items.list }}
+        forecast_hourly_template: >
+          {% set dt = state_attr('sensor.weather_home_forecast', 'datetime') %}
+          {% set temp = state_attr('sensor.weather_home_forecast', 'temperature') %}
+          {% set prec = state_attr('sensor.weather_home_forecast', 'precipitation') %}
+          {% set cond = state_attr('sensor.weather_home_forecast', 'condition') %}
+          {% set valid = ['clear-night', 'cloudy', 'exceptional', 'fog', 'hail', 'lightning-rainy', 'lightning', 'partlycloudy', 'pouring', 'rainy', 'snowy-rainy', 'snowy', 'sunny', 'windy-variant', 'windy'] %}
+          {% set items = namespace(list=[]) %}
+          {% if dt and temp and cond and dt|length > 0 %}
+            {% for i in range(dt|length) %}
+              {% set item_dt = as_datetime(dt[i]) %}
+              {% if item_dt is not none and as_local(item_dt).date() >= now().date() %}
+                {% set items.list = items.list + [{
+                  "datetime": (as_local(item_dt)).isoformat(),
+                  "temperature": temp[i] | float(0),
+                  "precipitation": prec[i] | float(0) if (prec is defined and prec[i] is defined) else 0,
+                  "condition": cond[i] if cond[i] in valid else 'cloudy'
+                }] %}
+              {% endif %}
+            {% endfor %}
+          {% endif %}
+          {{ items.list }}
