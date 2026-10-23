@@ -48,7 +48,9 @@ This document records the foundational architectural decisions (ADRs) and struct
     - Module Storage: Modules reside as individual YAML files under `bubble_card/modules/<module_name>.yaml` and are fully tracked in Git.
     - Reusability Contract: Instead of inline 20-60 line `styles:` blocks duplicated across cards and dashboards, cards reference shared modules via `modules: [<module_name>]`.
     - Active Module Catalog:
-      - `person_home_badge`: Circular presence badge over avatar picture at 2 o'clock position with `mdi:home` icon and theme accent color.
+      - `person_home_badge`: Circular presence badge over avatar picture at 2 o'clock position with `mdi:home` icon and theme accent color; conditionally rendered only when person is `home`.
+      - `room_window_badge`: Circular alert badge at 2 o'clock position on room card icons with `mdi:window-open-variant` icon in sky blue (`#0284c7`); conditionally rendered only when the room's window contact (`binary_sensor.<room>_window_contact`) is `on`.
+      - `washer_done_badge`: Circular reminder badge at 2 o'clock position on bathroom card icon with `mdi:washing-machine` icon in emerald green (`#10b981`); conditionally rendered when laundry cycle is done (`input_boolean.bathroom_laundry` is `on`).
       - `bubble_header_separator`: Standardized typography (`font-size: var(--dashboard-header-font-size)`, `font-weight: var(--dashboard-header-font-weight)`) for section separators.
       - `bubble_sidebar_notification`: Handles typography, transparent background, and dynamic auto-collapse height calculation (`fontSize` + `lineHeight * count`) for multi-line sidebar notifications.
       - `bubble_room_climate`: Dynamically inspects room light entity, formats room multi-sensor `Temp C° | Hum %` in `.bubble-state`, and applies threshold warning color when humidity is high.

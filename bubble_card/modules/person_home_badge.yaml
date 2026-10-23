@@ -1,7 +1,7 @@
 person_home_badge:
   name: "Person Home Badge"
-  description: "Displays a home badge on the top right of the avatar circle"
-  version: "1.0"
+  description: "Displays a home badge on the top right of the avatar circle when the person is home"
+  version: "1.1"
   code: |
     .bubble-icon-container {
       overflow: visible !important;
@@ -11,6 +11,7 @@ person_home_badge:
     }
     .bubble-icon-container::after {
       content: '';
+      display: ${(state || '').toLowerCase() === 'home' ? 'block' : 'none'} !important;
       position: absolute;
       top: -2px;
       right: -2px;

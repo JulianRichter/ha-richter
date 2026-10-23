@@ -285,6 +285,15 @@ views:
                   width: auto !important;
                   overflow: hidden !important;
                 }
+                ha-card::after {
+                  content: '';
+                  display: block;
+                  height: 3px;
+                  margin: 8px 6.5px 16px 12px;
+                  border-radius: 2px;
+                  background: {{ state_attr('sensor.weather_home_forecast', 'wind_gradient_1d') | default('rgba(56, 189, 248, 0.35)', true) }};
+                  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+                }
                 .wrapper, #graph-wrapper, .apexcharts-canvas, svg {
                   min-width: 0 !important;
                   max-width: 100% !important;
@@ -501,6 +510,7 @@ views:
               action: more-info
             modules:
               - bubble_room_climate
+              - room_window_badge
 
           - type: custom:bubble-card
             card_type: button
@@ -521,6 +531,7 @@ views:
               action: more-info
             modules:
               - bubble_room_climate
+              - room_window_badge
 
           - type: custom:bubble-card
             card_type: button
@@ -541,6 +552,7 @@ views:
               action: more-info
             modules:
               - bubble_room_climate
+              - room_window_badge
 
           - type: horizontal-stack
             cards:
@@ -553,6 +565,7 @@ views:
                 card_layout: large
                 modules:
                   - bubble_room_climate
+                  - room_window_badge
                 styles: |
                   .bubble-button-background {
                      background-color: ${state === 'on' ? 'rgb(255, 167, 88)' : 'var(--bubble-background-background-color)'} !important;
@@ -570,6 +583,7 @@ views:
                 card_layout: large
                 modules:
                   - bubble_room_climate
+                  - washer_done_badge
                 styles: |
                   .bubble-button-background {
                      background-color: ${state === 'on' ? 'rgb(255, 167, 88)' : 'var(--bubble-background-background-color)'} !important;
@@ -1770,7 +1784,7 @@ views:
                   content: '';
                   display: block;
                   height: 4px;
-                  margin: 2px 73px 6px 51px;
+                  margin: 2px 69px 6px 47.5px;
                   border-radius: 2px;
                   background: {{ state_attr('sensor.weather_home_forecast', 'wind_gradient_3d') | default('rgba(56, 189, 248, 0.35)', true) }};
                   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);

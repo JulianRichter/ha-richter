@@ -1,0 +1,29 @@
+room_window_badge:
+  name: "Room Window Badge"
+  description: "Displays an open-window badge on the top right of the room icon when a window contact is open"
+  version: "1.0"
+  code: |
+    .bubble-icon-container {
+      overflow: visible !important;
+    }
+    .bubble-icon-container::after {
+      content: '';
+      display: ${(() => {
+        const room = entity.replace('light.', '').replace('_group', '').replace('_light', '');
+        const winState = hass.states['binary_sensor.' + room + '_window_contact']?.state;
+        return winState === 'on' ? 'block' : 'none';
+      })()} !important;
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 18px;
+      height: 18px;
+      background-color: #0284c7;
+      border-radius: 50%;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M21 20V2H3v18H1v3h22v-3M19 4v7h-2V4M5 4h2v7H5m0 9v-7h2v7m2 0V4h6v16m2 0v-7h2v7Z'/%3E%3C/svg%3E");
+      background-size: 11px;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 2;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
