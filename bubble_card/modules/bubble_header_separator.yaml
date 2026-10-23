@@ -1,0 +1,9 @@
+bubble_header_separator:
+  name: "Header Separator"
+  description: "Standardizes font size and weight for dashboard section headers"
+  version: "1.0"
+  code: |
+    .bubble-name {
+      font-size: var(--dashboard-header-font-size, 28px);
+      font-weight: var(--dashboard-header-font-weight, 500);
+    }

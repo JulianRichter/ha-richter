@@ -196,19 +196,21 @@ views:
                 show: false
               - id: rain
                 min: 0
-                max: 100
+                max: 3
                 show: false
             series:
               - name: Rain
                 entity: sensor.weather_home_forecast_at_midnight
                 data_generator: |
                   return entity.attributes.datetime.map((datetime, index) => {
-                    return [new Date(datetime).getTime(), entity.attributes.precipitation[index]];
+                    const p = entity.attributes.precipitation[index] || 0;
+                    return [new Date(datetime).getTime(), p];
                   });
                 type: area
                 stroke_width: 0
-                color: "#42a5f5"
-                opacity: 0.1
+                color: "#38bdf8"
+                opacity: 0.55
+                curve: smooth
                 yaxis_id: rain
               - name: Forecast
                 entity: sensor.weather_home_forecast
@@ -239,6 +241,8 @@ views:
                 color: "#ffa726"
                 yaxis_id: temp
             apex_config:
+              stroke:
+                curve: smooth
               markers:
                 size: 0
                 discrete:
@@ -322,65 +326,8 @@ views:
             show_name: false
             show_attribute: true
             attribute: sidebar_html_text
-            styles: >
-              /* position button in sidebar */
-
-              ha-card {
-                padding: 0 0 0 0 !important;
-              }
-
-              .bubble-button-card-container {
-                background-color: rgba(0, 0, 0, 0) !important;
-                border-radius: 0 !important;
-              }
-
-              .bubble-button-background {
-                 background-color: rgba(0, 0, 0, 0) !important;
-              }
-
-              .bubble-name-container {
-                margin: 0 3vw !important;
-              }
-
-
-              /* style text */
-
-              p {
-                font-family: SF Display, Roboto;
-                font-size: 18px;
-                font-weight: 400;
-                color: #6a7377;
-                margin-block-end: 0 !important;
-                line-height: 21px;
-              }
-
-
-              /* Inline JS to dynamically set height (margin + two line content)
-              */
-
-              ${(() => {
-                const entity = 'binary_sensor.template_tablet_sidebar_birthday_notification';
-                const count = hass.states[entity]?.attributes?.count || 0;
-                const isVisible = count > 0;
-                const fontSize = 18;
-                const lineHeight = 21; 
-                const height = isVisible ? 1*fontSize + (2*lineHeight * count) : 0;
-                const el = this.shadowRoot.querySelector('.bubble-button-card-container');
-                if (el) {
-                  el.style.height = height + 'px';
-                  el.style.display = isVisible ? '' : 'none';
-                }
-                this.style.display = isVisible ? '' : 'none';
-                const updateParent = () => {
-                  const h = this.closest('hui-card') || this.parentElement;
-                  if (h) h.style.display = isVisible ? '' : 'none';
-                };
-                updateParent();
-                if (!this.closest('hui-card')) {
-                  requestAnimationFrame(updateParent);
-                }
-                return isVisible ? '' : ':host { display: none !important; } ha-card { display: none !important; }';
-              })()}
+            modules:
+              - bubble_sidebar_notification
 
           - type: custom:bubble-card
             card_type: button
@@ -389,65 +336,8 @@ views:
             show_name: false
             show_attribute: true
             attribute: sidebar_html_text
-            styles: >
-              /* position button in sidebar */
-
-              ha-card {
-                padding: 0 0 0 0 !important;
-              }
-
-              .bubble-button-card-container {
-                background-color: rgba(0, 0, 0, 0) !important;
-                border-radius: 0 !important;
-              }
-
-              .bubble-button-background {
-                 background-color: rgba(0, 0, 0, 0) !important;
-              }
-
-              .bubble-name-container {
-                margin: 0 3vw !important;
-              }
-
-
-              /* style text */
-
-              p {
-                font-family: SF Display, Roboto;
-                font-size: 18px;
-                font-weight: 400;
-                color: #6a7377;
-                margin-block-end: 0 !important;
-                line-height: 21px;
-              }
-
-
-              /* Inline JS to dynamically set height (margin + two line content)
-              */
-
-              ${(() => {
-                const entity = 'binary_sensor.template_tablet_sidebar_anniversary_notification';
-                const count = hass.states[entity]?.attributes?.count || 0;
-                const isVisible = count > 0;
-                const fontSize = 18;
-                const lineHeight = 21; 
-                const height = isVisible ? 1*fontSize + (2*lineHeight * count) : 0;
-                const el = this.shadowRoot.querySelector('.bubble-button-card-container');
-                if (el) {
-                  el.style.height = height + 'px';
-                  el.style.display = isVisible ? '' : 'none';
-                }
-                this.style.display = isVisible ? '' : 'none';
-                const updateParent = () => {
-                  const h = this.closest('hui-card') || this.parentElement;
-                  if (h) h.style.display = isVisible ? '' : 'none';
-                };
-                updateParent();
-                if (!this.closest('hui-card')) {
-                  requestAnimationFrame(updateParent);
-                }
-                return isVisible ? '' : ':host { display: none !important; } ha-card { display: none !important; }';
-              })()}
+            modules:
+              - bubble_sidebar_notification
 
           - type: custom:bubble-card
             card_type: button
@@ -456,61 +346,8 @@ views:
             show_name: false
             show_attribute: true
             attribute: sidebar_html_text
-            styles: >
-              /* position button in sidebar */
-
-              ha-card {
-                padding: 0 0 0 0 !important;
-              }
-
-              .bubble-button-card-container {
-                background-color: rgba(0, 0, 0, 0) !important;
-                border-radius: 0 !important;
-              }
-
-              .bubble-button-background {
-                 background-color: rgba(0, 0, 0, 0) !important;
-              }
-
-              .bubble-name-container {
-                margin: 0 3vw !important;
-              }
-
-
-              /* style text */ p {
-                font-family: SF Display, Roboto;
-                font-size: 18px;
-                font-weight: 400;
-                color: #6a7377;
-                margin-block-end: 0 !important;
-                line-height: 21px;
-              }
-
-
-              /* Inline JS to dynamically set height (margin-block-top + header
-              + content) */ ${(() => {
-                const entity = 'binary_sensor.template_tablet_sidebar_sensors_offline';
-                const count = hass.states[entity]?.attributes?.count || 0;
-                const isVisible = count > 0;
-                const fontSize = 18;
-                const lineHeight = 21; 
-                const height = isVisible ? 1*fontSize + lineHeight + (2*lineHeight * count) : 0;
-                const el = this.shadowRoot.querySelector('.bubble-button-card-container');
-                if (el) {
-                  el.style.height = height + 'px';
-                  el.style.display = isVisible ? '' : 'none';
-                }
-                this.style.display = isVisible ? '' : 'none';
-                const updateParent = () => {
-                  const h = this.closest('hui-card') || this.parentElement;
-                  if (h) h.style.display = isVisible ? '' : 'none';
-                };
-                updateParent();
-                if (!this.closest('hui-card')) {
-                  requestAnimationFrame(updateParent);
-                }
-                return isVisible ? '' : ':host { display: none !important; } ha-card { display: none !important; }';
-              })()}
+            modules:
+              - bubble_sidebar_notification
 
           - type: custom:bubble-card
             card_type: button
@@ -519,59 +356,8 @@ views:
             show_name: false
             show_attribute: true
             attribute: sidebar_html_text
-            styles: >
-              /* position button in sidebar */ ha-card {
-                padding: 0 0 0 0 !important;
-              }
-
-              .bubble-button-card-container {
-                background-color: rgba(0, 0, 0, 0) !important;
-                border-radius: 0 !important;
-              }
-
-              .bubble-button-background {
-                 background-color: rgba(0, 0, 0, 0) !important;
-              }
-
-              .bubble-name-container {
-                margin: 0 3vw !important;
-              }
-
-
-              /* style text */ p {
-                font-family: SF Display, Roboto;
-                font-size: 18px;
-                font-weight: 400;
-                color: #6a7377;
-                margin-block-end: 0 !important;
-                line-height: 21px;
-              }
-
-
-              /* Inline JS to dynamically set height (margin-block-top + header
-              + content) */ ${(() => {
-                const entity = 'binary_sensor.template_tablet_sidebar_window_contacts';
-                const count = hass.states[entity]?.attributes?.count || 0;
-                const isVisible = count > 0;
-                const fontSize = 18;
-                const lineHeight = 21; 
-                const height = isVisible ? 1*fontSize + lineHeight + (2*lineHeight * count) : 0;
-                const el = this.shadowRoot.querySelector('.bubble-button-card-container');
-                if (el) {
-                  el.style.height = height + 'px';
-                  el.style.display = isVisible ? '' : 'none';
-                }
-                this.style.display = isVisible ? '' : 'none';
-                const updateParent = () => {
-                  const h = this.closest('hui-card') || this.parentElement;
-                  if (h) h.style.display = isVisible ? '' : 'none';
-                };
-                updateParent();
-                if (!this.closest('hui-card')) {
-                  requestAnimationFrame(updateParent);
-                }
-                return isVisible ? '' : ':host { display: none !important; } ha-card { display: none !important; }';
-              })()}
+            modules:
+              - bubble_sidebar_notification
 
         # Sidebar styling: subtle dark background and divider border
         card_mod:
@@ -609,11 +395,9 @@ views:
           - type: custom:bubble-card
             card_type: separator
             name: Geräte
+            modules:
+              - bubble_header_separator
             styles: |
-              .bubble-name {
-                font-size: var(--dashboard-header-font-size);
-                font-weight: var(--dashboard-header-font-weight);
-              }
               ha-card {
                 padding: 1.5vw 0 0 0 !important;
               }
@@ -691,11 +475,9 @@ views:
           - type: custom:bubble-card
             card_type: separator
             name: Räume
+            modules:
+              - bubble_header_separator
             styles: |
-              .bubble-name {
-                font-size: var(--dashboard-header-font-size);
-                font-weight: var(--dashboard-header-font-weight);
-              }
               ha-card {
                 padding: 1.5vw 0 0 0 !important;
               }
@@ -717,26 +499,8 @@ views:
               action: toggle
             hold_action:
               action: more-info
-            styles: |
-              ${(() => {
-                const hum = parseFloat(hass.states['sensor.living_room_multi_sensor_humidity'].state);
-                const thresh = parseFloat(hass.states['input_number.dashboard_humidity_threshold_medium'].state);
-                const isAlert = hum > thresh;
-                const isLightOn = state === 'on';
-                const humStyle = isAlert 
-                  ? (isLightOn ? "color: #8b0000; font-weight: 700;" : "color: #eb4d5b; font-weight: 600;") 
-                  : "color: inherit;";
-                const el = card.querySelector('.bubble-state');
-                if (el) {
-                  el.innerHTML =
-                    parseFloat(hass.states['sensor.living_room_multi_sensor_temperature'].state).toFixed(1)
-                    + " C°"
-                    + " \u00A0 | \u00A0 "
-                    + "<span style='" + humStyle + "'>"
-                    + hum.toFixed(1)
-                    + " %</span>";
-                }
-              })()}
+            modules:
+              - bubble_room_climate
 
           - type: custom:bubble-card
             card_type: button
@@ -755,26 +519,8 @@ views:
               action: toggle
             hold_action:
               action: more-info
-            styles: |
-              ${(() => {
-                const hum = parseFloat(hass.states['sensor.bedroom_multi_sensor_humidity'].state);
-                const thresh = parseFloat(hass.states['input_number.dashboard_humidity_threshold_medium'].state);
-                const isAlert = hum > thresh;
-                const isLightOn = state === 'on';
-                const humStyle = isAlert 
-                  ? (isLightOn ? "color: #8b0000; font-weight: 700;" : "color: #eb4d5b; font-weight: 600;") 
-                  : "color: inherit;";
-                const el = card.querySelector('.bubble-state');
-                if (el) {
-                  el.innerHTML =
-                    parseFloat(hass.states['sensor.bedroom_multi_sensor_temperature'].state).toFixed(1)
-                    + " C°"
-                    + " \u00A0 | \u00A0 "
-                    + "<span style='" + humStyle + "'>"
-                    + hum.toFixed(1)
-                    + " %</span>";
-                }
-              })()}
+            modules:
+              - bubble_room_climate
 
           - type: custom:bubble-card
             card_type: button
@@ -793,26 +539,8 @@ views:
               action: toggle
             hold_action:
               action: more-info
-            styles: |
-              ${(() => {
-                const hum = parseFloat(hass.states['sensor.baby_room_multi_sensor_humidity'].state);
-                const thresh = parseFloat(hass.states['input_number.dashboard_humidity_threshold_medium'].state);
-                const isAlert = hum > thresh;
-                const isLightOn = state === 'on';
-                const humStyle = isAlert 
-                  ? (isLightOn ? "color: #8b0000; font-weight: 700;" : "color: #eb4d5b; font-weight: 600;") 
-                  : "color: inherit;";
-                const el = card.querySelector('.bubble-state');
-                if (el) {
-                  el.innerHTML =
-                    parseFloat(hass.states['sensor.baby_room_multi_sensor_temperature'].state).toFixed(1)
-                    + " C°"
-                    + " \u00A0 | \u00A0 "
-                    + "<span style='" + humStyle + "'>"
-                    + hum.toFixed(1)
-                    + " %</span>";
-                }
-              })()}
+            modules:
+              - bubble_room_climate
 
           - type: horizontal-stack
             cards:
@@ -823,6 +551,8 @@ views:
                 icon: mdi:fridge-outline
                 show_state: true
                 card_layout: large
+                modules:
+                  - bubble_room_climate
                 styles: |
                   .bubble-button-background {
                      background-color: ${state === 'on' ? 'rgb(255, 167, 88)' : 'var(--bubble-background-background-color)'} !important;
@@ -830,26 +560,6 @@ views:
                   .bubble-icon {
                      color: ${state === 'on' ? 'rgb(255, 167, 88)' : 'var(--primary-text-color)'} !important;
                   }
-
-                  ${(() => {
-                    const hum = parseFloat(hass.states['sensor.kitchen_multi_sensor_humidity'].state);
-                    const thresh = parseFloat(hass.states['input_number.dashboard_humidity_threshold_medium'].state);
-                    const isAlert = hum > thresh;
-                    const isLightOn = state === 'on';
-                    const humStyle = isAlert 
-                      ? (isLightOn ? "color: #8b0000; font-weight: 700;" : "color: #eb4d5b; font-weight: 600;") 
-                      : "color: inherit;";
-                    const el = card.querySelector('.bubble-state');
-                    if (el) {
-                      el.innerHTML =
-                        parseFloat(hass.states['sensor.kitchen_multi_sensor_temperature'].state).toFixed(1)
-                        + " C°"
-                        + " \u00A0 | \u00A0 "
-                        + "<span style='" + humStyle + "'>"
-                        + hum.toFixed(1)
-                        + " %</span>";
-                    }
-                  })()}
 
               - type: custom:bubble-card
                 card_type: button
@@ -858,6 +568,8 @@ views:
                 icon: mdi:toilet
                 show_state: true
                 card_layout: large
+                modules:
+                  - bubble_room_climate
                 styles: |
                   .bubble-button-background {
                      background-color: ${state === 'on' ? 'rgb(255, 167, 88)' : 'var(--bubble-background-background-color)'} !important;
@@ -865,26 +577,6 @@ views:
                   .bubble-icon {
                      color: ${state === 'on' ? 'rgb(255, 167, 88)' : 'var(--primary-text-color)'} !important;
                   }
-
-                  ${(() => {
-                    const hum = parseFloat(hass.states['sensor.bathroom_multi_sensor_humidity'].state);
-                    const thresh = parseFloat(hass.states['input_number.dashboard_humidity_threshold_medium'].state);
-                    const isAlert = hum > thresh;
-                    const isLightOn = state === 'on';
-                    const humStyle = isAlert 
-                      ? (isLightOn ? "color: #8b0000; font-weight: 700;" : "color: #eb4d5b; font-weight: 600;") 
-                      : "color: inherit;";
-                    const el = card.querySelector('.bubble-state');
-                    if (el) {
-                      el.innerHTML =
-                        parseFloat(hass.states['sensor.bathroom_multi_sensor_temperature'].state).toFixed(1)
-                        + " C°"
-                        + " \u00A0 | \u00A0 "
-                        + "<span style='" + humStyle + "'>"
-                        + hum.toFixed(1)
-                        + " %</span>";
-                    }
-                  })()}
 
         columns: 1
         view_layout:
@@ -896,21 +588,20 @@ views:
           - type: custom:bubble-card
             card_type: separator
             name: Sensor
-            styles: |
-              .bubble-name {
-                font-size: var(--dashboard-header-font-size);
-                font-weight: var(--dashboard-header-font-weight);
-              }
+            modules:
+              - bubble_header_separator
 
           - type: custom:mini-graph-card
             entities:
               - entity: input_number.dashboard_humidity_threshold_medium
                 show_legend: false
                 color: "#1db954"
+                fixed_value: true
               - entity: input_number.dashboard_humidity_threshold_medium
                 show_legend: false
                 show_fill: false
                 color: rgba(115, 115, 115, 0.7)
+                fixed_value: true
               - entity: sensor.living_room_multi_sensor_humidity
                 name: Wohnz.
                 color: "#ffa726"
@@ -965,11 +656,8 @@ views:
           - type: custom:bubble-card
             card_type: separator
             name: Home
-            styles: |
-              .bubble-name {
-                font-size: var(--dashboard-header-font-size);
-                font-weight: var(--dashboard-header-font-weight);
-              }
+            modules:
+              - bubble_header_separator
           - type: custom:bubble-card
             card_type: button
             entity: person.julian
@@ -980,29 +668,8 @@ views:
               - entity: person.julian
                 icon: mdi:map-marker-outline
             button_type: state
-            styles: |
-              .bubble-icon-container {
-                overflow: visible !important;
-              }
-              .bubble-entity-picture {
-                border-radius: 50% !important;
-              }
-              .bubble-icon-container::after {
-                content: '';
-                position: absolute;
-                top: -2px;
-                right: -2px;
-                width: 18px;
-                height: 18px;
-                background-color: var(--accent-color, rgb(80, 110, 172));
-                border-radius: 50%;
-                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z'/%3E%3C/svg%3E");
-                background-size: 11px;
-                background-position: center;
-                background-repeat: no-repeat;
-                z-index: 2;
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-              }
+            modules:
+              - person_home_badge
           - type: custom:bubble-card
             card_type: button
             entity: person.xingyang
@@ -1013,6 +680,8 @@ views:
               - entity: person.xingyang
                 icon: mdi:map-marker-outline
             button_type: state
+            modules:
+              - person_home_badge
           - type: horizontal-stack
             cards:
               - type: custom:bubble-card
@@ -1055,15 +724,9 @@ views:
               tap_action:
                 action: navigate
                 navigation_path: "#bubble_vacuum_popup"
+            modules:
+              - bubble_footer_button
             styles: |
-              .bubble-name {
-                font-size: var(--dashboard-footer-font-size);
-              }
-              .bubble-state {
-                font-size: 11px;
-                opacity: 0.85;
-                white-space: nowrap;
-              }
               ${(() => {
                 const vac = hass.states['vacuum.robi'];
                 const idle = hass.states['sensor.template_vacuum_idle_time'];
@@ -1095,18 +758,9 @@ views:
               tap_action:
                 action: navigate
                 navigation_path: "#bubble_media_popup"
+            modules:
+              - bubble_footer_button
             styles: |
-              .bubble-name {
-                font-size: var(--dashboard-footer-font-size);
-              }
-              .bubble-state {
-                font-size: 11px;
-                opacity: 0.85;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-width: 90px;
-              }
               ${(() => {
                 const sp = hass.states['media_player.spotify_julian'];
                 const lp = hass.states['sensor.last_played_media_info'];
@@ -1134,18 +788,9 @@ views:
               tap_action:
                 action: navigate
                 navigation_path: "#bubble_climate_popup"
+            modules:
+              - bubble_footer_button
             styles: |
-              .bubble-name {
-                font-size: var(--dashboard-footer-font-size);
-              }
-              .bubble-state {
-                font-size: 11px;
-                opacity: 0.85;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-                max-width: 90px;
-              }
               ${(() => {
                 const clim = hass.states['climate.living_room_thermostat'];
                 const target = clim?.attributes?.temperature;
@@ -1175,15 +820,9 @@ views:
                 @media (max-width: 600px) {
                   :host { display: none !important; }
                 }
+            modules:
+              - bubble_footer_button
             styles: |
-              .bubble-name {
-                font-size: var(--dashboard-footer-font-size);
-              }
-              .bubble-state {
-                font-size: 11px;
-                opacity: 0.85;
-                white-space: nowrap;
-              }
               ${(() => {
                 const s = hass.states['sensor.home_total_power'];
                 const p = s ? Math.round(parseFloat(s.state)) : '--';
@@ -1210,15 +849,9 @@ views:
                 @media (max-width: 600px) {
                   :host { display: none !important; }
                 }
+            modules:
+              - bubble_footer_button
             styles: |
-              .bubble-name {
-                font-size: var(--dashboard-footer-font-size);
-              }
-              .bubble-state {
-                font-size: 11px;
-                opacity: 0.85;
-                white-space: nowrap;
-              }
               ${(() => {
                 const sKp = hass.states['sensor.augsburg_curtiusstrasse_koenigsplatz'];
                 const sLh = hass.states['sensor.augsburg_curtiusstrasse_lechh_n_ostfriedh'];
@@ -2014,9 +1647,19 @@ views:
                     formatter: |
                       EVAL:function(val) { return Math.round(val) + "°"; }
               - id: rain
+                opposite: true
+                show: true
                 min: 0
                 max: 4
-                show: false
+                decimals: 0
+                apex_config:
+                  tickAmount: 4
+                  labels:
+                    style:
+                      colors: "#38bdf8"
+                      fontSize: "11px"
+                    formatter: |
+                      EVAL:function(val) { return Math.round(val) + " mm"; }
             now:
               show: true
               color: "rgba(255, 255, 255, 0.4)"
@@ -2030,9 +1673,9 @@ views:
                     return [new Date(datetime).getTime(), p];
                   });
                 type: area
-                stroke_width: 1
-                color: "#42a5f5"
-                opacity: 0.3
+                stroke_width: 0
+                color: "#38bdf8"
+                opacity: 0.28
                 curve: smooth
                 yaxis_id: rain
                 unit: mm
@@ -2045,7 +1688,7 @@ views:
                 type: line
                 stroke_width: 3
                 color: "#ffa726"
-                opacity: 0.35
+                opacity: 0.85
                 curve: smooth
                 yaxis_id: temp
                 unit: "°C"
@@ -2070,6 +1713,8 @@ views:
                 yaxis_id: temp
                 unit: "°C"
             apex_config:
+              stroke:
+                curve: smooth
               markers:
                 size: 0
                 discrete:
@@ -2096,7 +1741,7 @@ views:
                     show: true
               xaxis:
                 type: datetime
-                tickAmount: 3
+                tickAmount: 4
                 labels:
                   format: "ddd"
                   style:
@@ -2117,9 +1762,18 @@ views:
               style: |
                 ha-card {
                   border: none !important;
-                  background: rgba(0, 0, 0, 0.2) !important;
-                  border-radius: var(--bubble-border-radius, 24px) !important;
-                  padding: 8px 12px !important;
+                  background: transparent !important;
+                  box-shadow: none !important;
+                  padding: 8px 4px 4px 4px !important;
+                }
+                ha-card::after {
+                  content: '';
+                  display: block;
+                  height: 4px;
+                  margin: 2px 73px 6px 51px;
+                  border-radius: 2px;
+                  background: {{ state_attr('sensor.weather_home_forecast', 'wind_gradient_3d') | default('rgba(56, 189, 248, 0.35)', true) }};
+                  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
                 }
             grid_options:
               columns: 12
@@ -2137,10 +1791,10 @@ views:
             card_mod:
               style: |
                 ha-card {
-                  background: rgba(0, 0, 0, 0.2) !important;
+                  background: transparent !important;
                   border: none !important;
-                  border-radius: var(--bubble-border-radius, 24px) !important;
-                  padding: 8px 16px !important;
+                  box-shadow: none !important;
+                  padding: 8px 8px !important;
                 }
                 .card-content {
                   padding: 0 !important;
@@ -2156,8 +1810,8 @@ views:
           - type: custom:bubble-card
             card_type: button
             entity: sensor.weather_home_current_rain_probability
-            name: Regenrisiko
-            icon: mdi:water-percent
+            name: Niederschlag
+            icon: mdi:weather-rainy
             show_state: true
             card_layout: large
             grid_options:
@@ -2171,3 +1825,19 @@ views:
             card_layout: large
             grid_options:
               columns: 6
+            styles: |
+              ${(() => {
+                const spd = parseFloat(hass.states['sensor.weather_home_current_wind_speed']?.state || '0');
+                const bft = hass.states['sensor.weather_home_current_wind_speed']?.attributes?.bft_desc || (spd < 12 ? 'Leichte Brise' : 'Mäßig');
+                const gust = hass.states['sensor.weather_home_forecast']?.attributes?.max_gust_today;
+                const gustStr = (gust && gust > 0) ? Math.round(gust) + ' km/h' : '--';
+                
+                const stateEl = card.querySelector('.bubble-state');
+                if (stateEl) {
+                  stateEl.innerHTML = spd.toFixed(1) + ' km/h &nbsp;·&nbsp; ' + bft;
+                }
+                const nameEl = card.querySelector('.bubble-name');
+                if (nameEl) {
+                  nameEl.innerHTML = 'Wind &nbsp;<span style=\"font-size: 11px; opacity: 0.7;\">(Böen bis ' + gustStr + ')</span>';
+                }
+              })()}

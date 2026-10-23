@@ -43,6 +43,16 @@ This document records the foundational architectural decisions (ADRs) and struct
     - `dashboards/bubble_code/bubble_code.yaml` (`theme: tablet_grid_theme`): Reference baseline dashboard; kept untouched.
     - `dashboards/bubble_kiosk/bubble_kiosk.yaml` (`theme: tablet_kiosk_theme`): Primary wall-mounted kiosk interface.
     - `dashboards/bubble_nebula/bubble_nebula.yaml` (`theme: tablet_nebula_purple_theme`): Cosmic dark purple edition with translucent glass/ice styling.
+  - **Bubble Card Modules Architecture (`bubble_card/modules/`)**:
+    - Backend Integration: Powered by [`custom_components/bubble_card_tools`](custom_components/bubble_card_tools/) to enable persistent, local, file-backed module storage.
+    - Module Storage: Modules reside as individual YAML files under `bubble_card/modules/<module_name>.yaml` and are fully tracked in Git.
+    - Reusability Contract: Instead of inline 20-60 line `styles:` blocks duplicated across cards and dashboards, cards reference shared modules via `modules: [<module_name>]`.
+    - Active Module Catalog:
+      - `person_home_badge`: Circular presence badge over avatar picture at 2 o'clock position with `mdi:home` icon and theme accent color.
+      - `bubble_header_separator`: Standardized typography (`font-size: var(--dashboard-header-font-size)`, `font-weight: var(--dashboard-header-font-weight)`) for section separators.
+      - `bubble_sidebar_notification`: Handles typography, transparent background, and dynamic auto-collapse height calculation (`fontSize` + `lineHeight * count`) for multi-line sidebar notifications.
+      - `bubble_room_climate`: Dynamically inspects room light entity, formats room multi-sensor `Temp C° | Hum %` in `.bubble-state`, and applies threshold warning color when humidity is high.
+      - `bubble_footer_button`: Standardized typography, opacity, and text ellipsis truncation for bottom launcher buttons.
   - **CSS Scoping Invariants**:
     - Global Theme Borders: Never set `ha-card-border-width: 1px` or global `ha-card-box-shadow` on the theme root; Bubble Card separator headers, markdown cards, and sidebar containers inherit `ha-card` and will render unwanted border outlines. Card borders must be applied strictly to specific interactive card containers via `bubble-border` or card-level `card_mod`.
     - Active Button Badges: On bright/vibrant active button cards, the default icon background blends into the card background. Active buttons require `.is-on .bubble-icon-container { background-color: rgba(0, 0, 0, 0.28) !important; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15) !important; }` and `.is-on .bubble-icon { color: #ffffff !important; }`.

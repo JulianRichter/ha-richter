@@ -1,0 +1,30 @@
+bubble_room_climate:
+  name: "Room Climate Display"
+  description: "Formats room multi-sensor temperature and humidity into .bubble-state with alert threshold styling"
+  version: "1.0"
+  code: |
+    ${(() => {
+      const room = entity.replace('light.', '').replace('_group', '').replace('_light', '');
+      const humEntity = 'sensor.' + room + '_multi_sensor_humidity';
+      const tempEntity = 'sensor.' + room + '_multi_sensor_temperature';
+      const humState = hass.states[humEntity]?.state;
+      const tempState = hass.states[tempEntity]?.state;
+      if (!humState || !tempState) return;
+      const hum = parseFloat(humState);
+      const thresh = parseFloat(hass.states['input_number.dashboard_humidity_threshold_medium']?.state || '60');
+      const isAlert = hum > thresh;
+      const isLightOn = state === 'on';
+      const humStyle = isAlert 
+        ? (isLightOn ? "color: #8b0000; font-weight: 700;" : "color: #eb4d5b; font-weight: 600;") 
+        : "color: inherit;";
+      const el = card.querySelector('.bubble-state');
+      if (el) {
+        el.innerHTML =
+          parseFloat(tempState).toFixed(1)
+          + " C°"
+          + " \u00A0 | \u00A0 "
+          + "<span style='" + humStyle + "'>"
+          + hum.toFixed(1)
+          + " %</span>";
+      }
+    })()}

@@ -1,0 +1,28 @@
+person_home_badge:
+  name: "Person Home Badge"
+  description: "Displays a home badge on the top right of the avatar circle"
+  version: "1.0"
+  code: |
+    .bubble-icon-container {
+      overflow: visible !important;
+    }
+    .bubble-entity-picture {
+      border-radius: 50% !important;
+    }
+    .bubble-icon-container::after {
+      content: '';
+      position: absolute;
+      top: -2px;
+      right: -2px;
+      width: 18px;
+      height: 18px;
+      background-color: var(--accent-color, rgb(80, 110, 172));
+      border-radius: 50%;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z'/%3E%3C/svg%3E");
+      background-size: 11px;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 2;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
+

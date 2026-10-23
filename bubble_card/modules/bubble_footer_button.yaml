@@ -1,0 +1,16 @@
+bubble_footer_button:
+  name: "Footer Button Typography"
+  description: "Standardizes font size, opacity, and ellipsis text truncation for footer buttons"
+  version: "1.0"
+  code: |
+    .bubble-name {
+      font-size: var(--dashboard-footer-font-size, 12px);
+    }
+    .bubble-state {
+      font-size: 11px;
+      opacity: 0.85;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 90px;
+    }

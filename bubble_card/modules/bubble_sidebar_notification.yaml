@@ -1,0 +1,49 @@
+bubble_sidebar_notification:
+  name: "Sidebar Notification Item"
+  description: "Handles typography, transparent background, and dynamic auto-collapse height for sidebar notifications"
+  version: "1.0"
+  code: |
+    ha-card {
+      padding: 0 0 0 0 !important;
+    }
+    .bubble-button-card-container {
+      background-color: rgba(0, 0, 0, 0) !important;
+      border-radius: 0 !important;
+    }
+    .bubble-button-background {
+      background-color: rgba(0, 0, 0, 0) !important;
+    }
+    .bubble-name-container {
+      margin: 0 3vw !important;
+    }
+    p {
+      font-family: SF Display, Roboto, sans-serif;
+      font-size: 18px;
+      font-weight: 400;
+      color: #6a7377;
+      margin-block-end: 0 !important;
+      line-height: 21px;
+    }
+    ${(() => {
+      const count = hass.states[entity]?.attributes?.count || 0;
+      const isVisible = count > 0;
+      const fontSize = 18;
+      const lineHeight = 21; 
+      const hasHeader = entity.includes('sensors_offline') || entity.includes('window_contacts');
+      const height = isVisible ? 1 * fontSize + (hasHeader ? lineHeight : 0) + (2 * lineHeight * count) : 0;
+      const el = card.querySelector('.bubble-button-card-container');
+      if (el) {
+        el.style.height = height + 'px';
+        el.style.display = isVisible ? '' : 'none';
+      }
+      card.style.display = isVisible ? '' : 'none';
+      const updateParent = () => {
+        const h = card.closest('hui-card') || card.parentElement;
+        if (h) h.style.display = isVisible ? '' : 'none';
+      };
+      updateParent();
+      if (!card.closest('hui-card')) {
+        requestAnimationFrame(updateParent);
+      }
+      return isVisible ? '' : ':host { display: none !important; } ha-card { display: none !important; }';
+    })()}

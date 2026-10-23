@@ -173,6 +173,10 @@ This document preserves operational knowledge and architectural invariants for H
   - `dashboards/bubble_code/bubble_code.yaml` (`bubble-code-dashboard`): Reference baseline dashboard (`tablet_grid_theme`). Kept pristine.
   - `dashboards/bubble_kiosk/bubble_kiosk.yaml` (`bubble-kiosk-dashboard`): Production wall kiosk dashboard (`tablet_kiosk_theme`).
   - `dashboards/bubble_nebula/bubble_nebula.yaml` (`bubble-nebula-dashboard`): Cosmic dark purple glass edition (`tablet_nebula_purple_theme`).
+- **Bubble Card Modules Integration**:
+  - Reusable CSS & JavaScript styles reside in `bubble_card/modules/*.yaml`.
+  - Backed by `bubble_card_tools` custom component for local, Git-versioned file storage.
+  - Automatically shared across all dashboards (`bubble_code`, `bubble_kiosk`, `bubble_nebula`).
 - **Device Viewport & Scaling Specifications**:
   - **Wall-Mounted Tablet (Huawei MediaPad M5 Lite 10)**:
     - CSS Viewport: `1130 × 706` px @ `1.7x` device pixel ratio (Screen: `1130 × 706`).
