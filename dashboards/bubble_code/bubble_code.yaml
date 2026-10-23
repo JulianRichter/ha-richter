@@ -431,6 +431,8 @@ views:
                     entity_id: input_boolean.vacuum_mopping_enabled
               - entity: vacuum.robi
                 icon: mdi:dots-horizontal
+            modules:
+              - vacuum_attention_badge
             styles: >
               ${subButtonIcon[0].setAttribute("icon",
               hass.states['select.robi_suction_level'].attributes.icon )}
@@ -511,6 +513,7 @@ views:
             modules:
               - bubble_room_climate
               - room_window_badge
+              - room_battery_badge
 
           - type: custom:bubble-card
             card_type: button
@@ -532,6 +535,7 @@ views:
             modules:
               - bubble_room_climate
               - room_window_badge
+              - room_battery_badge
 
           - type: custom:bubble-card
             card_type: button
@@ -553,6 +557,7 @@ views:
             modules:
               - bubble_room_climate
               - room_window_badge
+              - room_battery_badge
 
           - type: horizontal-stack
             cards:
@@ -566,6 +571,7 @@ views:
                 modules:
                   - bubble_room_climate
                   - room_window_badge
+                  - dishwasher_done_badge
                 styles: |
                   .bubble-button-background {
                      background-color: ${state === 'on' ? 'rgb(255, 167, 88)' : 'var(--bubble-background-background-color)'} !important;
@@ -584,6 +590,7 @@ views:
                 modules:
                   - bubble_room_climate
                   - washer_done_badge
+                  - room_battery_badge
                 styles: |
                   .bubble-button-background {
                      background-color: ${state === 'on' ? 'rgb(255, 167, 88)' : 'var(--bubble-background-background-color)'} !important;
@@ -740,6 +747,7 @@ views:
                 navigation_path: "#bubble_vacuum_popup"
             modules:
               - bubble_footer_button
+              - vacuum_attention_badge
             styles: |
               ${(() => {
                 const vac = hass.states['vacuum.robi'];
@@ -804,6 +812,7 @@ views:
                 navigation_path: "#bubble_climate_popup"
             modules:
               - bubble_footer_button
+              - climate_heating_badge
             styles: |
               ${(() => {
                 const clim = hass.states['climate.living_room_thermostat'];

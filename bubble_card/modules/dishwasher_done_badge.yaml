@@ -1,0 +1,25 @@
+dishwasher_done_badge:
+  name: "Dishwasher Done Badge"
+  description: "Displays a dishwasher badge on the kitchen card icon when cycle finishes and is waiting to be unloaded"
+  version: "1.0"
+  code: |
+    .bubble-icon-container {
+      overflow: visible !important;
+    }
+    .bubble-icon-container::before {
+      content: '';
+      display: ${hass.states['input_boolean.kitchen_dishwasher_done']?.state === 'on' ? 'block' : 'none'} !important;
+      position: absolute;
+      ${hass.states['binary_sensor.kitchen_window_contact']?.state === 'on' ? 'bottom: -2px;' : 'top: -2px;'}
+      right: -2px;
+      width: 18px;
+      height: 18px;
+      background-color: #10b981;
+      border-radius: 50%;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M6,2A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V4A2,2 0 0,0 18,2H6M6,4H18V20H6V4M8.5,5A1.5,1.5 0 0,1 10,6.5A1.5,1.5 0 0,1 8.5,8A1.5,1.5 0 0,1 7,6.5A1.5,1.5 0 0,1 8.5,5M12,5H16V7H12V5M7,11H17V17A5,5 0 0,1 12,22A5,5 0 0,1 7,17V11M9.76,13A3,3 0 0,0 12,14A3,3 0 0,0 14.24,13H9.76Z'/%3E%3C/svg%3E");
+      background-size: 11px;
+      background-position: center;
+      background-repeat: no-repeat;
+      z-index: 2;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    }
