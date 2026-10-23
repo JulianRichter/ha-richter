@@ -1,7 +1,22 @@
 room_window_badge:
   name: "Room Window Badge"
-  description: "Displays an open-window badge on the top right of the room icon when a window contact is open"
-  version: "1.0"
+  description: "Displays an open-window badge on the room icon when a window contact is open"
+  version: "1.1"
+  editor:
+    - name: position
+      label: "Position"
+      default: "top-right"
+      selector:
+        select:
+          options:
+            - label: "Top Right"
+              value: "top-right"
+            - label: "Top Left"
+              value: "top-left"
+            - label: "Bottom Right"
+              value: "bottom-right"
+            - label: "Bottom Left"
+              value: "bottom-left"
   code: |
     .bubble-icon-container {
       overflow: visible !important;
@@ -14,8 +29,17 @@ room_window_badge:
         return winState === 'on' ? 'block' : 'none';
       })()} !important;
       position: absolute;
-      top: -2px;
-      right: -2px;
+      ${(() => {
+        const raw = this.config?.room_window_badge?.position ?? 'top-right';
+        const pos = String(raw).toLowerCase().replace(/[\s_]+/g, '-');
+        const map = {
+          'top-right': 'top: -2px; right: -2px;',
+          'top-left': 'top: -2px; left: -2px;',
+          'bottom-right': 'bottom: -2px; right: -2px;',
+          'bottom-left': 'bottom: -2px; left: -2px;'
+        };
+        return map[pos] || map['top-right'];
+      })()}
       width: 18px;
       height: 18px;
       background-color: #0284c7;

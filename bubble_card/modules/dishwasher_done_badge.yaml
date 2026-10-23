@@ -1,7 +1,22 @@
 dishwasher_done_badge:
   name: "Dishwasher Done Badge"
   description: "Displays a dishwasher badge on the kitchen card icon when cycle finishes and is waiting to be unloaded"
-  version: "1.0"
+  version: "1.1"
+  editor:
+    - name: position
+      label: "Position"
+      default: "top-right"
+      selector:
+        select:
+          options:
+            - label: "Top Right (Auto-shift if window open)"
+              value: "top-right"
+            - label: "Top Left"
+              value: "top-left"
+            - label: "Bottom Right"
+              value: "bottom-right"
+            - label: "Bottom Left"
+              value: "bottom-left"
   code: |
     .bubble-icon-container {
       overflow: visible !important;
@@ -10,8 +25,21 @@ dishwasher_done_badge:
       content: '';
       display: ${hass.states['input_boolean.kitchen_dishwasher_done']?.state === 'on' ? 'block' : 'none'} !important;
       position: absolute;
-      ${hass.states['binary_sensor.kitchen_window_contact']?.state === 'on' ? 'bottom: -2px;' : 'top: -2px;'}
-      right: -2px;
+      ${(() => {
+        const raw = this.config?.dishwasher_done_badge?.position;
+        if (raw) {
+          const pos = String(raw).toLowerCase().replace(/[\s_]+/g, '-');
+          const map = {
+            'top-right': 'top: -2px; right: -2px;',
+            'top-left': 'top: -2px; left: -2px;',
+            'bottom-right': 'bottom: -2px; right: -2px;',
+            'bottom-left': 'bottom: -2px; left: -2px;'
+          };
+          return map[pos] || map['top-right'];
+        }
+        const winOpen = hass.states['binary_sensor.kitchen_window_contact']?.state === 'on';
+        return winOpen ? 'bottom: -2px; right: -2px;' : 'top: -2px; right: -2px;';
+      })()}
       width: 18px;
       height: 18px;
       background-color: #10b981;

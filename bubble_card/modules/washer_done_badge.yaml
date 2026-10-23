@@ -1,7 +1,22 @@
 washer_done_badge:
   name: "Washer Done Badge"
-  description: "Displays a washing machine badge on the top right of the icon when laundry cycle is done and waiting to be unloaded"
-  version: "1.0"
+  description: "Displays a washing machine badge on the icon when laundry cycle is done and waiting to be unloaded"
+  version: "1.1"
+  editor:
+    - name: position
+      label: "Position"
+      default: "top-right"
+      selector:
+        select:
+          options:
+            - label: "Top Right"
+              value: "top-right"
+            - label: "Top Left"
+              value: "top-left"
+            - label: "Bottom Right"
+              value: "bottom-right"
+            - label: "Bottom Left"
+              value: "bottom-left"
   code: |
     .bubble-icon-container {
       overflow: visible !important;
@@ -10,8 +25,17 @@ washer_done_badge:
       content: '';
       display: ${hass.states['input_boolean.bathroom_laundry']?.state === 'on' ? 'block' : 'none'} !important;
       position: absolute;
-      top: -2px;
-      right: -2px;
+      ${(() => {
+        const raw = this.config?.washer_done_badge?.position ?? 'top-right';
+        const pos = String(raw).toLowerCase().replace(/[\s_]+/g, '-');
+        const map = {
+          'top-right': 'top: -2px; right: -2px;',
+          'top-left': 'top: -2px; left: -2px;',
+          'bottom-right': 'bottom: -2px; right: -2px;',
+          'bottom-left': 'bottom: -2px; left: -2px;'
+        };
+        return map[pos] || map['top-right'];
+      })()}
       width: 18px;
       height: 18px;
       background-color: #10b981;

@@ -1,7 +1,22 @@
 room_battery_badge:
   name: "Room Battery Alert Badge"
-  description: "Displays a low-battery warning badge on the top-left of the room icon when any sensor in that room reports low battery"
-  version: "1.0"
+  description: "Displays a low-battery warning badge on the room icon when any sensor in that room reports low battery"
+  version: "1.1"
+  editor:
+    - name: position
+      label: "Position"
+      default: "top-left"
+      selector:
+        select:
+          options:
+            - label: "Top Left"
+              value: "top-left"
+            - label: "Top Right"
+              value: "top-right"
+            - label: "Bottom Right"
+              value: "bottom-right"
+            - label: "Bottom Left"
+              value: "bottom-left"
   code: |
     .bubble-icon-container {
       overflow: visible !important;
@@ -18,8 +33,17 @@ room_battery_badge:
         return isLow ? 'block' : 'none';
       })()} !important;
       position: absolute;
-      top: -2px;
-      left: -2px;
+      ${(() => {
+        const raw = this.config?.room_battery_badge?.position ?? 'top-left';
+        const pos = String(raw).toLowerCase().replace(/[\s_]+/g, '-');
+        const map = {
+          'top-left': 'top: -2px; left: -2px;',
+          'top-right': 'top: -2px; right: -2px;',
+          'bottom-left': 'bottom: -2px; left: -2px;',
+          'bottom-right': 'bottom: -2px; right: -2px;'
+        };
+        return map[pos] || map['top-left'];
+      })()}
       width: 18px;
       height: 18px;
       background-color: #f59e0b;

@@ -1,7 +1,22 @@
 person_home_badge:
   name: "Person Home Badge"
-  description: "Displays a home badge on the top right of the avatar circle when the person is home"
-  version: "1.1"
+  description: "Displays a home badge on the avatar circle when the person is home"
+  version: "1.2"
+  editor:
+    - name: position
+      label: "Position"
+      default: "top-right"
+      selector:
+        select:
+          options:
+            - label: "Top Right"
+              value: "top-right"
+            - label: "Top Left"
+              value: "top-left"
+            - label: "Bottom Right"
+              value: "bottom-right"
+            - label: "Bottom Left"
+              value: "bottom-left"
   code: |
     .bubble-icon-container {
       overflow: visible !important;
@@ -13,8 +28,17 @@ person_home_badge:
       content: '';
       display: ${(state || '').toLowerCase() === 'home' ? 'block' : 'none'} !important;
       position: absolute;
-      top: -2px;
-      right: -2px;
+      ${(() => {
+        const raw = this.config?.person_home_badge?.position ?? 'top-right';
+        const pos = String(raw).toLowerCase().replace(/[\s_]+/g, '-');
+        const map = {
+          'top-right': 'top: -2px; right: -2px;',
+          'top-left': 'top: -2px; left: -2px;',
+          'bottom-right': 'bottom: -2px; right: -2px;',
+          'bottom-left': 'bottom: -2px; left: -2px;'
+        };
+        return map[pos] || map['top-right'];
+      })()}
       width: 18px;
       height: 18px;
       background-color: var(--accent-color, rgb(80, 110, 172));
@@ -26,4 +50,3 @@ person_home_badge:
       z-index: 2;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
     }
-
