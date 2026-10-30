@@ -6,11 +6,11 @@ utility_meter:
   # Daily power consumption of all devices
   total_power_kwh_daily:
     name: Total Power
-    source: sensor.total_power_kwh
+    source: sensor.home_total_energy
     cycle: daily
 
   # Monthly power consumption of all devices
   total_power_kwh_monthly:
     name: Total Power
-    source: sensor.total_power_kwh
+    source: sensor.home_total_energy
     cycle: monthly

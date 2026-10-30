@@ -98,8 +98,8 @@ google_assistant:
     switch.living_room_tv:
       name: Bildschirm
       expose: true
-    switch.living_room_laptop:
-      name: Laptop
+    switch.living_room_desktop:
+      name: Desktop
       expose: true
     switch.living_room_spot_lights:
       name: Eckstrahler

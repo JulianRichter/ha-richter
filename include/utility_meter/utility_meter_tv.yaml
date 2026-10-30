@@ -6,11 +6,11 @@ utility_meter:
   # Daily power consumption of the tv
   living_room_tv_kwh_daily:
     name: TV
-    source: sensor.tv_kwh
+    source: sensor.living_room_tv_energy
     cycle: daily
 
   # Monthly power consumption of the tv
   living_room_tv_kwh_monthly:
     name: TV
-    source: sensor.tv_kwh
+    source: sensor.living_room_tv_energy
     cycle: monthly

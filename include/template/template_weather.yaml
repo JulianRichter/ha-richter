@@ -51,6 +51,36 @@ template:
           {% else %}
             0.0
           {% endif %}
+        attributes:
+          bft: >
+            {% set s = state_attr('weather.home_open_meteo', 'wind_speed') | default(0) | float(0) %}
+            {% if s < 1 %}0
+            {% elif s < 6 %}1
+            {% elif s < 12 %}2
+            {% elif s < 20 %}3
+            {% elif s < 29 %}4
+            {% elif s < 39 %}5
+            {% elif s < 50 %}6
+            {% elif s < 62 %}7
+            {% else %}8{% endif %}
+          bft_desc: >
+            {% set s = state_attr('weather.home_open_meteo', 'wind_speed') | default(0) | float(0) %}
+            {% if s < 1 %}Windstille
+            {% elif s < 6 %}Leiser Zug
+            {% elif s < 12 %}Leichte Brise
+            {% elif s < 20 %}Schwache Brise
+            {% elif s < 29 %}Mäßige Brise
+            {% elif s < 39 %}Frische Brise
+            {% elif s < 50 %}Starker Wind
+            {% elif s < 62 %}Steifer Wind
+            {% else %}Sturm{% endif %}
+          cycling_status: >
+            {% set s = state_attr('weather.home_open_meteo', 'wind_speed') | default(0) | float(0) %}
+            {% if s < 15 %}Ideal zum Radeln
+            {% elif s < 29 %}Mäßiger Gegenwind
+            {% elif s < 41 %}Anstrengender Gegenwind
+            {% elif s < 55 %}Starker Wind / Böig
+            {% else %}Gefahr: Sturmböen!{% endif %}
 
   # ----------------------------------------------------------------------------
   # Hourly & Daily Forecast & Precipitation (Periodic query with cache fallback)
@@ -60,6 +90,8 @@ template:
         event: start
       - trigger: time_pattern
         minutes: /30
+      - trigger: event
+        event_type: update_weather_forecast
     action:
       - action: weather.get_forecasts
         continue_on_error: true
@@ -78,7 +110,7 @@ template:
     sensor:
       - name: Weather Home - Current Precipitation
         unique_id: weather_home_current_precipitation
-        unit_of_measurement: "%"
+        unit_of_measurement: "mm"
         state: >
           {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
           {% if f and f|length > 0 and f[0].precipitation is defined %}
@@ -145,6 +177,118 @@ template:
               {{ this.attributes.condition }}
             {% else %}[]{% endif %}
 
+          wind_speed: >
+            {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
+            {% if f and f|length > 0 %}
+              [
+              {% for h in f %}
+                {{ h.wind_speed | default(0) | float(0) }}
+                {% if not loop.last %},{% endif %}
+              {% endfor %}
+              ]
+            {% elif this is defined and 'wind_speed' in this.attributes and this.attributes.wind_speed %}
+              {{ this.attributes.wind_speed }}
+            {% else %}[]{% endif %}
+
+          wind_gust_speed: >
+            {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
+            {% if f and f|length > 0 %}
+              [
+              {% for h in f %}
+                {{ h.wind_gust_speed | default(0) | float(0) }}
+                {% if not loop.last %},{% endif %}
+              {% endfor %}
+              ]
+            {% elif this is defined and 'wind_gust_speed' in this.attributes and this.attributes.wind_gust_speed %}
+              {{ this.attributes.wind_gust_speed }}
+            {% else %}[]{% endif %}
+
+          max_gust_today: >
+            {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
+            {% if f and f|length > 0 %}
+              {% set ns = namespace(max_g=0) %}
+              {% for h in f %}
+                {% set item_dt = as_datetime(h.datetime) %}
+                {% if item_dt is not none and as_local(item_dt).date() == now().date() %}
+                  {% set g = h.wind_gust_speed | default(0) | float(0) %}
+                  {% if g > ns.max_g %}{% set ns.max_g = g %}{% endif %}
+                {% endif %}
+              {% endfor %}
+              {{ ns.max_g }}
+            {% elif this is defined and 'max_gust_today' in this.attributes and this.attributes.max_gust_today %}
+              {{ this.attributes.max_gust_today }}
+            {% else %}0{% endif %}
+
+          wind_gradient_1d: >
+            {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
+            {% if f and f|length > 0 %}
+              {% set t0 = as_timestamp(today_at('00:00')) %}
+              {% set t_span = 24 * 3600 %}
+              {% set now_pct = [([(((as_timestamp(now()) - t0) / t_span) * 100) | round(0) | int, 0] | max), 100] | min %}
+              {% set ns = namespace(stops=['rgba(56, 189, 248, 0.35) 0%', 'rgba(56, 189, 248, 0.35) ' ~ now_pct ~ '%'], last_col='') %}
+              {% for h in f %}
+                {% set ts = as_timestamp(as_datetime(h.datetime)) %}
+                {% if ts >= t0 and ts <= (t0 + t_span) %}
+                  {% set pct = [([(((ts - t0) / t_span) * 100) | round(0) | int, 0] | max), 100] | min %}
+                  {% if pct > now_pct %}
+                    {% set val = [h.wind_gust_speed | default(0) | float(0), h.wind_speed | default(0) | float(0)] | max %}
+                    {% if val < 25 %}
+                      {% set col = 'rgba(56, 189, 248, 0.35)' %}
+                    {% elif val < 40 %}
+                      {% set col = 'rgba(251, 191, 36, 0.7)' %}
+                    {% elif val < 60 %}
+                      {% set col = 'rgba(249, 115, 22, 0.85)' %}
+                    {% else %}
+                      {% set col = 'rgba(239, 68, 68, 0.95)' %}
+                    {% endif %}
+                    {% set ns.stops = ns.stops + [col ~ ' ' ~ pct ~ '%'] %}
+                    {% set ns.last_col = col %}
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+              {% if ns.stops|length > 0 and ns.last_col %}
+                {% set ns.stops = ns.stops + [ns.last_col ~ ' 100%'] %}
+              {% endif %}
+              linear-gradient(to right, {{ ns.stops | join(', ') }})
+            {% elif this is defined and 'wind_gradient_1d' in this.attributes and this.attributes.wind_gradient_1d %}
+              {{ this.attributes.wind_gradient_1d }}
+            {% else %}none{% endif %}
+
+          wind_gradient_3d: >
+            {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
+            {% if f and f|length > 0 %}
+              {% set t0 = as_timestamp(today_at('00:00')) %}
+              {% set t_span = 72 * 3600 %}
+              {% set now_pct = [([(((as_timestamp(now()) - t0) / t_span) * 100) | round(0) | int, 0] | max), 100] | min %}
+              {% set ns = namespace(stops=['rgba(56, 189, 248, 0.35) 0%', 'rgba(56, 189, 248, 0.35) ' ~ now_pct ~ '%'], last_col='') %}
+              {% for h in f %}
+                {% if loop.index0 % 2 == 0 %}
+                  {% set ts = as_timestamp(as_datetime(h.datetime)) %}
+                  {% set pct = [([(((ts - t0) / t_span) * 100) | round(0) | int, 0] | max), 100] | min %}
+                  {% if pct > now_pct %}
+                    {% set val = [h.wind_gust_speed | default(0) | float(0), h.wind_speed | default(0) | float(0)] | max %}
+                    {% if val < 25 %}
+                      {% set col = 'rgba(56, 189, 248, 0.35)' %}
+                    {% elif val < 40 %}
+                      {% set col = 'rgba(251, 191, 36, 0.7)' %}
+                    {% elif val < 60 %}
+                      {% set col = 'rgba(249, 115, 22, 0.85)' %}
+                    {% else %}
+                      {% set col = 'rgba(239, 68, 68, 0.95)' %}
+                    {% endif %}
+                    {% set ns.stops = ns.stops + [col ~ ' ' ~ pct ~ '%'] %}
+                    {% set ns.last_col = col %}
+                  {% endif %}
+                {% endif %}
+              {% endfor %}
+              {% if ns.stops|length > 0 and ns.last_col %}
+                {% set ns.stops = ns.stops + [ns.last_col ~ ' 100%'] %}
+              {% endif %}
+              linear-gradient(to right, {{ ns.stops | join(', ') }})
+            {% elif this is defined and 'wind_gradient_3d' in this.attributes and this.attributes.wind_gradient_3d %}
+              {{ this.attributes.wind_gradient_3d }}
+            {% else %}none{% endif %}
+
       - name: Weather Home - Forecast Daily
         unique_id: weather_home_forecast_daily
         state: "{{ now() }}"
@@ -183,6 +327,8 @@ template:
         event: start
       - trigger: time_pattern
         minutes: /30
+      - trigger: event
+        event_type: update_weather_forecast
     action:
       - action: weather.get_forecasts
         continue_on_error: true
@@ -274,6 +420,42 @@ template:
               {{ items.list }}
             {% elif this is defined and 'condition' in this.attributes and this.attributes.condition %}
               {{ this.attributes.condition }}
+            {% else %}[]{% endif %}
+
+          wind_speed: >
+            {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
+            {% set has_today_cache = this is defined and 'wind_speed' in this.attributes and this.attributes.wind_speed and this.attributes.wind_speed != '[]' and this.state not in ['unavailable', 'unknown', ''] and as_local(as_datetime(this.state)).date() == now().date() %}
+            {% if trigger.platform != 'time' and has_today_cache %}
+              {{ this.attributes.wind_speed }}
+            {% elif f and f|length > 0 %}
+              {% set items = namespace(list=[]) %}
+              {% for h in f %}
+                {% set item_dt = as_datetime(h.datetime) %}
+                {% if item_dt is not none and as_local(item_dt).date() >= now().date() %}
+                  {% set items.list = items.list + [h.wind_speed | default(0) | float(0)] %}
+                {% endif %}
+              {% endfor %}
+              {{ items.list }}
+            {% elif this is defined and 'wind_speed' in this.attributes and this.attributes.wind_speed %}
+              {{ this.attributes.wind_speed }}
+            {% else %}[]{% endif %}
+
+          wind_gust_speed: >
+            {% set f = hourly.get('weather.home_open_meteo', {}).get('forecast') if hourly is defined and hourly else none %}
+            {% set has_today_cache = this is defined and 'wind_gust_speed' in this.attributes and this.attributes.wind_gust_speed and this.attributes.wind_gust_speed != '[]' and this.state not in ['unavailable', 'unknown', ''] and as_local(as_datetime(this.state)).date() == now().date() %}
+            {% if trigger.platform != 'time' and has_today_cache %}
+              {{ this.attributes.wind_gust_speed }}
+            {% elif f and f|length > 0 %}
+              {% set items = namespace(list=[]) %}
+              {% for h in f %}
+                {% set item_dt = as_datetime(h.datetime) %}
+                {% if item_dt is not none and as_local(item_dt).date() >= now().date() %}
+                  {% set items.list = items.list + [h.wind_gust_speed | default(0) | float(0)] %}
+                {% endif %}
+              {% endfor %}
+              {{ items.list }}
+            {% elif this is defined and 'wind_gust_speed' in this.attributes and this.attributes.wind_gust_speed %}
+              {{ this.attributes.wind_gust_speed }}
             {% else %}[]{% endif %}
 
   # ----------------------------------------------------------------------------

@@ -35,25 +35,33 @@ template:
 
             {# Only show block if at least one sensor is offline #}
             {%- if offline | count > 0 -%}
-            <p>Sensor offline:
+            <p><span style="display: block; font-weight: 500; color: #94a3b8; margin: 12px 0 4px 0;">Sensor offline:</span>
             {%- for sensor in offline -%}
 
               {# Compute time since last update #}
               {%- set time_now     = as_timestamp(now()) -%}
               {%- set time_changed = as_timestamp(states[sensor].last_updated) -%}
               {%- set time_diff    = time_now - time_changed -%}
-              {%- set time_min     = (time_diff / 60) | int -%}
+              {%- set m            = (time_diff / 60) | int -%}
 
-              {# Sensor name #}
-              <br>- {{ state_attr(sensor, 'friendly_name') }}<br>
-              {%- if time_min < 60 -%}
-                &nbsp {{ '{:02}'.format(time_min) }}:{{ '{:02}'.format((time_diff % 60) | int) }} min
+              {%- if m < 60 -%}
+                {%- set time_str = '{:02} min'.format(m) -%}
+              {%- elif m < 1440 -%}
+                {%- set time_hour = (m / 60) | int -%}
+                {%- set time_rem  = (m - 60 * time_hour) | int -%}
+                {%- set time_str  = '{:02}:{:02} h'.format(time_hour, time_rem) -%}
               {%- else -%}
-                {%- set time_hour = (time_min / 60) | int -%}
-                {%- set time_min  = (time_min - 60 * time_hour) | int -%}
-                &nbsp {{ '{:02}'.format(time_hour) }}:{{ '{:02}'.format(time_min) }} h
+                {%- set time_str  = '{:d} d'.format((m / 1440) | int) -%}
               {%- endif -%}
 
+              {%- set raw_name = state_attr(sensor, 'friendly_name') -%}
+              {%- set name = raw_name
+                | replace('Schlafzimmer', 'Schlafz.')
+                | replace('Badezimmer', 'Bad')
+                | replace('Kinderzimmer', 'Kinderz.')
+                | replace('Wohnzimmer', 'Wohnz.')
+              -%}
+              <span style="display: block; line-height: 22px;">- {{ name }} <span style="font-variant-numeric: tabular-nums; opacity: 0.65; font-size: 13px; margin-left: 4px;">· {{ time_str }}</span></span>
             {%- endfor -%}
             </p>
             {%- endif -%}

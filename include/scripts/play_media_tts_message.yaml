@@ -61,10 +61,10 @@ script:
             {%- set custom_vol = volume_level if volume_level is defined and volume_level not in [none, '']
                 else (volume if volume is defined and volume not in [none, '']
                 else none) -%}
-            {{ custom_vol | float if custom_vol is not none else (0.2 if is_state('input_boolean.presence_home', 'off') else 0.4) }}
+            {{ custom_vol | float(0.4) if custom_vol is not none else (0.2 if is_state('input_boolean.presence_home', 'off') else 0.4) }}
           start_volume: >-
             {%- set vol = state_attr(entity_id, 'volume_level') -%}
-            {{ vol | float if vol is not none and vol != '' else target_volume }}
+            {{ vol | float(target_volume) if vol is not none and vol != '' else target_volume }}
 
       # Set announcement volume on media player
       - action: media_player.volume_set
@@ -126,4 +126,4 @@ script:
         target:
           entity_id: "{{ entity_id }}"
         data:
-          volume_level: "{{ start_volume | float }}"
+          volume_level: "{{ start_volume | float(0.4) }}"

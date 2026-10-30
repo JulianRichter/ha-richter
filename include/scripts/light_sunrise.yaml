@@ -43,7 +43,7 @@ script:
       # Initialize step counters and delays
       - variables:
           steps: "{{ target_brightness_pct | default(40) | int(40) }}"
-          step_delay: "{{ (seconds | default(600) / steps) | float }}"
+          step_delay: "{{ (seconds | default(600) / steps) | float(1.0) }}"
           light: "{{ entity_id }}"
 
       # Start dim and warm

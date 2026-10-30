@@ -23,19 +23,19 @@ template:
           {% set m = state_attr('light.bedroom_light_right', 'color_temp') %}
           {% set max_k = state_attr('light.bedroom_light_right', 'max_color_temp_kelvin') %}
           {% set min_k = state_attr('light.bedroom_light_right', 'min_color_temp_kelvin') %}
-          {% set min_m = (1000000 / max_k) | int if (max_k and max_k > 1000) else (state_attr('light.bedroom_light_right', 'min_mireds') | default(153, true) | int(153)) %}
-          {% set max_m = (1000000 / min_k) | int if (min_k and min_k > 1000) else (state_attr('light.bedroom_light_right', 'max_mireds') | default(500, true) | int(500)) %}
-          {% set temp = (1000000 / k) | int if (k and k > 1000) else (m | int if m else 370) %}
+          {% set min_m = (1000000 / max_k) | int(153) if (max_k and max_k > 1000) else (state_attr('light.bedroom_light_right', 'min_mireds') | default(153, true) | int(153)) %}
+          {% set max_m = (1000000 / min_k) | int(500) if (min_k and min_k > 1000) else (state_attr('light.bedroom_light_right', 'max_mireds') | default(500, true) | int(500)) %}
+          {% set temp = (1000000 / k) | int(370) if (k and k > 1000) else (m | int(370) if m else 370) %}
           {{ [min_m, [temp, max_m] | min] | max }}
         hs: "{{ state_attr('light.bedroom_light_right', 'hs_color') }}"
         min_mireds: >
           {% set max_k = state_attr('light.bedroom_light_right', 'max_color_temp_kelvin') %}
           {% set min_m = state_attr('light.bedroom_light_right', 'min_mireds') %}
-          {{ (1000000 / max_k) | int if (max_k and max_k > 1000) else (min_m | default(153, true) | int(153)) }}
+          {{ (1000000 / max_k) | int(153) if (max_k and max_k > 1000) else (min_m | default(153, true) | int(153)) }}
         max_mireds: >
           {% set min_k = state_attr('light.bedroom_light_right', 'min_color_temp_kelvin') %}
           {% set max_m = state_attr('light.bedroom_light_right', 'max_mireds') %}
-          {{ (1000000 / min_k) | int if (min_k and min_k > 1000) else (max_m | default(500, true) | int(500)) }}
+          {{ (1000000 / min_k) | int(500) if (min_k and min_k > 1000) else (max_m | default(500, true) | int(500)) }}
         supports_transition: "{{ true }}"
         turn_on:
           action: light.turn_on

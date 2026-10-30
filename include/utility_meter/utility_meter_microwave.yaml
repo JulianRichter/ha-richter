@@ -6,11 +6,11 @@ utility_meter:
   # Daily power consumption of the microwave
   kitchen_microwave_kwh_daily:
     name: Mikrowelle
-    source: sensor.microwave_kwh
+    source: sensor.kitchen_microwave_energy
     cycle: daily
 
   # Monthly power consumption of the microwave
   kitchen_microwave_kwh_monthly:
     name: Mikrowelle
-    source: sensor.microwave_kwh
+    source: sensor.kitchen_microwave_energy
     cycle: monthly

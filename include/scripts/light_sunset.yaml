@@ -34,7 +34,7 @@ script:
       # Initialize step counters and delays
       - variables:
           steps: 100
-          step_delay: "{{ (seconds | default(600) / steps) | float }}"
+          step_delay: "{{ (seconds | default(600) / steps) | float(1.0) }}"
           light: "{{ entity_id }}"
 
       # Start full brightness in warm cozy tone

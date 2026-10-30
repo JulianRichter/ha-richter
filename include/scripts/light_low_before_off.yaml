@@ -93,7 +93,7 @@ script:
 
       # Wait for transition to complete before cutting power
       - delay:
-          milliseconds: "{{ (trans * 1000 + 500) | int if trans > 0 else 500 }}"
+          milliseconds: "{{ (trans * 1000 + 500) | int(500) if trans > 0 else 500 }}"
 
       # Turn off target lights only if they haven't been re-brightened or turned back on
       - variables:

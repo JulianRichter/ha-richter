@@ -6,11 +6,11 @@ utility_meter:
   # Daily power consumption of the fridge
   kitchen_fridge_kwh_daily:
     name: Kühlschrank
-    source: sensor.fridge_kwh
+    source: sensor.kitchen_fridge_energy
     cycle: daily
 
   # Monthly power consumption of the fridge
   kitchen_fridge_kwh_monthly:
     name: Kühlschrank
-    source: sensor.fridge_kwh
+    source: sensor.kitchen_fridge_energy
     cycle: monthly

@@ -1,6 +1,8 @@
 template:
   # ====================================================================
   # Tablet Sidebar - Window Contacts
+  # - Displays open windows with duration, current humidity, and venting trend
+  # - Replaces legacy arrow with clean typography and dynamic climate feedback
   # ====================================================================
 
   # Window contacts status display for tablet dashboard sidebar
@@ -17,35 +19,55 @@ template:
             - sensor.living_room_humidity_change
             - sensor.bedroom_humidity_change
             - sensor.baby_room_humidity_change
+          humidities:
+            - sensor.kitchen_multi_sensor_humidity
+            - sensor.living_room_multi_sensor_humidity
+            - sensor.bedroom_multi_sensor_humidity
+            - sensor.baby_room_multi_sensor_humidity
         state: >
-          {{ 'on' if entities|select('is_state','on')|list|count>0 else 'off' }}
+          {{ 'on' if entities | select('is_state', 'on') | list | count > 0 else 'off' }}
         attributes:
           count: >
-            {{ entities|select('is_state','on')|list|count }}
+            {{ entities | select('is_state', 'on') | list | count }}
           sidebar_html_text: >-
-            {%- set open_windows = entities|select('is_state','on')|list -%}
-            {%- if open_windows|count>0 -%}
-            <p>Fenster offen:
+            {%- set open_windows = entities | select('is_state', 'on') | list -%}
+            {%- if open_windows | count > 0 -%}
+            <p><span style="display: block; font-weight: 500; color: #94a3b8; margin: 12px 0 4px 0;">Fenster offen:</span>
             {%- for sensor in open_windows -%}
               {%- set idx = entities.index(sensor) -%}
-              {%- set deriv = states(derivatives[idx])|float(default=0) -%}
+              {%- set deriv = states(derivatives[idx]) | float(0) -%}
               {%- set time_now = as_timestamp(now()) -%}
               {%- set time_changed = as_timestamp(states[sensor].last_updated) -%}
               {%- set diff = time_now - time_changed -%}
-              {%- set m = (diff/60)|int -%}
-              <br>- {{ state_attr(sensor,'friendly_name') | replace(' (F)','') }}
-              {%- if m<60 -%}
-                <br>&nbsp {{ '{:02}'.format(m) }}:{{ '{:02}'.format((diff%60)|int) }} min
+              {%- set m = (diff / 60) | int -%}
+              {%- if m < 60 -%}
+                {%- set time_str = '{:02} min'.format(m) -%}
               {%- else -%}
-                {%- set h = (m/60)|int -%}
-                {%- set rm = (m-60*h)|int -%}
-                <br>&nbsp {{ '{:02}'.format(h) }}:{{ '{:02}'.format(rm) }} h
+                {%- set h = (m / 60) | int -%}
+                {%- set rm = (m - 60 * h) | int -%}
+                {%- set time_str = '{:02}:{:02} h'.format(h, rm) -%}
               {%- endif -%}
-              {%- if deriv <= -1.0 -%}
-                &nbsp; <ha-icon icon="mdi:trending-down" style="--mdc-icon-size: 16px; color: #42a5f5; vertical-align: middle;"></ha-icon>
+              {%- set raw_name = state_attr(sensor, 'friendly_name') | replace(' (F)', '') -%}
+              {%- set name = raw_name
+                | replace('Schlafzimmer', 'Schlafz.')
+                | replace('Badezimmer', 'Bad')
+                | replace('Kinderzimmer', 'Kinderz.')
+                | replace('Wohnzimmer', 'Wohnz.')
+              -%}
+              {%- if m >= 25 -%}
+                {%- set smiley = '🥶' -%}
+                {%- set smiley_title = 'Zu lange offen (Kälteverlust)' -%}
+              {%- elif deriv <= -0.2 -%}
+                {%- set smiley = '😊' -%}
+                {%- set smiley_title = 'Lüftet gut (Feuchte sinkt)' -%}
+              {%- elif deriv >= 0.2 -%}
+                {%- set smiley = '😅' -%}
+                {%- set smiley_title = 'Feuchte steigt' -%}
               {%- else -%}
-                &nbsp; <ha-icon icon="mdi:trending-neutral" style="--mdc-icon-size: 16px; opacity: 0.6; vertical-align: middle;"></ha-icon>
+                {%- set smiley = '😌' -%}
+                {%- set smiley_title = 'Frisch gelüftet (Optimal)' -%}
               {%- endif -%}
+              <span style="display: block; line-height: 22px;">- {{ name }} <span style="font-variant-numeric: tabular-nums; opacity: 0.75; font-size: 13px; margin-left: 4px;">· {%- if m >= 25 -%}<span style="color: #ffa726;">{{ time_str }}</span>{%- else -%}{{ time_str }}{%- endif -%}&nbsp;<span style="font-size: 15px; vertical-align: -1px;" title="{{ smiley_title }}">{{ smiley }}</span></span></span>
             {%- endfor -%}
             </p>
             {%- endif -%}
