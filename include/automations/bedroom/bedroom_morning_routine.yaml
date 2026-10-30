@@ -3,7 +3,7 @@ automation:
   # Bedroom - Morning Routine
   # - Starts 15 min before alarm (once/day when alarm enabled and residents home)
   # - Priority: Google Home alarm > Julian next phone alarm > input_datetime fallback
-  # - Starts 10m sunrise light effect, opens blinds, plays TTS at alarm time, sets presence_home on, turns off light 15m later
+  # - Starts 10m sunrise light effect, opens blinds, plays TTS at alarm time, turns off light 15m later
   # ====================================================================
 
   - id: "bedroom_morning_routine"
@@ -95,11 +95,6 @@ automation:
         data:
           entity_id: media_player.bedroom
           message: Guten Morgen
-
-      # Set house presence to awake / home mode
-      - action: input_boolean.turn_on
-        target:
-          entity_id: input_boolean.presence_home
 
       # Keep light on for another 15 minutes before turning off
       - delay:

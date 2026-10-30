@@ -5,7 +5,7 @@ automation:
   # - Acts as manual fallback for motion lighting with shared brightness (brightness_high)
   # - Single press up when off: Turns on kitchen light to shared full brightness
   # - Single press up when on: Toggles between full and dim/warm setting
-  # - Down single click: Turns off kitchen light smoothly via light_low_before_off
+  # - Down single click: Turns off kitchen light instantly without transition
   # ====================================================================
 
   - id: "kitchen_light_switch"
@@ -67,13 +67,13 @@ automation:
                       brightness: "{{ brightness_high }}"
                       color_temp_kelvin: 2000
 
-          # Down single press: turn off light smoothly
+          # Down single press: turn off light instantly
           - conditions:
               - condition: template
                 value_template: "{{ trigger.to_state.attributes.event_type == 'off' }}"
             sequence:
-              - action: script.light_low_before_off
-                data:
+              - action: light.turn_off
+                target:
                   entity_id: light.kitchen_light_group
 
           # Up hold: reserved

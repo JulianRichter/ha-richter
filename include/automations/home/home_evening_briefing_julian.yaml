@@ -45,6 +45,7 @@ automation:
       - action: calendar.get_events
         target:
           entity_id:
+            - calendar.1114zxy_gmail_com
             - calendar.familie
             - calendar.german_holidays_all
             - calendar.julian_all
@@ -112,21 +113,31 @@ automation:
             {%- set aft_t = (wx.aft | max) | round(0) | int if wx.aft else (wx.all | max | round(0) | int if wx.all else 20) -%}
             {%- set eve_t = (wx.eve | sum / wx.eve | length) | round(0) | int if wx.eve else (wx.all | min | round(0) | int if wx.all else 15) -%}
             {#- ---------- Calendar: remaining tonight vs tomorrow ---------- -#}
+            {%- set cal_names = {
+              'calendar.julian_all': 'Julian',
+              'calendar.1114zxy_gmail_com': 'Schascha',
+              'calendar.keno': 'Keno',
+              'calendar.leo': 'Leo',
+              'calendar.familie': 'Familie',
+              'calendar.german_holidays_all': 'Feiertag'
+            } -%}
             {%- set cal_tonight = namespace(items=[]) -%}
             {%- set cal_tomorrow = namespace(items=[]) -%}
             {%- for cal_id, cal_data in (calendar_events | default({}, true)).items() -%}
+              {%- set person = cal_names.get(cal_id, '') -%}
+              {%- set label = ('[' ~ person ~ '] ') if person else '' -%}
               {%- for event in cal_data.events | default([], true) -%}
                 {%- if 'T' in event.start -%}
                   {%- set start_dt = as_datetime(event.start) | as_local -%}
                   {%- if start_dt.date() == now().date() and start_dt > now() -%}
-                    {%- set cal_tonight.items = cal_tonight.items + [{'sort': start_dt.strftime('%H:%M'), 'text': event.summary ~ ' um ' ~ start_dt.strftime('%H:%M') ~ ' Uhr'}] -%}
+                    {%- set cal_tonight.items = cal_tonight.items + [{'sort': start_dt.strftime('%H:%M'), 'text': label ~ event.summary ~ ' um ' ~ start_dt.strftime('%H:%M') ~ ' Uhr'}] -%}
                   {%- elif start_dt.date() == tomorrow_date -%}
-                    {%- set cal_tomorrow.items = cal_tomorrow.items + [{'sort': start_dt.strftime('%H:%M'), 'text': event.summary ~ ' um ' ~ start_dt.strftime('%H:%M') ~ ' Uhr'}] -%}
+                    {%- set cal_tomorrow.items = cal_tomorrow.items + [{'sort': start_dt.strftime('%H:%M'), 'text': label ~ event.summary ~ ' um ' ~ start_dt.strftime('%H:%M') ~ ' Uhr'}] -%}
                   {%- endif -%}
                 {%- else -%}
                   {%- set start_d = as_datetime(event.start) | as_local -%}
                   {%- if start_d.date() == tomorrow_date -%}
-                    {%- set cal_tomorrow.items = cal_tomorrow.items + [{'sort': '00:00', 'text': event.summary ~ ' (ganztägig)'}] -%}
+                    {%- set cal_tomorrow.items = cal_tomorrow.items + [{'sort': '00:00', 'text': label ~ event.summary ~ ' (ganztägig)'}] -%}
                   {%- endif -%}
                 {%- endif -%}
               {%- endfor -%}
@@ -228,14 +239,21 @@ automation:
             - Satz 3: Eine konkrete, abgestimmte Kleidungsempfehlung für morgen, die diesen Tagesverlauf berücksichtigt (z.B. "Für den Vormittag empfiehlt sich eine Übergangsjacke, später reicht ein Sakko." bzw. "Eine wetterfeste Jacke ist angeraten.").
 
             Absatz 3 (Fitness & Tagesaktivität - NUR falls in den Daten vorhanden):
-            - Nenne kurz und dezent die bisherigen Schritte des heutigen Tages, gerundet auf 500er (z.B. "Heute stehen bislang rund siebeneinhalbtausend Schritte zu Buche." oder "Bislang hast du heute knapp siebentausendfünfhundert Schritte absolviert.").
+            - Nenne kurz, natürlich und dezent die bisherigen Schritte des Tages, gerundet auf 500er (z.B. "Bislang bist du heute rund siebeneinhalbtausend Schritte gegangen.", "Du kommst heute bisher auf rund siebeneinhalbtausend Schritte." oder "Dein Schrittzähler liegt aktuell bei rund siebeneinhalbtausend Schritten.").
+            - Formuliere die Bewegung ungezwungen und natürlich im eleganten Alltagston.
             - Schrittzahl IMMER gerundet auf halbe Tausender nennen – NIEMALS exakte oder krumme Zahlen sprechen.
             - Liegen keine Schrittdaten vor: Diesen Absatz komplett weglassen!
-            - Wichtig: Niemals motivierend oder belehrend wie ein Fitnesstrainer klingen. Sachlich und dezent im JARVIS-Stil.
+            - Wichtig: Niemals motivierend oder belehrend wie ein Fitnesstrainer klingen. Sachlich, unaufgeregt und diskret im JARVIS-Stil.
 
             Absatz 4 (Termine & Tagesplan):
             - Falls für heute Abend noch Termine anstehen: Nenne sie kurz in einem Satz.
             - Morgen anstehende Termine: Nenne die morgigen Termine ruhig nacheinander in kurzen Einzelsätzen. Wenn morgen keine Termine anstehen: Trocken erwähnen, dass der Kalender morgen komplett frei ist.
+            - Zuordnung der Termine (den Namen natürlich und elegant einbinden):
+              * [Julian]: Persönliche Termine des Zuhörers – sprich ihn direkt in der Du-Form an (z.B. "Für dich steht um zehn Uhr ein Meeting an.").
+              * [Schascha]: Termine seiner Ehefrau Schascha (z.B. "Schascha hat um elf Uhr einen Termin.", "Für Schascha steht Pilates an.").
+              * [Keno] oder [Leo]: Termine der Söhne Keno und Leo (z.B. "Keno startet um acht Uhr mit dem Kindergarten.", "Um halb fünf folgt der Sportkurs für Leo.").
+              * [Familie]: Gemeinsame Familientermine, Geburtstage oder Jubiläen (z.B. "Morgen hat Ole Geburtstag.", "Als Familie steht um achtzehn Uhr ein Abendessen an.").
+              * [Feiertag]: Deutsche Feiertage (z.B. "Morgen ist Feiertag.").
             - Falls Aufgaben vorliegen: Kurz und beiläufig in einem Satz erwähnen.
 
             Absatz 5 (Smart-Home-Hinweise - NUR falls in den Daten vorhanden):
@@ -246,7 +264,8 @@ automation:
             - Ein kurzer, vornehmer Feierabend-Abschluss (z.B. "Einen entspannten Feierabend." oder "Einen angenehmen und ruhigen Abend.").
 
             STRENG VERBOTEN:
-            - Niemals einen Namen nennen (weder Julian noch Sir). Sprich direkt in der Du-Form, niemals mit Sie.
+            - Den Zuhörer niemals mit Namen ansprechen (weder "Julian" noch "Sir"). Sprich ihn direkt in der Du-Form an ("du hast", "für dich"). Die Namen der Familienmitglieder (Schascha, Keno, Leo) bei deren Terminen natürlich ganz normal nennen.
+            - Keine unnatürlichen oder gestelzten Floskeln wie "zu Buche stehen", "zu Buche schlagen", "absolviert" oder bürokratische Amtsphrasen. Sprich menschlich, flüssig und ungezwungen.
             - Keine Roboterfloskeln ("Die Systeme laufen im Hintergrund", "Statusbericht").
             - Keine übertriebenen Motivations- oder Feierabendfloskeln ("Lass die Seele baumeln").
             - Keine exakten oder krummen Schrittzahlen nennen – stets auf 500er runden (z.B. "rund siebentausendfünfhundert Schritte" oder "rund siebeneinhalbtausend Schritte" statt exakter Zahlen).
@@ -257,9 +276,9 @@ automation:
 
             Morgen früh starten wir frisch bei acht Grad. Am Nachmittag klettert das Thermometer bei sonnigem Himmel auf einundzwanzig Grad, bevor es zum Abend auf dreizehn Grad absinkt. Für den Vormittag empfiehlt sich eine Übergangsjacke, später reicht ein Sakko.
 
-            Heute stehen bislang rund siebeneinhalbtausend Schritte zu Buche.
+            Bislang bist du heute rund siebeneinhalbtausend Schritte gegangen.
 
-            Morgen hat Ole Geburtstag. Die Termine starten um acht Uhr mit dem Kindergarten. Um halb drei steht die Abholung an, und um halb fünf folgt der Sportkurs.
+            Morgen hat Ole Geburtstag. Keno startet um acht Uhr mit dem Kindergarten, und um halb drei steht die Abholung an. Um halb fünf folgt der Sportkurs für Leo, während Schascha um achtzehn Uhr einen Termin hat.
 
             Das Fenster im Schlafzimmer steht aktuell noch offen.
 

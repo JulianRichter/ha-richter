@@ -3,10 +3,10 @@ automation:
   # Kitchen - Dishwasher
   # - Tracks dishwasher cycle completion using binary_sensor.kitchen_dishwasher
   # - Sets helper input_boolean.kitchen_dishwasher_done when cycle finishes
-  # - Announces via play_media_tts_dishwasher on media_player.kitchen when someone enters the kitchen
+  # - Announces once via play_media_tts_dishwasher on media_player.kitchen when someone enters the kitchen
   # - If someone is already in the kitchen when it finishes, announces immediately
   # - Only announces when presence_home is on (not while sleeping or away)
-  # - Clears the helper upon announcement and when a new cycle starts
+  # - Keeps input_boolean.kitchen_dishwasher_done active until cleared manually from dashboard or new cycle starts
   # ====================================================================
 
   - id: "kitchen_dishwasher"
@@ -35,18 +35,36 @@ automation:
         to: "on"
         id: kitchen_motion
 
+      # User cleared the reminder from dashboard icon
+      - trigger: state
+        entity_id: input_boolean.kitchen_dishwasher_done
+        from: "on"
+        to: "off"
+        id: reminder_cleared
+
     condition: []
 
     action:
       - choose:
-          # Cycle started: clear any lingering reminder
+          # Cycle started: clear reminder and announcement flag
           - conditions:
               - condition: trigger
                 id: dishwasher_started
             sequence:
               - action: input_boolean.turn_off
                 target:
-                  entity_id: input_boolean.kitchen_dishwasher_done
+                  entity_id:
+                    - input_boolean.kitchen_dishwasher_done
+                    - input_boolean.kitchen_dishwasher_announced
+
+          # User cleared reminder: reset announcement flag
+          - conditions:
+              - condition: trigger
+                id: reminder_cleared
+            sequence:
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.kitchen_dishwasher_announced
 
           # Cycle finished: set reminder, announce immediately if kitchen is currently occupied & awake
           - conditions:
@@ -56,6 +74,9 @@ automation:
               - action: input_boolean.turn_on
                 target:
                   entity_id: input_boolean.kitchen_dishwasher_done
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.kitchen_dishwasher_announced
               - if:
                   - condition: state
                     entity_id: binary_sensor.kitchen_motion_sensor_occupancy
@@ -64,14 +85,14 @@ automation:
                     entity_id: input_boolean.presence_home
                     state: "on"
                 then:
-                  - action: input_boolean.turn_off
+                  - action: input_boolean.turn_on
                     target:
-                      entity_id: input_boolean.kitchen_dishwasher_done
+                      entity_id: input_boolean.kitchen_dishwasher_announced
                   - action: script.play_media_tts_dishwasher
                     data:
                       entity_id: media_player.kitchen
 
-          # Someone enters the kitchen while clean dishes are pending
+          # Someone enters the kitchen while clean dishes are pending and not yet announced
           - conditions:
               - condition: trigger
                 id: kitchen_motion
@@ -79,12 +100,15 @@ automation:
                 entity_id: input_boolean.kitchen_dishwasher_done
                 state: "on"
               - condition: state
+                entity_id: input_boolean.kitchen_dishwasher_announced
+                state: "off"
+              - condition: state
                 entity_id: input_boolean.presence_home
                 state: "on"
             sequence:
-              - action: input_boolean.turn_off
+              - action: input_boolean.turn_on
                 target:
-                  entity_id: input_boolean.kitchen_dishwasher_done
+                  entity_id: input_boolean.kitchen_dishwasher_announced
               - action: script.play_media_tts_dishwasher
                 data:
                   entity_id: media_player.kitchen

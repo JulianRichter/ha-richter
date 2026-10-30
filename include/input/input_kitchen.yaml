@@ -3,7 +3,12 @@ input_boolean:
   # Kitchen Helpers
   # ====================================================================
 
-  # Dishwasher finished reminder (turns on when cycle completes, clears when announced upon entry)
+  # Dishwasher finished reminder (turns on when cycle completes, cleared manually via dashboard icon)
   kitchen_dishwasher_done:
     name: Kitchen - Dishwasher Done
     icon: mdi:dishwasher
+
+  # Dishwasher TTS announced flag (ensures Gemini TTS announces only once per cycle upon kitchen entry)
+  kitchen_dishwasher_announced:
+    name: Kitchen - Dishwasher Announced
+    icon: mdi:bullhorn

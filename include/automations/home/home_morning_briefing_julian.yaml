@@ -46,6 +46,7 @@ automation:
       - action: calendar.get_events
         target:
           entity_id:
+            - calendar.1114zxy_gmail_com
             - calendar.familie
             - calendar.german_holidays_all
             - calendar.julian_all
@@ -122,24 +123,34 @@ automation:
             {%- set aft_t = (wx.aft | max) | round(0) | int if wx.aft else (wx.all | max | round(0) | int if wx.all else cur_temp) -%}
             {%- set eve_t = (wx.eve | sum / wx.eve | length) | round(0) | int if wx.eve else (wx.all | min | round(0) | int if wx.all else cur_temp) -%}
             {#- ---------- Calendar: remaining today vs tomorrow ---------- -#}
+            {%- set cal_names = {
+              'calendar.julian_all': 'Julian',
+              'calendar.1114zxy_gmail_com': 'Schascha',
+              'calendar.keno': 'Keno',
+              'calendar.leo': 'Leo',
+              'calendar.familie': 'Familie',
+              'calendar.german_holidays_all': 'Feiertag'
+            } -%}
             {%- set cal_today = namespace(items=[]) -%}
             {%- set cal_tomorrow = namespace(items=[]) -%}
             {%- set tomorrow_d = (now() + timedelta(days=1)).date() -%}
             {%- for cal_id, cal_data in (calendar_events | default({}, true)).items() -%}
+              {%- set person = cal_names.get(cal_id, '') -%}
+              {%- set label = ('[' ~ person ~ '] ') if person else '' -%}
               {%- for event in cal_data.events | default([], true) -%}
                 {%- if 'T' in event.start -%}
                   {%- set start_dt = as_datetime(event.start) | as_local -%}
                   {%- if start_dt.date() == now().date() and start_dt > now() -%}
-                    {%- set cal_today.items = cal_today.items + [{'sort': start_dt.strftime('%H:%M'), 'text': event.summary ~ ' um ' ~ start_dt.strftime('%H:%M') ~ ' Uhr'}] -%}
+                    {%- set cal_today.items = cal_today.items + [{'sort': start_dt.strftime('%H:%M'), 'text': label ~ event.summary ~ ' um ' ~ start_dt.strftime('%H:%M') ~ ' Uhr'}] -%}
                   {%- elif start_dt.date() == tomorrow_d -%}
-                    {%- set cal_tomorrow.items = cal_tomorrow.items + [{'sort': start_dt.strftime('%H:%M'), 'text': event.summary ~ ' um ' ~ start_dt.strftime('%H:%M') ~ ' Uhr'}] -%}
+                    {%- set cal_tomorrow.items = cal_tomorrow.items + [{'sort': start_dt.strftime('%H:%M'), 'text': label ~ event.summary ~ ' um ' ~ start_dt.strftime('%H:%M') ~ ' Uhr'}] -%}
                   {%- endif -%}
                 {%- else -%}
                   {%- set start_d = as_datetime(event.start) | as_local -%}
                   {%- if start_d.date() == now().date() -%}
-                    {%- set cal_today.items = cal_today.items + [{'sort': '00:00', 'text': event.summary ~ ' (ganztägig)'}] -%}
+                    {%- set cal_today.items = cal_today.items + [{'sort': '00:00', 'text': label ~ event.summary ~ ' (ganztägig)'}] -%}
                   {%- elif start_d.date() == tomorrow_d -%}
-                    {%- set cal_tomorrow.items = cal_tomorrow.items + [{'sort': '00:00', 'text': event.summary ~ ' (ganztägig)'}] -%}
+                    {%- set cal_tomorrow.items = cal_tomorrow.items + [{'sort': '00:00', 'text': label ~ event.summary ~ ' (ganztägig)'}] -%}
                   {%- endif -%}
                 {%- endif -%}
               {%- endfor -%}
@@ -255,13 +266,14 @@ automation:
 
             Absatz 3 (Fitness & Erholung - NUR falls in den Daten vorhanden):
             {%- if is_night %}
-            - Schritte heute: Nenne kurz und dezent die bisherigen Schritte des Tages, gerundet auf 500er (z.B. "Heute stehen bislang rund achttausend Schritte zu Buche." oder "Bislang sind es heute knapp siebeneinhalbtausend Schritte.").
+            - Schritte heute: Nenne kurz, dezent und natürlich die bisherigen Schritte des Tages, gerundet auf 500er (z.B. "Bislang bist du heute rund achttausend Schritte gegangen." oder "Heute kommst du bisher auf rund achttausend Schritte.").
             {%- else %}
-            - Schlaf und gestrige Aktivität in ein bis zwei ruhigen, dezenten Sätzen (z.B. "Die Nacht brachte acht Stunden und vierzig Minuten Schlaf. Gestern lagst du bei rund siebeneinhalbtausend Schritten.").
-            - Schrittzahl IMMER gerundet auf halbe Tausender nennen (z.B. "rund siebeneinhalbtausend Schritte", "knapp siebentausendfünfhundert Schritte") – NIEMALS exakte oder krumme Zahlen sprechen.
+            - Schlaf und gestrige Aktivität in ein bis zwei ruhigen, natürlichen Sätzen (z.B. "Die Nacht brachte acht Stunden und vierzig Minuten Schlaf. Gestern warst du rund siebeneinhalbtausend Schritte unterwegs." oder "Gestern lagst du bei rund siebeneinhalbtausend Schritten.").
+            - Schrittzahl IMMER gerundet auf halbe Tausender nennen (z.B. "rund siebeneinhalbtausend Schritte", "knapp achttausend Schritte") – NIEMALS exakte oder krumme Zahlen sprechen.
+            - Formuliere die Bewegung ungezwungen und natürlich im eleganten Alltagston.
             - Nur erwähnen, was tatsächlich in den Daten vorhanden ist.
             {%- endif %}
-            - Wichtig: Niemals motivierend oder belehrend wie ein Fitnesstrainer klingen. Einfach sachlich, dezent und elegant im JARVIS-Ton.
+            - Wichtig: Niemals motivierend oder belehrend wie ein Fitnesstrainer klingen. Einfach sachlich, dezent, unaufgeregt und diskret im JARVIS-Ton.
             - Liegen keine Fitnessdaten vor: Diesen Absatz komplett weglassen!
 
             Absatz 4 (Termine & Tagesplan):
@@ -271,6 +283,12 @@ automation:
             - Wenn heute noch Termine anstehen: Nenne jeden anstehenden Termin in einem eigenen kurzen Satz.
             - Wenn heute keine Termine mehr anstehen: Sage, dass heute keine Termine mehr anstehen, und nenne die Termine für morgen (oder erwähne, dass auch morgen frei ist).
             {%- endif %}
+            - Zuordnung der Termine (den Namen natürlich und elegant einbinden):
+              * [Julian]: Persönliche Termine des Zuhörers – sprich ihn direkt in der Du-Form an (z.B. "Für dich beginnt der Tag um neun Uhr mit dem Team-Meeting.", "Um vierzehn Uhr hast du eine Besprechung.").
+              * [Schascha]: Termine seiner Ehefrau Schascha (z.B. "Schascha hat um elf Uhr einen Arzttermin.", "Für Schascha steht um achtzehn Uhr Yoga an.").
+              * [Keno] oder [Leo]: Termine der Söhne Keno und Leo (z.B. "Keno hat um acht Uhr Kindergarten.", "Um halb fünf folgt der Sportkurs für Leo.").
+              * [Familie]: Gemeinsame Familientermine, Geburtstage oder Jubiläen (z.B. "Morgen hat Ole Geburtstag.", "Gemeinsam steht um achtzehn Uhr das Familienessen an.").
+              * [Feiertag]: Deutsche Feiertage (z.B. "Morgen ist Feiertag.").
             - Falls Aufgaben vorliegen: Kurz und beiläufig in einem Satz erwähnen.
 
             {%- if is_weekend and not is_night %}
@@ -290,7 +308,8 @@ automation:
             {%- endif %}
 
             STRENG VERBOTEN:
-            - Niemals einen Namen nennen (weder Julian noch Sir). Sprich direkt in der Du-Form, niemals mit Sie.
+            - Den Zuhörer niemals mit Namen ansprechen (weder "Julian" noch "Sir"). Sprich ihn direkt in der Du-Form an ("du hast", "für dich"). Die Namen der Familienmitglieder (Schascha, Keno, Leo) bei deren Terminen natürlich ganz normal nennen.
+            - Keine unnatürlichen oder gestelzten Floskeln wie "zu Buche stehen", "zu Buche schlagen", "absolviert" oder bürokratische Amtsphrasen. Sprich menschlich, flüssig und ungezwungen.
             - Keine Roboterfloskeln ("Alle Systeme laufen einwandfrei", "Statusbericht").
             - Keine übertriebenen Motivationssprüche.
             - Keine exakten oder krummen Schrittzahlen nennen – stets auf 500er runden (z.B. "rund siebentausendfünfhundert Schritte" oder "rund siebeneinhalbtausend Schritte" statt exakter Zahlen).
@@ -303,7 +322,7 @@ automation:
 
             Die Nacht brachte acht Stunden und vierzig Minuten Schlaf. Gestern lagst du bei rund siebeneinhalbtausend Schritten.
 
-            Die Termine beginnen um neun Uhr mit dem Team-Meeting. Um vierzehn Uhr folgt die Projektbesprechung.
+            Keno hat um acht Uhr Kindergarten. Für dich beginnt der Tag um neun Uhr mit dem Team-Meeting, und um vierzehn Uhr folgt die Projektbesprechung. Schascha hat um elf Uhr einen Arzttermin.
 
             Das Fenster im Schlafzimmer steht aktuell noch offen.
 

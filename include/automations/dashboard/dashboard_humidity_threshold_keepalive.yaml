@@ -1,0 +1,38 @@
+automation:
+  # ====================================================================
+  # Dashboard - Humidity Threshold Keepalive
+  # - Periodically cycles the humidity threshold (+0.1 then back)
+  # - Ensures Home Assistant recorder maintains fresh state history
+  #   to prevent mini-graph-card from hanging on an empty history window
+  # ====================================================================
+
+  - id: "dashboard_humidity_threshold_keepalive"
+    alias: "Dashboard - Humidity Threshold Keepalive"
+    mode: single
+    trigger:
+      # Run daily at 03:15 AM
+      - trigger: time
+        at: "03:15:00"
+
+    condition: []
+
+    action:
+      # Capture current value and nudge by +0.1 to register a recorder state transition
+      - variables:
+          current_val: "{{ states('input_number.dashboard_humidity_threshold_medium') | float(60.0) }}"
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.dashboard_humidity_threshold_medium
+        data:
+          value: "{{ (current_val + 0.1) | round(1) }}"
+
+      # Short pause
+      - delay:
+          seconds: 1
+
+      # Restore original threshold value
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.dashboard_humidity_threshold_medium
+        data:
+          value: "{{ current_val | round(1) }}"

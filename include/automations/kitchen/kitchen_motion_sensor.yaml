@@ -3,8 +3,9 @@ automation:
   # Kitchen - Motion Sensor
   # - Controls kitchen lighting based on occupancy and presence state
   # - Turns on dimmed when sleeping, full brightness (brightness_high = 255) when awake
+  # - Instant turn-on and turn-off without transition
   # - Shares brightness with wall switch (switch acts as fallback for motion)
-  # - Motion cleared: Turns off light if at shared full brightness or sleep brightness
+  # - Motion cleared: Turns off light instantly if at shared full brightness or sleep brightness
   # ====================================================================
 
   - id: "kitchen_motion_sensor"
@@ -24,7 +25,7 @@ automation:
 
     action:
       - choose:
-          # Motion detected: turn on light if off, or recovering from clearance fade
+          # Motion detected: turn on light if off, or recovering from clearance
           - conditions:
               # Motion active
               - condition: template
@@ -36,13 +37,12 @@ automation:
                   {% set b = state_attr('light.kitchen_light_group', 'brightness') | default(0, true) | int(0) %}
                   {{ is_state('light.kitchen_light_group', 'off') or (b <= brightness_sleep and is_state('input_boolean.presence_home', 'on')) }}
             sequence:
-              # Turn light on (dimmed if sleeping, full brightness otherwise)
+              # Turn light on instantly (dimmed if sleeping, full brightness otherwise)
               - action: light.turn_on
                 target:
                   entity_id: light.kitchen_light_group
                 data:
                   brightness: "{{ brightness_sleep if is_state('input_boolean.presence_home', 'off') else brightness_high }}"
-                  transition: 1
 
           # Motion cleared: turn off light if set by motion or switch fallback (sleep or full brightness)
           - conditions:
@@ -66,8 +66,7 @@ automation:
                   {% set b = state_attr('light.kitchen_light_group', 'brightness') | default(0, true) | int(0) %}
                   {{ b <= brightness_sleep or b == brightness_high }}
             sequence:
-              # Turn off slowly if bright, fast if already dim
-              - action: script.light_low_before_off
-                data:
+              # Turn off instantly without transition
+              - action: light.turn_off
+                target:
                   entity_id: light.kitchen_light_group
-                  transition: "{{ 1 if (state_attr('light.kitchen_light_group', 'brightness') | default(0, true) | int(0) <= brightness_sleep) else 15 }}"

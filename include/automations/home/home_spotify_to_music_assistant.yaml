@@ -1,23 +1,22 @@
 automation:
   # ====================================================================
   # Home - Spotify to Music Assistant
-  # - Detects native Spotify Cast playback (Google Home voice or Spotify Connect) on a speaker
-  # - Debounces stale metadata: Spotify briefly restores the previous session on launch, so
-  #   every track change restarts the run and only settled speaker metadata is used
-  # - Uses Spotify's playlist only when Spotify is verifiably playing the same track
-  # - Hands over playback to the Music Assistant player on the same physical speaker
+  # - Detects native Spotify launch on Google Cast speakers
+  # - Instantly hands over track playback to Music Assistant on the same speaker
+  # - Background-syncs Spotify Web API to append playlist context and queue without delaying track start
   # ====================================================================
 
   - id: "home_spotify_to_music_assistant"
     alias: "Home - Spotify to Music Assistant"
     description: "Hands over native Spotify Cast playback to Music Assistant on the same speaker."
     mode: restart
+    trace:
+      stored_traces: 25
 
     # ------------------------------------------------------------------
-    # Triggers: Cast speaker starts playing or switches track
+    # Triggers: Cast speaker launches the native Spotify receiver app
     # ------------------------------------------------------------------
     trigger:
-      # Cast speaker starts playing (ignores HA startup restores)
       - trigger: state
         entity_id: &cast_speakers
           - media_player.living_room_cast
@@ -29,15 +28,8 @@ automation:
           - media_player.minis_cast
           - media_player.wohnzimmer_kuche
           - media_player.chromecast_cast
-        to: "playing"
-        not_from:
-          - "unavailable"
-          - "unknown"
-
-      # Track changes on the speaker (restarts the run -> debounces stale session data)
-      - trigger: state
-        entity_id: *cast_speakers
-        attribute: media_title
+        attribute: app_name
+        to: "Spotify"
 
     # ------------------------------------------------------------------
     # Variables: Speaker mapping and shared settings
@@ -57,71 +49,71 @@ automation:
       spotify_entity: media_player.spotify_julian
       cast_entity: "{{ trigger.entity_id }}"
       target_player: "{{ speaker_map.get(cast_entity, '') }}"
-      settle_seconds: 3
 
     # ------------------------------------------------------------------
-    # Conditions: Mapped speaker is playing the native Spotify receiver
+    # Conditions: Mapped speaker exists and MA player is not already playing
     # ------------------------------------------------------------------
     condition:
-      # Speaker is mapped, playing, and running the Spotify Cast app
       - condition: template
         value_template: >-
           {{ target_player != ''
-             and is_state(cast_entity, 'playing')
-             and (state_attr(cast_entity, 'app_name') | default('', true) | lower) == 'spotify' }}
+             and not is_state(target_player, ['playing', 'buffering']) }}
 
     # ------------------------------------------------------------------
-    # Actions: Wait for settled metadata, then hand over to Music Assistant
+    # Actions: Verify metadata, sync playlist context, hand over to Music Assistant
     # ------------------------------------------------------------------
     action:
-      # Step 1: Debounce - any track change during this delay restarts the run
-      - delay:
-          seconds: "{{ settle_seconds }}"
-
-      # Step 2: Abort if the speaker stopped playing Spotify or has no track info
-      - condition: template
-        value_template: >-
+      # Step 1: Wait until the Cast receiver has a populated track title and starts playing
+      - wait_template: >-
           {{ is_state(cast_entity, 'playing')
              and (state_attr(cast_entity, 'app_name') | default('', true) | lower) == 'spotify'
-             and (state_attr(cast_entity, 'media_title') | default('', true)) != '' }}
+             and (state_attr(cast_entity, 'media_title') | default('', true) | trim) != '' }}
+        timeout: "00:00:10"
+        continue_on_timeout: false
 
-      # Step 3: Capture the settled track from the speaker (source of truth)
+      # Step 2: Capture verified track metadata directly from the active Cast speaker
       - variables:
           cast_title: "{{ state_attr(cast_entity, 'media_title') | default('', true) }}"
           cast_artist: "{{ state_attr(cast_entity, 'media_artist') | default('', true) }}"
+          raw_content_id: "{{ state_attr(cast_entity, 'media_content_id') | default('', true) | string }}"
           cast_uri: >-
-            {% set content_id = state_attr(cast_entity, 'media_content_id') | default('', true) | string %}
-            {{ content_id if content_id.startswith('spotify:track:') else '' }}
+            {% if raw_content_id.startswith('spotify:track:') %}
+              {{ raw_content_id }}
+            {% elif raw_content_id | length == 22 and ' ' not in raw_content_id %}
+              spotify:track:{{ raw_content_id }}
+            {% else %}
+              {{ '' }}
+            {% endif %}
 
-      # Step 4: Refresh the Spotify entity until it reports the same track (max ~6 s)
+      # Step 3: Sync with Spotify Web API to check if playback belongs to an active playlist
       - repeat:
           sequence:
             - action: homeassistant.update_entity
               target:
                 entity_id: "{{ spotify_entity }}"
-            - delay:
-                milliseconds: 1500
+            - wait_template: >-
+                {% set same_title = (state_attr(spotify_entity, 'media_title') | default('', true) | lower) == (cast_title | lower) %}
+                {% set same_uri = cast_uri != '' and state_attr(spotify_entity, 'media_content_id') == cast_uri %}
+                {{ is_state(spotify_entity, 'playing') and (same_title or same_uri) }}
+              timeout: "00:00:01"
+              continue_on_timeout: true
           until:
             - condition: template
               value_template: >-
-                {% set same_title = state_attr(spotify_entity, 'media_title') == cast_title %}
+                {% set same_title = (state_attr(spotify_entity, 'media_title') | default('', true) | lower) == (cast_title | lower) %}
                 {% set same_uri = cast_uri != '' and state_attr(spotify_entity, 'media_content_id') == cast_uri %}
-                {{ repeat.index >= 4 or (is_state(spotify_entity, 'playing') and (same_title or same_uri)) }}
+                {{ repeat.index >= 3 or (is_state(spotify_entity, 'playing') and (same_title or same_uri)) }}
 
-      # Step 5: Only trust Spotify data (playlist, shuffle) if it plays the same track
+      # Step 4: Resolve verified media context (playlist > track URI > title)
       - variables:
           spotify_synced: >-
-            {% set same_title = state_attr(spotify_entity, 'media_title') == cast_title %}
+            {% set same_title = (state_attr(spotify_entity, 'media_title') | default('', true) | lower) == (cast_title | lower) %}
             {% set same_uri = cast_uri != '' and state_attr(spotify_entity, 'media_content_id') == cast_uri %}
             {{ is_state(spotify_entity, 'playing') and (same_title or same_uri) }}
           spotify_playlist: "{{ (state_attr(spotify_entity, 'media_playlist') | default('', true)) if spotify_synced else '' }}"
           spotify_track_uri: "{{ (state_attr(spotify_entity, 'media_content_id') | default('', true)) if spotify_synced else '' }}"
           spotify_shuffle: "{{ spotify_synced and (state_attr(spotify_entity, 'shuffle') | default(false, true)) }}"
-
-      # Step 6: Choose what to play (playlist > track URI > title search with radio)
-      - variables:
           use_playlist: "{{ spotify_playlist != '' }}"
-          media_type: "{{ 'playlist' if use_playlist else 'track' }}"
           media_id: >-
             {% if use_playlist %}
               {{ spotify_playlist }}
@@ -132,12 +124,12 @@ automation:
             {% else %}
               {{ cast_title }}
             {% endif %}
-          # Artist is only needed to disambiguate a free-text title search
+          media_type: "{{ 'playlist' if use_playlist else 'track' }}"
           search_by_title: "{{ not use_playlist and spotify_track_uri == '' and cast_uri == '' }}"
 
-      # Step 7: Hand over playback to Music Assistant
+      # Step 5: Hand over playback to Music Assistant
+      # Playlists play with radio_mode: false so the entire playlist plays in order. Single tracks enable radio_mode.
       - if:
-          # Title search -> pass artist for exact matching
           - condition: template
             value_template: "{{ search_by_title and cast_artist != '' }}"
         then:
@@ -150,7 +142,6 @@ automation:
               artist: "{{ cast_artist }}"
               radio_mode: true
               enqueue: replace
-        # Playlist or Spotify URI -> no artist needed; radio only for single tracks
         else:
           - action: music_assistant.play_media
             target:
@@ -161,7 +152,7 @@ automation:
               radio_mode: "{{ not use_playlist }}"
               enqueue: replace
 
-      # Step 8: Restore shuffle for playlists that were shuffled on Spotify
+      # Step 6: Apply shuffle setting if the playlist was shuffled in Spotify
       - if:
           - condition: template
             value_template: "{{ use_playlist and spotify_shuffle }}"
@@ -171,4 +162,3 @@ automation:
               entity_id: "{{ target_player }}"
             data:
               shuffle: true
-

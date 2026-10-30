@@ -2,7 +2,7 @@ automation:
   # ====================================================================
   # Baby Room - Morning Routine
   # - Starts 15 min before alarm (once/day when alarm enabled and residents home)
-  # - Starts 10m sunrise light effect, opens blinds, plays TTS at alarm time, sets presence_home on, turns off light 15m later
+  # - Starts 10m sunrise light effect, opens blinds, plays TTS at alarm time, turns off light 15m later
   # ====================================================================
 
   - id: "baby_room_morning_routine"
@@ -17,7 +17,7 @@ automation:
       # Google Home alarm: trigger 15 minutes before the next scheduled alarm
       - trigger: template
         value_template: >
-          {% set alarm_dt = states('sensor.kinderzimmer_alarms') | as_datetime %}
+          {% set alarm_dt = states('sensor.baby_room_alarms') | as_datetime %}
           {% if alarm_dt is not none and alarm_dt > now() %}
             {{ (now() + timedelta(minutes=15)).strftime('%Y-%m-%d %H:%M') == (alarm_dt | as_local).strftime('%Y-%m-%d %H:%M') }}
           {% else %}
@@ -27,7 +27,7 @@ automation:
       # Manual alarm: trigger 15 minutes before scheduled alarm time (used if Google alarm is unset)
       - trigger: template
         value_template: >
-          {% set google_alarm_dt = states('sensor.kinderzimmer_alarms') | as_datetime %}
+          {% set google_alarm_dt = states('sensor.baby_room_alarms') | as_datetime %}
           {% if google_alarm_dt is none or google_alarm_dt < now() %}
             {% set alarm = states('input_datetime.baby_room_alarm_time') %}
             {% if alarm not in ['unknown', 'unavailable', 'none', ''] %}
@@ -78,11 +78,6 @@ automation:
         data:
           entity_id: media_player.baby_room
           message: Guten Morgen
-
-      # Set house presence to awake / home mode
-      - action: input_boolean.turn_on
-        target:
-          entity_id: input_boolean.presence_home
 
       # Keep light on for another 15 minutes before turning off
       - delay:

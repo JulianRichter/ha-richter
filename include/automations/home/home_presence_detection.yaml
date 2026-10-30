@@ -3,7 +3,7 @@ automation:
   # Home - Presence Detection
   # - Automates Home and Away scenes via single presence_home toggle
   # - on = home/awake, off = away/sleeping
-  # - Triggered via manual dashboard/switch toggles, GPS resident tracking, or sunrise fallback
+  # - Triggered via manual dashboard/switch toggles, GPS resident tracking, or sunrise
   # - Regulates thermostats, transitions lights, and announces status via TTS
   # - Announces in German and optionally in Chinese via play_media_tts_message
   # ====================================================================
@@ -37,7 +37,7 @@ automation:
         entity_id: group.residents
         to: "not_home"
 
-      # Sunrise fallback: Wake up house if residents are home and presence is off
+      # Sunrise: Wake up house if residents are home and presence is off
       - id: home_sunrise
         trigger: sun
         event: sunrise
@@ -95,7 +95,7 @@ automation:
                     target:
                       entity_id: light.bathroom_light
                     data:
-                      brightness_pct: 100
+                      brightness: "{{ states('input_number.light_brightness_motion') | int(200) }}"
                       transition: 10
 
               # Smooth transition for kitchen light if already turned on
@@ -108,7 +108,7 @@ automation:
                     target:
                       entity_id: light.kitchen_light_group
                     data:
-                      brightness_pct: 100
+                      brightness: "{{ states('input_number.light_brightness_high') | int(255) }}"
                       transition: 10
 
               # Scenario-specific greetings
@@ -166,15 +166,31 @@ automation:
                 data:
                   temperature: "{{ states('input_number.dashboard_thermostat_setpoint_night') | float(17) }}"
 
-              # Smoothly turn off bathroom light if currently on
+              # Smooth transition for bathroom light to sleep brightness if already turned on
               - if:
                   - condition: state
                     entity_id: light.bathroom_light
                     state: "on"
                 then:
-                  - action: script.light_low_before_off
-                    data:
+                  - action: light.turn_on
+                    target:
                       entity_id: light.bathroom_light
+                    data:
+                      brightness: "{{ states('input_number.light_brightness_sleep') | int(5) }}"
+                      transition: 10
+
+              # Smooth transition for kitchen light to sleep brightness if already turned on
+              - if:
+                  - condition: state
+                    entity_id: light.kitchen_light_group
+                    state: "on"
+                then:
+                  - action: light.turn_on
+                    target:
+                      entity_id: light.kitchen_light_group
+                    data:
+                      brightness: "{{ states('input_number.light_brightness_sleep') | int(5) }}"
+                      transition: 10
 
               # Scenario-specific departures/goodnight actions
               - choose:
