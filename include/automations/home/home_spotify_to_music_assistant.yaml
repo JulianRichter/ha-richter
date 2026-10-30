@@ -110,7 +110,16 @@ automation:
             {% set same_title = (state_attr(spotify_entity, 'media_title') | default('', true) | lower) == (cast_title | lower) %}
             {% set same_uri = cast_uri != '' and state_attr(spotify_entity, 'media_content_id') == cast_uri %}
             {{ is_state(spotify_entity, 'playing') and (same_title or same_uri) }}
-          spotify_playlist: "{{ (state_attr(spotify_entity, 'media_playlist') | default('', true)) if spotify_synced else '' }}"
+          raw_spotify_playlist: "{{ (state_attr(spotify_entity, 'media_playlist') | default('', true)) if spotify_synced else '' }}"
+          # Map Spotify system playlists (Liked Songs / Lieblingsmusik) to Music Assistant's library playlist
+          spotify_playlist: >-
+            {% set pl = raw_spotify_playlist | trim %}
+            {% set pl_clean = pl | lower %}
+            {% if pl_clean in ['liked songs', 'lieblingsmusik', 'lieblingssongs', 'lieblingstitel', 'favorites', 'liked songs julian'] %}
+              Liked Songs Julian
+            {% else %}
+              {{ pl }}
+            {% endif %}
           spotify_track_uri: "{{ (state_attr(spotify_entity, 'media_content_id') | default('', true)) if spotify_synced else '' }}"
           spotify_shuffle: "{{ spotify_synced and (state_attr(spotify_entity, 'shuffle') | default(false, true)) }}"
           use_playlist: "{{ spotify_playlist != '' }}"
