@@ -19,9 +19,7 @@
   - Template entities: `include/template/`
   - Sensors & Utility meters: `include/sensor/`, `include/utility_meter/`
   - Themes & Dashboards: `include/themes/`, `dashboards/`
-    - `dashboards/bubble_code/bubble_code.yaml`: Baseline reference dashboard (`tablet_grid_theme`).
-    - `dashboards/bubble_kiosk/bubble_kiosk.yaml`: Wall kiosk dashboard (`tablet_kiosk_theme`).
-    - `dashboards/bubble_nebula/bubble_nebula.yaml`: Dark purple cosmic glass edition (`tablet_nebula_purple_theme`).
+    - `dashboards/bubble_code/bubble_code.yaml`: Primary wall kiosk and desktop dashboard (`bubble_code_theme`).
 - Theme & Card CSS Scoping Invariants:
   - Never set `ha-card-border-width: 1px` or global `ha-card-box-shadow` on the theme root; Bubble Card separator headers, markdown cards, and sidebar containers inherit `ha-card` and will render unwanted border outlines. Card borders must be applied to specific card containers via `bubble-border` or card-level `card_mod`.
   - Active Button Badges: High-contrast dark badge (`rgba(0, 0, 0, 0.28)`) with white icon (`#ffffff`) on `.is-on .bubble-icon-container` prevents icon drowning on bright backgrounds.
@@ -55,7 +53,7 @@ Before modifying, guessing entities, or scanning the workspace, always consult `
   - Gemini AI Briefings: Direct integration with Google Generative AI (`conversation.google_ai_conversation`). Always route dynamic/generative prompts through `script.play_media_tts_gemini` to query Gemini and speak responses safely with volume ducking and fallback handling.
   - Spotify & Music Assistant: Voice/Cast playback on speakers is automatically intercepted by `home_spotify_to_music_assistant.yaml` to hand over playback to Music Assistant. 1-click resumption routes through `script.media_resume_last_played`.
 - Lighting & Anti-Blinding:
-  - When dimmable/ambient lights are turned off, route or call `script.light_low_before_off` to prevent bright flash on the next turn-on.
+  - When dimmable/ambient lights are turned off, route or call `script.light_low_before_off` to prevent bright flash on the next turn-on. Exception: Kitchen and bathroom lights use instant transitions without fade-down to eliminate entry ramp-up delays.
   - Wall switches: single press toggles primary state; hold activates secondary scene or overrides.
 - Climate & Windows:
   - Window contacts interlock with thermostats (shut off while open, restore when closed) and trigger caring humidity guidance.

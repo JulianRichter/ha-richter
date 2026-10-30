@@ -35,14 +35,12 @@ This document records the foundational architectural decisions (ADRs) and struct
 
 ## ADR 04: Bubble Card UI Architecture & CSS Scoping
 - **Status**: Accepted & Invariant
-- **Context**: The tablet interface uses Bubble Card v3 with Kiosk Mode for clean, modern wall-mounted control across multiple dashboard variants.
+- **Context**: The tablet and desktop interface uses Bubble Card v3 with Kiosk Mode for clean, modern wall-mounted control.
 - **Decision**:
   - Modal interaction patterns use `#bubble_<subsystem>_popup` hash navigation.
   - Custom styling is applied via Bubble Card's native `styles:` block or scoped `card_mod` to avoid shadow-DOM piercing breakage across Home Assistant Core updates.
-  - Multi-dashboard structure:
-    - `dashboards/bubble_code/bubble_code.yaml` (`theme: tablet_grid_theme`): Reference baseline dashboard; kept untouched.
-    - `dashboards/bubble_kiosk/bubble_kiosk.yaml` (`theme: tablet_kiosk_theme`): Primary wall-mounted kiosk interface.
-    - `dashboards/bubble_nebula/bubble_nebula.yaml` (`theme: tablet_nebula_purple_theme`): Cosmic dark purple edition with translucent glass/ice styling.
+  - Dashboard architecture:
+    - `dashboards/bubble_code/bubble_code.yaml` (`theme: bubble_code_theme`): Primary dashboard interface for wall-mounted tablet and desktop.
   - **Bubble Card Modules Architecture (`bubble_card/modules/`)**:
     - Backend Integration: Powered by [`custom_components/bubble_card_tools`](custom_components/bubble_card_tools/) to enable persistent, local, file-backed module storage.
     - Module Storage: Modules reside as individual YAML files under `bubble_card/modules/<module_name>.yaml` and are fully tracked in Git.

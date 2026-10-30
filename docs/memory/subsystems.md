@@ -15,10 +15,9 @@ This document preserves operational knowledge and architectural invariants for H
   - **Hybrid Resident Tracking (GPS + Wi-Fi)**:
     - Companion App Wi-Fi SSID sensors (`sensor.julian_wifi_connection`, `sensor.xingyang_ssid`) feed template device trackers (`device_tracker.julian_wifi`, `device_tracker.xingyang_wifi` in [`include/template/template_presence.yaml`](include/template/template_presence.yaml)) matching home SSID (`Nudelauflauf`).
     - Adding these stationary trackers to `person.julian` and `person.xingyang` provides instant arrival detection (zero geofence lag) while GPS prevents false "away" triggers during phone Wi-Fi sleep at night.
-- **Morning Auto-Wake & Fallback Architecture**:
-  - Scheduled Alarm: [`bedroom_morning_routine.yaml`](include/automations/bedroom/bedroom_morning_routine.yaml) (and [`baby_room_morning_routine.yaml`](include/automations/baby_room/baby_room_morning_routine.yaml)) automatically sets `presence_home = on` at alarm wake-up time (when blinds open).
-  - Living Room Greeting Suppression: When waking via alarm morning routine, living room TTS greeting is suppressed so only the bedroom speaker greets.
-  - Sunrise Fallback: If no alarm ran earlier and residents are home (`group.residents = home`), `home_presence_detection.yaml` automatically turns `presence_home = on` silently at astronomical sunrise as a fallback, adjusting thermostats to daytime mode.
+- **Morning Auto-Wake & Sunrise Architecture**:
+  - Scheduled Alarm: [`bedroom_morning_routine.yaml`](include/automations/bedroom/bedroom_morning_routine.yaml) (and [`baby_room_morning_routine.yaml`](include/automations/baby_room/baby_room_morning_routine.yaml)) handles gentle wake-up (sunrise light effect, blinds opening, and bedside TTS greeting) without turning on `presence_home`. This preserves dim nightlight behavior for motion sensors between alarm time and dawn.
+  - Sunrise Wake-Up: [`home_presence_detection.yaml`](include/automations/home/home_presence_detection.yaml) automatically turns `presence_home = on` silently at astronomical sunrise if residents are home (`group.residents = home`), shifting thermostats to daytime setpoints and enabling daytime motion lighting brightness.
 
 ---
 
@@ -69,7 +68,7 @@ This document preserves operational knowledge and architectural invariants for H
   - `input_number.light_brightness_motion` (default: 200, used by motion automations)
   - `input_text.light_color_sleep` (default: 255,0,0)
   - `input_text.light_color_awake` (default: 255,166,87)
-- **Motion Triggered Lights (Living Room, Baby Room, Bedroom, Bathroom)**:
+- **Motion Triggered Lights (Living Room, Baby Room, Bedroom)**:
   - Motion active + `presence_home == on` → Ambient motion light (`light_brightness_motion` = 200).
   - Motion active + `presence_home == off` → Dim nightlight (`light_brightness_sleep` = 5, red if RGB).
   - Motion turn-on contract: Only turns on if target light is `off` or recovering from a clearance fade (`<= light_brightness_sleep` when awake). Lights already on at motion or manual brightness are never modified or re-triggered.
@@ -78,10 +77,17 @@ This document preserves operational knowledge and architectural invariants for H
   - Room ambient interlocks: Living room motion lighting suppresses if `switch.living_room_spot_lights` is active. Bedroom motion bedside lights suppress if decorative `light.bedroom_light_sphere` is active.
   - Automation mode: All motion automations use `mode: restart` so re-entering during a clearance fade immediately cancels the fade and restores illumination.
   - Motion cleared → Slow 15s fade-out via `script.light_low_before_off` (1s if already dim; power cut-off is guarded to only turn off lights that are still `<= light_brightness_sleep`).
+- **Kitchen & Bathroom Instant Motion & Transition Contract**:
+  - `light_low_before_off` is omitted for kitchen and bathroom lights; they turn on and off instantly without transition so there is no split-second ramp-up delay upon entering.
+  - When motion clears, the light turns off immediately (`light.turn_off` without transition), preserving its last set brightness in bulb memory for the next activation.
+  - Presence mode transitions: If kitchen or bathroom lights are already on when `presence_home` changes state, they smoothly cross-fade over a 10-second transition:
+    - Night/Away → Home/Awake: Kitchen ramps smoothly to `brightness_high` (255); Bathroom ramps to `brightness_motion` (200).
+    - Home/Awake → Night/Away: Both ramp smoothly to `brightness_sleep` (5).
 - **Kitchen Motion & Switch Exception (Fallback Contract)**:
   - Wall switch and motion sensor share the same brightness (`light_brightness_high` = 255) when awake (`light_brightness_sleep` = 5 when asleep).
   - The kitchen wall switch acts as a direct manual fallback for motion lighting: pressing switch UP from off turns on directly to `brightness_high` (255).
   - When motion clears, kitchen lights turn off automatically if at `brightness_high` (255) or `brightness_sleep` (5), whether triggered by motion or by the fallback switch.
+  - Down single-click on switch turns off kitchen light instantly without transition.
 - **Wall Switch Single-Press Cycling (Other Rooms)**:
   - 1st press when OFF: Always turns on in dim/warm ambient mode first (`brightness_awake` / `color_awake`). Anti-blinding guaranteed.
   - 2nd press when ON (dim): Steps up to full daylight brightness (`brightness_high`, 2000K).
@@ -169,14 +175,11 @@ This document preserves operational knowledge and architectural invariants for H
 ---
 
 ## 10. Dashboard & Visual Testing Subsystem
-- **Dashboard Variants**:
-  - `dashboards/bubble_code/bubble_code.yaml` (`bubble-code-dashboard`): Reference baseline dashboard (`tablet_grid_theme`). Kept pristine.
-  - `dashboards/bubble_kiosk/bubble_kiosk.yaml` (`bubble-kiosk-dashboard`): Production wall kiosk dashboard (`tablet_kiosk_theme`).
-  - `dashboards/bubble_nebula/bubble_nebula.yaml` (`bubble-nebula-dashboard`): Cosmic dark purple glass edition (`tablet_nebula_purple_theme`).
+- **Dashboard Architecture**:
+  - `dashboards/bubble_code/bubble_code.yaml` (`bubble-code-dashboard`): Primary wall kiosk and desktop dashboard (`bubble_code_theme`).
 - **Bubble Card Modules Integration**:
   - Reusable CSS & JavaScript styles reside in `bubble_card/modules/*.yaml`.
   - Backed by `bubble_card_tools` custom component for local, Git-versioned file storage.
-  - Automatically shared across all dashboards (`bubble_code`, `bubble_kiosk`, `bubble_nebula`).
 - **Device Viewport & Scaling Specifications**:
   - **Wall-Mounted Tablet (Huawei MediaPad M5 Lite 10)**:
     - CSS Viewport: `1130 × 706` px @ `1.7x` device pixel ratio (Screen: `1130 × 706`).

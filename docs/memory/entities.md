@@ -13,8 +13,7 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 | **Light** | `light.living_room_light_google` | Google Assistant Light Template | Exposed to voice integration |
 | **Switch** | `switch.living_room_spot_lights` | Spot Light Relay Switch | Main switch |
 | **Switch** | `switch.living_room_tv` | TV Smart Plug | Power toggle & metering |
-| **Switch** | `switch.living_room_desktop` | Desktop PC Smart Plug | Power toggle & metering |
-| **Switch** | `switch.living_room_laptop` | Laptop Smart Plug | Power toggle |
+| **Switch** | `switch.living_room_desktop` | Desktop PC Smart Plug | Power toggle & metering (ex-laptop) |
 | **Switch** | `switch.living_room_tablet_screen` | Dashboard Tablet Screen | Controls tablet screen on/off |
 | **Climate** | `climate.living_room_thermostat` | Living Room Radiator Valve | Linked to window contact |
 | **Cover** | `cover.living_room_curtain_left` | Left Window Curtain | Smart curtain motor |
@@ -82,7 +81,7 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 | **Sensor** | `sensor.baby_room_multi_sensor_temperature` | Ambient Temperature | Multi-sensor reading |
 | **Sensor** | `sensor.baby_room_multi_sensor_humidity` | Relative Humidity | Multi-sensor reading |
 | **Sensor** | `sensor.baby_room_humidity_change` | Rate of Humidity Change | Evaluates ventilation status |
-| **Sensor** | `sensor.kinderzimmer_alarms` | Google Home Alarm Time | Triggers morning routine 15m prior |
+| **Sensor** | `sensor.baby_room_alarms` | Google Home Alarm Time | Triggers morning routine 15m prior |
 | **Switch Event**| `event.baby_room_light_switch_action` | Wall Switch | Single: light / Hold: heater |
 | **Media** | `media_player.baby_room` | Baby Room Speaker | Audio playback |
 | **Media** | `media_player.baby_room_cast` | Baby Room Google Cast Target | TTS target |
@@ -117,7 +116,8 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 | **Media** | `media_player.kitchen` | Kitchen Speaker | Audio playback |
 | **Media** | `media_player.kitchen_cast` | Kitchen Google Cast Target | TTS target |
 | **Helper** | `input_number.dashboard_thermostat_setpoint_kitchen` | UI Setpoint Helper | Thermostat target |
-| **Helper** | `input_boolean.kitchen_dishwasher_done` | Dishwasher Finished Reminder | Active when cycle finishes, cleared upon entry announcement |
+| **Helper** | `input_boolean.kitchen_dishwasher_done` | Dishwasher Finished Reminder | Active when cycle finishes, cleared manually via dashboard icon |
+| **Helper** | `input_boolean.kitchen_dishwasher_announced` | Dishwasher TTS Announced Flag | Tracks whether entry TTS announcement was spoken |
 | **Helper** | `input_boolean.vacuum_clean_kitchen` | Room Vacuum Clean Toggle | Dispatched by Robi schedule |
 
 ---
@@ -176,6 +176,14 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 - `sensor.julian_sleep_duration`: Julian's sleep duration in minutes from Fitbit/Pixel Watch.
 - `input_number.julian_yesterday_steps`: Persisted total of Julian's previous day steps (archived at 23:59:45 or sensor reset by `automation.home_fitness_tracking_julian_steps`).
 
+### Calendars & Family Schedule
+- `calendar.julian_all`: Julian's primary calendar ("Julian").
+- `calendar.1114zxy_gmail_com`: Wife's primary calendar ("Schascha").
+- `calendar.keno`: Son Keno's schedule ("Keno").
+- `calendar.leo`: Son Leo's schedule ("Leo").
+- `calendar.familie`: Shared family calendar for birthdays, anniversaries, and family events ("Familie").
+- `calendar.german_holidays_all`: German nationwide public holidays ("Feiertag").
+
 ### Vacuum (Robi) Dispatch
 - `vacuum.robi`: Dreame robot vacuum cleaner.
 - `input_datetime.vacuum_cleaning_time`: Daily scheduled departure time.
@@ -192,7 +200,14 @@ This catalog serves as the single source of truth for entity IDs, helper names, 
 
 ### Energy & Utility Meters
 - `sensor.home_total_power`: Total house power draw aggregated in Watts.
-- `sensor.template_bs_energy_basic_usage`: Base load utility meter source.
+- `sensor.home_total_energy`: Total house Riemann integral energy (source for utility meters).
+- `sensor.total_power_kwh_daily` / `sensor.total_power_kwh_monthly`: Total house daily and monthly energy consumption.
+- `sensor.home_base_energy_simulated`: Base load utility meter source for annual base price simulation.
+- `sensor.basic_price_kwh_daily` / `sensor.basic_price_kwh_monthly`: Fixed tariff base costs tracked as kWh equivalent.
+- `sensor.kitchen_fridge_kwh_daily` / `sensor.kitchen_fridge_kwh_monthly`: Fridge daily/monthly consumption.
+- `sensor.living_room_desktop_kwh_daily` / `sensor.living_room_desktop_kwh_monthly`: Desktop PC daily/monthly consumption.
+- `sensor.living_room_tv_kwh_daily` / `sensor.living_room_tv_kwh_monthly`: TV daily/monthly consumption.
+- `sensor.kitchen_microwave_kwh_daily` / `sensor.kitchen_microwave_kwh_monthly`: Microwave daily/monthly consumption.
 - `counter.energy_basic_price_increase_counter`: Hourly operational counter for energy cost calculation.
 - `input_number.home_energy_price`: Current kWh tariff setpoint.
 - `input_number.home_energy_base_price`: Annual fixed base fee setpoint.
