@@ -11,7 +11,7 @@ views:
   - type: custom:grid-layout
     title: Home
     path: Home
-    theme: tablet_grid_theme
+    theme: bubble_code_theme
     layout:
       margin: 0
       padding: 0
@@ -196,26 +196,63 @@ views:
                 show: false
               - id: rain
                 min: 0
-                max: 3
+                max: 4
+                show: false
+              - id: wind
+                min: 0
+                max: 25
                 show: false
             series:
               - name: Rain
                 entity: sensor.weather_home_forecast_at_midnight
                 data_generator: |
-                  return entity.attributes.datetime.map((datetime, index) => {
+                  const list = entity?.attributes?.datetime || [];
+                  const now0 = new Date();
+                  now0.setHours(0, 0, 0, 0);
+                  const t0 = now0.getTime();
+                  const pts = list.map((datetime, index) => {
                     const p = entity.attributes.precipitation[index] || 0;
                     return [new Date(datetime).getTime(), p];
                   });
+                  if (pts.length > 0 && pts[0][0] > t0) {
+                    pts.unshift([t0, pts[0][1]]);
+                  }
+                  return pts;
                 type: area
                 stroke_width: 0
                 color: "#38bdf8"
-                opacity: 0.55
+                opacity: 0.38
                 curve: smooth
                 yaxis_id: rain
+              - name: Wind
+                entity: sensor.weather_home_forecast_at_midnight
+                data_generator: |
+                  const list = entity?.attributes?.datetime || [];
+                  const now0 = new Date();
+                  now0.setHours(0, 0, 0, 0);
+                  const t0 = now0.getTime();
+                  const pts = list.map((datetime, index) => {
+                    const raw = (entity.attributes.wind_speed && entity.attributes.wind_speed[index] !== undefined)
+                      ? entity.attributes.wind_speed[index]
+                      : 0;
+                    const w = Math.max(0, raw - 10);
+                    return [new Date(datetime).getTime(), w];
+                  });
+                  if (pts.length > 0 && pts[0][0] > t0) {
+                    pts.unshift([t0, pts[0][1]]);
+                  }
+                  return pts;
+                type: area
+                stroke_width: 0
+                color: "#cbd5e1"
+                opacity: 0.30
+                curve: smooth
+                yaxis_id: wind
               - name: Forecast
                 entity: sensor.weather_home_forecast
                 data_generator: |
-                  return entity.attributes.datetime.map((datetime, index) => {
+                  const list = entity?.attributes?.datetime || [];
+                  return list.map((datetime, index) => {
                     return [new Date(datetime).getTime(), entity.attributes.temperature[index]];
                   });
                 type: line
@@ -245,12 +282,15 @@ views:
                 curve: smooth
               markers:
                 size: 0
+                strokeWidth: 0
+                strokeColors: "transparent"
                 discrete:
-                  - seriesIndex: 3
+                  - seriesIndex: 4
                     dataPointIndex: 0
                     size: 3
                     fillColor: "#ffa726"
                     strokeColor: "#ffa726"
+                    strokeWidth: 0
               chart:
                 height: 90px
                 width: 100%
@@ -289,18 +329,24 @@ views:
                   min-width: 0 !important;
                   max-width: 100% !important;
                 }
+                .apexcharts-marker[default-marker-size="0.1"],
+                .apexcharts-marker[default-marker-size="0"] {
+                  display: none !important;
+                  opacity: 0 !important;
+                }
 
           - type: custom:clock-weather-card
             entity: weather.weather_home_mock
             weather_icon_type: line
-            forecast_rows: 3
-            time_pattern: HH:mm
-            time_format: 24
-            hide_today_section: true
-            hide_forecast_section: false
-            show_humidity: false
-            hide_clock: false
-            hide_date: true
+            locale: de
+            sections:
+              header:
+                hide: true
+              forecast_strip:
+                hide: true
+              forecast_list:
+                hide: false
+                count: 3
             card_mod:
               style: |
                 ha-card {
@@ -312,10 +358,13 @@ views:
                 .card-content {
                   padding: 0 !important;
                 }
-                clock-weather-card-forecast-row {
-                  grid-template-columns: 2rem 2.1rem auto 2.1rem !important;
+                clock-weather-card-divider {
+                  display: none !important;
                 }
-                clock-weather-card-forecast-row forecast-text:nth-of-type(1) {
+                clock-weather-card-forecast-list .rows {
+                  grid-template-columns: var(--cwc-list-row-height, 28px) max-content 1fr max-content !important;
+                }
+                clock-weather-card-forecast-list-item .label {
                   display: none !important;
                 }
 
@@ -346,8 +395,19 @@ views:
             show_name: false
             show_attribute: true
             attribute: sidebar_html_text
+            tap_action:
+              action: navigate
+              navigation_path: "#bubble_sensors_offline_popup"
+            button_action:
+              tap_action:
+                action: navigate
+                navigation_path: "#bubble_sensors_offline_popup"
             modules:
               - bubble_sidebar_notification
+            styles: |
+              ha-card {
+                cursor: pointer !important;
+              }
 
           - type: custom:bubble-card
             card_type: button
@@ -411,9 +471,11 @@ views:
               - entity: vacuum.robi
                 tap_action:
                   action: perform-action
-                  perform_action: dreame_vacuum.select_select_next
+                  perform_action: select.select_next
                   target:
                     entity_id: select.robi_suction_level
+                  data:
+                    cycle: true
               - entity: vacuum.robi
                 tap_action:
                   action: perform-action
@@ -424,12 +486,13 @@ views:
                 icon: mdi:dots-horizontal
             modules:
               - vacuum_attention_badge
-            styles: >
-              ${subButtonIcon[0].setAttribute("icon",
-              hass.states['select.robi_suction_level'].attributes.icon )}
-              ${subButtonIcon[1].setAttribute("icon",
-              hass.states['binary_sensor.template_vacuum_mopping_enabled'].attributes.icon
-              )}
+            styles: |
+              ${(() => {
+                const sIcon = hass.states['select.robi_suction_level']?.attributes?.icon;
+                if (sIcon && subButtonIcon[0]) subButtonIcon[0].setAttribute("icon", sIcon);
+                const mIcon = hass.states['binary_sensor.template_vacuum_mopping_enabled']?.attributes?.icon;
+                if (mIcon && subButtonIcon[1]) subButtonIcon[1].setAttribute("icon", mIcon);
+              })()}
           - type: custom:bubble-card
             card_type: button
             entity: switch.living_room_tv
@@ -503,6 +566,7 @@ views:
               action: more-info
             modules:
               - bubble_room_climate
+              - room_light_color
               - room_window_badge
               - room_battery_badge
 
@@ -525,6 +589,7 @@ views:
               action: more-info
             modules:
               - bubble_room_climate
+              - room_light_color
               - room_window_badge
               - room_battery_badge
 
@@ -547,6 +612,7 @@ views:
               action: more-info
             modules:
               - bubble_room_climate
+              - room_light_color
               - room_window_badge
               - room_battery_badge
 
@@ -559,17 +625,22 @@ views:
                 icon: mdi:fridge-outline
                 show_state: true
                 card_layout: large
+                button_type: switch
+                button_action:
+                  tap_action:
+                    action: toggle
+                tap_action:
+                  action: perform-action
+                  perform_action: input_boolean.turn_off
+                  target:
+                    entity_id: input_boolean.kitchen_dishwasher_done
+                hold_action:
+                  action: more-info
                 modules:
                   - bubble_room_climate
+                  - room_light_color
                   - room_window_badge
                   - dishwasher_done_badge
-                styles: |
-                  .bubble-button-background {
-                     background-color: ${state === 'on' ? 'rgb(255, 167, 88)' : 'var(--bubble-background-background-color)'} !important;
-                  }
-                  .bubble-icon {
-                     color: ${state === 'on' ? 'rgb(255, 167, 88)' : 'var(--primary-text-color)'} !important;
-                  }
 
               - type: custom:bubble-card
                 card_type: button
@@ -578,17 +649,22 @@ views:
                 icon: mdi:toilet
                 show_state: true
                 card_layout: large
+                button_type: switch
+                button_action:
+                  tap_action:
+                    action: toggle
+                tap_action:
+                  action: perform-action
+                  perform_action: input_boolean.turn_off
+                  target:
+                    entity_id: input_boolean.bathroom_laundry
+                hold_action:
+                  action: more-info
                 modules:
                   - bubble_room_climate
+                  - room_light_color
                   - washer_done_badge
                   - room_battery_badge
-                styles: |
-                  .bubble-button-background {
-                     background-color: ${state === 'on' ? 'rgb(255, 167, 88)' : 'var(--bubble-background-background-color)'} !important;
-                  }
-                  .bubble-icon {
-                     color: ${state === 'on' ? 'rgb(255, 167, 88)' : 'var(--primary-text-color)'} !important;
-                  }
 
         columns: 1
         view_layout:
@@ -603,53 +679,183 @@ views:
             modules:
               - bubble_header_separator
 
-          - type: custom:mini-graph-card
-            entities:
-              - entity: input_number.dashboard_humidity_threshold_medium
-                show_legend: false
-                color: "#1db954"
-                fixed_value: true
-              - entity: input_number.dashboard_humidity_threshold_medium
-                show_legend: false
-                show_fill: false
-                color: rgba(115, 115, 115, 0.7)
-                fixed_value: true
+          - type: custom:apexcharts-card
+            graph_span: 4h
+            update_interval: 1min
+            yaxis:
+              - id: humidity
+                min: ~58
+                show: false
+            apex_config:
+              chart:
+                height: 177px
+                toolbar:
+                  show: false
+                zoom:
+                  enabled: false
+                parentHeightOffset: 0
+                events:
+                  mounted: |
+                    EVAL:function(chartContext, config) {
+                      const updateSplit = function() {
+                        try {
+                          const root = chartContext.el.getRootNode();
+                          const haCard = root.querySelector('ha-card');
+                          const line = root.querySelector('.apexcharts-yaxis-annotations line');
+                          if (haCard) {
+                            if (line) {
+                              const cRect = haCard.getBoundingClientRect();
+                              const lRect = line.getBoundingClientRect();
+                              if (cRect.height > 0) {
+                                const pct = Math.max(0, Math.min(100, ((lRect.top - cRect.top) / cRect.height) * 100));
+                                haCard.style.setProperty('--split-pct', pct.toFixed(1) + '%');
+                              }
+                            } else {
+                              const minY = chartContext.w?.globals?.minY;
+                              const maxY = chartContext.w?.globals?.maxY;
+                              if (minY !== undefined && 60 <= minY) {
+                                haCard.style.setProperty('--split-pct', '100%');
+                              } else if (maxY !== undefined && 60 >= maxY) {
+                                haCard.style.setProperty('--split-pct', '0%');
+                              }
+                            }
+                          }
+                        } catch(e) {}
+                      };
+                      setTimeout(updateSplit, 50);
+                      setTimeout(updateSplit, 300);
+                    }
+                  updated: |
+                    EVAL:function(chartContext, config) {
+                      setTimeout(function() {
+                        try {
+                          const root = chartContext.el.getRootNode();
+                          const haCard = root.querySelector('ha-card');
+                          const line = root.querySelector('.apexcharts-yaxis-annotations line');
+                          if (haCard) {
+                            if (line) {
+                              const cRect = haCard.getBoundingClientRect();
+                              const lRect = line.getBoundingClientRect();
+                              if (cRect.height > 0) {
+                                const pct = Math.max(0, Math.min(100, ((lRect.top - cRect.top) / cRect.height) * 100));
+                                haCard.style.setProperty('--split-pct', pct.toFixed(1) + '%');
+                              }
+                            } else {
+                              const minY = chartContext.w?.globals?.minY;
+                              const maxY = chartContext.w?.globals?.maxY;
+                              if (minY !== undefined && 60 <= minY) {
+                                haCard.style.setProperty('--split-pct', '100%');
+                              } else if (maxY !== undefined && 60 >= maxY) {
+                                haCard.style.setProperty('--split-pct', '0%');
+                              }
+                            }
+                          }
+                        } catch(e) {}
+                      }, 50);
+                    }
+              stroke:
+                curve: smooth
+                width: 2.5
+              grid:
+                show: true
+                borderColor: "rgba(255, 255, 255, 0.06)"
+                strokeDashArray: 3
+                padding:
+                  left: 18
+                  right: 18
+                  top: -10
+                  bottom: 2
+                xaxis:
+                  lines:
+                    show: true
+                yaxis:
+                  lines:
+                    show: false
+              xaxis:
+                type: numeric
+                tickAmount: 4
+                labels:
+                  formatter: |
+                    EVAL:function(val) {
+                      const diffHours = Math.round((Date.now() - val) / 3600000);
+                      if (diffHours <= 0) return "Jetzt";
+                      return "-" + diffHours + "h";
+                    }
+                  style:
+                    colors: "#90a4ae"
+                    fontSize: "10px"
+                axisBorder:
+                  show: false
+                axisTicks:
+                  show: false
+              legend:
+                show: true
+                position: top
+                horizontalAlign: center
+                fontSize: "11px"
+                fontWeight: 500
+                labels:
+                  colors: "#cfd8dc"
+                markers:
+                  width: 7
+                  height: 7
+                  radius: 12
+                  offsetX: -2
+                itemMargin:
+                  horizontal: 12
+                  vertical: 0
+              annotations:
+                yaxis:
+                  - y: 60
+                    borderColor: "rgba(34, 197, 94, 0.7)"
+                    borderWidth: 1.5
+                    strokeDashArray: 3
+            series:
               - entity: sensor.living_room_multi_sensor_humidity
                 name: Wohnz.
                 color: "#ffa726"
-                show_fill: false
+                stroke_width: 2.5
+                curve: smooth
+                yaxis_id: humidity
+                show:
+                  legend_value: false
               - entity: sensor.bedroom_multi_sensor_humidity
                 name: Schlafz.
                 color: "#ef5350"
-                show_fill: false
+                stroke_width: 2.5
+                curve: smooth
+                yaxis_id: humidity
+                show:
+                  legend_value: false
               - entity: sensor.baby_room_multi_sensor_humidity
                 name: Kinderz.
                 color: "#ab47bc"
-                show_fill: false
+                stroke_width: 2.5
+                curve: smooth
+                yaxis_id: humidity
+                show:
+                  legend_value: false
               - entity: sensor.bathroom_multi_sensor_humidity
                 name: Badez.
-                color: "#42a5f5"
-                show_fill: false
-            hour24: true
-            hours_to_show: 2
-            points_per_hour: 120
-            aggregate_func: last
-            line_width: 5
-            font_size: 64
-            height: 177
-            # lower_bound: 55
-            # upper_bound: 75
-            show:
-              name: false
-              icon: false
-              state: false
-              legend: true
-              points: false
-              fill: true
+                color: "#38bdf8"
+                stroke_width: 2.5
+                curve: smooth
+                yaxis_id: humidity
+                show:
+                  legend_value: false
             card_mod:
               style: |
                 ha-card {
-                  background: rgba(235, 77, 84, 0.1);
+                  background: linear-gradient(180deg,
+                    rgba(239, 68, 68, 0.12) 0%,
+                    rgba(239, 68, 68, 0.03) calc(var(--split-pct, 50%) - 4%),
+                    rgba(34, 197, 94, 0.03) calc(var(--split-pct, 50%) + 4%),
+                    rgba(34, 197, 94, 0.14) 100%),
+                    rgba(26, 26, 26, 0.82) !important;
+                  border-radius: var(--bubble-border-radius, 25px) !important;
+                  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+                  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+                  padding: 8px 4px 4px 4px !important;
                 }
         # Keep grid content aligned to top without stretching
         card_mod:
@@ -676,9 +882,19 @@ views:
             show_last_changed: true
             show_state: true
             card_layout: large
+            tap_action:
+              action: navigate
+              navigation_path: "#bubble_map_julian_popup"
+            button_action:
+              tap_action:
+                action: navigate
+                navigation_path: "#bubble_map_julian_popup"
             sub_button:
               - entity: person.julian
                 icon: mdi:map-marker-outline
+                tap_action:
+                  action: navigate
+                  navigation_path: "#bubble_map_julian_popup"
             button_type: state
             modules:
               - person_home_badge
@@ -688,9 +904,19 @@ views:
             show_last_changed: true
             show_state: true
             card_layout: large
+            tap_action:
+              action: navigate
+              navigation_path: "#bubble_map_xingyang_popup"
+            button_action:
+              tap_action:
+                action: navigate
+                navigation_path: "#bubble_map_xingyang_popup"
             sub_button:
               - entity: person.xingyang
                 icon: mdi:map-marker-outline
+                tap_action:
+                  action: navigate
+                  navigation_path: "#bubble_map_xingyang_popup"
             button_type: state
             modules:
               - person_home_badge
@@ -915,9 +1141,11 @@ views:
               - entity: vacuum.robi
                 tap_action:
                   action: perform-action
-                  perform_action: dreame_vacuum.select_select_next
+                  perform_action: select.select_next
                   target:
                     entity_id: select.robi_suction_level
+                  data:
+                    cycle: true
               - entity: vacuum.robi
                 tap_action:
                   action: perform-action
@@ -968,234 +1196,87 @@ views:
             grid_options:
               columns: 12
           - type: picture-elements
-            elements:
-              - type: image
-                image:
-                  media_content_id: /local/image/vacuum_room_selection/entrance_full.png
-                  media_content_type: ""
-                  metadata:
-                    navigateIds:
-                      - {}
-                      - media_content_type: ""
-                        media_content_id: __MANUAL_ENTRY__
-                entity: input_boolean.vacuum_clean_entrance
-                tap_action:
-                  action: none
-                style:
-                  width: 100%
-                  top: 50%
-                  left: 50%
-                state_filter:
-                  "on": opacity(50%)
-                  "off": opacity(0%)
-              - type: image
-                image:
-                  media_content_id: /local/image/vacuum_room_selection/living_room_full.png
-                  media_content_type: ""
-                  metadata:
-                    navigateIds:
-                      - {}
-                      - media_content_type: ""
-                        media_content_id: __MANUAL_ENTRY__
-                entity: input_boolean.vacuum_clean_living_room
-                tap_action:
-                  action: none
-                style:
-                  width: 100%
-                  top: 50%
-                  left: 50%
-                state_filter:
-                  "on": opacity(50%)
-                  "off": opacity(0%)
-              - type: image
-                image:
-                  media_content_id: /local/image/vacuum_room_selection/bedroom_full.png
-                  media_content_type: ""
-                  metadata:
-                    navigateIds:
-                      - {}
-                      - media_content_type: ""
-                        media_content_id: __MANUAL_ENTRY__
-                entity: input_boolean.vacuum_clean_bedroom
-                tap_action:
-                  action: none
-                style:
-                  width: 100%
-                  top: 50%
-                  left: 50%
-                state_filter:
-                  "on": opacity(50%)
-                  "off": opacity(0%)
-              - type: image
-                image:
-                  media_content_id: /local/image/vacuum_room_selection/baby_room_full.png
-                  media_content_type: ""
-                  metadata:
-                    navigateIds:
-                      - {}
-                      - media_content_type: ""
-                        media_content_id: __MANUAL_ENTRY__
-                entity: input_boolean.vacuum_clean_kidroom
-                tap_action:
-                  action: none
-                style:
-                  width: 100%
-                  top: 50%
-                  left: 50%
-                state_filter:
-                  "on": opacity(50%)
-                  "off": opacity(0%)
-              - type: image
-                image:
-                  media_content_id: /local/image/vacuum_room_selection/bathroom_full.png
-                  media_content_type: ""
-                  metadata:
-                    navigateIds:
-                      - {}
-                      - media_content_type: ""
-                        media_content_id: __MANUAL_ENTRY__
-                entity: input_boolean.vacuum_clean_bathroom
-                tap_action:
-                  action: none
-                style:
-                  width: 100%
-                  top: 50%
-                  left: 50%
-                state_filter:
-                  "on": opacity(50%)
-                  "off": opacity(0%)
-              - type: image
-                image:
-                  media_content_id: /local/image/vacuum_room_selection/kitchen_2_full.png
-                  media_content_type: ""
-                  metadata:
-                    navigateIds:
-                      - {}
-                      - media_content_type: ""
-                        media_content_id: __MANUAL_ENTRY__
-                entity: input_boolean.vacuum_clean_kitchen
-                tap_action:
-                  action: none
-                style:
-                  width: 100%
-                  top: 50%
-                  left: 50%
-                state_filter:
-                  "on": opacity(50%)
-                  "off": opacity(0%)
-              - type: image
-                image:
-                  media_content_id: /local/image/vacuum_room_selection/kitchen_toggle.png
-                  media_content_type: ""
-                  metadata:
-                    navigateIds:
-                      - {}
-                      - media_content_type: ""
-                        media_content_id: __MANUAL_ENTRY__
-                entity: input_boolean.vacuum_clean_kitchen
-                tap_action:
-                  action: toggle
-                style:
-                  width: 30%
-                  top: 77%
-                  left: 85%
-                  opacity: 0
-              - type: image
-                image:
-                  media_content_id: /local/image/vacuum_room_selection/entrance_toggle.png
-                  media_content_type: ""
-                  metadata:
-                    navigateIds:
-                      - {}
-                      - media_content_type: ""
-                        media_content_id: __MANUAL_ENTRY__
-                entity: input_boolean.vacuum_clean_entrance
-                tap_action:
-                  action: toggle
-                style:
-                  width: 24%
-                  top: 83%
-                  left: 58%
-                  opacity: 0
-              - type: image
-                image:
-                  media_content_id: /local/image/vacuum_room_selection/living_room_toggle.png
-                  media_content_type: ""
-                  metadata:
-                    navigateIds:
-                      - {}
-                      - media_content_type: ""
-                        media_content_id: __MANUAL_ENTRY__
-                entity: input_boolean.vacuum_clean_living_room
-                tap_action:
-                  action: toggle
-                style:
-                  width: 63%
-                  top: 33%
-                  left: 59%
-                  opacity: 0
-              - type: image
-                image:
-                  media_content_id: /local/image/vacuum_room_selection/bathroom_toggle.png
-                  media_content_type: ""
-                  metadata:
-                    navigateIds:
-                      - {}
-                      - media_content_type: ""
-                        media_content_id: __MANUAL_ENTRY__
-                entity: input_boolean.vacuum_clean_bathroom
-                tap_action:
-                  action: toggle
-                style:
-                  width: 16%
-                  top: 82%
-                  left: 36%
-                  opacity: 0
-              - type: image
-                image:
-                  media_content_id: /local/image/vacuum_room_selection/baby_room_toggle.png
-                  media_content_type: ""
-                  metadata:
-                    navigateIds:
-                      - {}
-                      - media_content_type: ""
-                        media_content_id: __MANUAL_ENTRY__
-                entity: input_boolean.vacuum_clean_kidroom
-                tap_action:
-                  action: toggle
-                style:
-                  width: 27%
-                  top: 73%
-                  left: 14%
-                  opacity: 0
-              - type: image
-                image:
-                  media_content_id: /local/image/vacuum_room_selection/bedroom_toggle.png
-                  media_content_type: ""
-                  metadata:
-                    navigateIds:
-                      - {}
-                      - media_content_type: ""
-                        media_content_id: __MANUAL_ENTRY__
-                entity: input_boolean.vacuum_clean_bedroom
-                tap_action:
-                  action: toggle
-                style:
-                  width: 42%
-                  top: 25%
-                  left: 21%
-                  opacity: 0
-            image: /local/image/vacuum_room_selection/map.png
+            camera_image: camera.robi_map
+            camera_view: live
+            elements: []
             card_mod:
               style: |
                 ha-card {
                   border: none !important;
                   box-shadow: none !important;
                   background: transparent !important;
+                  border-radius: var(--bubble-border-radius, 16px);
+                  overflow: hidden;
                 }
             grid_options:
               columns: 12
               rows: auto
+          - type: custom:bubble-card
+            card_type: separator
+            name: Raumauswahl
+            icon: mdi:floor-plan
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: button
+            button_type: switch
+            entity: input_boolean.vacuum_clean_living_room
+            name: Wohnzimmer
+            icon: mdi:sofa
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: button
+            button_type: switch
+            entity: input_boolean.vacuum_clean_kitchen
+            name: Küche
+            icon: mdi:silverware-fork-knife
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: button
+            button_type: switch
+            entity: input_boolean.vacuum_clean_bedroom
+            name: Schlafzimmer
+            icon: mdi:bed
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: button
+            button_type: switch
+            entity: input_boolean.vacuum_clean_kidroom
+            name: Kinderzimmer
+            icon: mdi:teddy-bear
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: button
+            button_type: switch
+            entity: input_boolean.vacuum_clean_bathroom
+            name: Bad
+            icon: mdi:shower
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: button
+            button_type: switch
+            entity: input_boolean.vacuum_clean_entrance
+            name: Flur
+            icon: mdi:door
+            tap_action:
+              action: toggle
+            grid_options:
+              columns: 6
           - type: custom:bubble-card
             card_type: separator
             name: Steuerung & Aktionen
@@ -1600,6 +1681,14 @@ views:
         hash: "#bubble_calendar_popup"
         show_header: false
         button_type: name
+        styles: |
+          .bubble-pop-up-background {
+            background: rgba(26, 26, 26, 0.82) !important;
+            backdrop-filter: blur(28px) !important;
+            -webkit-backdrop-filter: blur(28px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.10) !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+          }
         cards:
           - type: custom:bubble-card
             card_type: separator
@@ -1616,26 +1705,255 @@ views:
               - calendar.german_holidays_all
               - calendar.family_birthday
               - calendar.family_anniversary
-            initial_view: dayGridMonth
+            initial_view: listWeek
             views:
               - dayGridMonth
               - listWeek
               - timeGridDay
             card_mod:
-              style: |
-                ha-card {
-                  border: none !important;
-                  background: rgba(0, 0, 0, 0.2) !important;
-                  border-radius: var(--bubble-border-radius, 24px) !important;
-                  padding: 8px !important;
-                }
+              style:
+                .: |
+                  ha-card {
+                    border: none !important;
+                    background: rgba(0, 0, 0, 0.2) !important;
+                    border-radius: var(--bubble-border-radius, 24px) !important;
+                    padding: 12px 16px !important;
+                    box-shadow: none !important;
+                    --ha-card-background: transparent !important;
+                    --card-background-color: transparent !important;
+                    --divider-color: rgba(255, 255, 255, 0.08) !important;
+                    --primary-text-color: rgba(255, 255, 255, 0.95) !important;
+                    --secondary-text-color: rgba(255, 255, 255, 0.6) !important;
+                  }
+                ha-full-calendar$: |
+                  /* Toolbar & Header */
+                  .header {
+                    display: flex !important;
+                    align-items: center !important;
+                    justify-content: space-between !important;
+                    padding: 4px 4px 14px 4px !important;
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+                    margin-bottom: 10px !important;
+                  }
+                  .header h1 {
+                    font-size: 1.15rem !important;
+                    font-weight: 600 !important;
+                    color: rgba(255, 255, 255, 0.95) !important;
+                    letter-spacing: -0.01em !important;
+                    margin: 0 !important;
+                    font-family: inherit !important;
+                  }
+                  .navigation {
+                    display: flex !important;
+                    align-items: center !important;
+                    gap: 6px !important;
+                  }
+                  ha-button.today {
+                    --ha-button-background: rgba(255, 255, 255, 0.08) !important;
+                    --ha-button-color: rgba(255, 255, 255, 0.9) !important;
+                    --ha-button-border-radius: 12px !important;
+                    --primary-color: rgba(255, 255, 255, 0.9) !important;
+                  }
+                  ha-icon-button-prev,
+                  ha-icon-button-next {
+                    --ha-icon-button-color: rgba(255, 255, 255, 0.75) !important;
+                  }
+
+                  /* FullCalendar Theme Variables & Overrides */
+                  #calendar {
+                    height: auto !important;
+                    background-color: transparent !important;
+                    --fc-page-bg-color: transparent !important;
+                    --fc-neutral-bg-color: rgba(255, 255, 255, 0.04) !important;
+                    --fc-neutral-text-color: rgba(255, 255, 255, 0.7) !important;
+                    --fc-border-color: rgba(255, 255, 255, 0.08) !important;
+                    --fc-theme-standard-border-color: rgba(255, 255, 255, 0.08) !important;
+                    --fc-today-bg-color: rgba(56, 189, 248, 0.15) !important;
+                    --fc-list-event-hover-bg-color: rgba(255, 255, 255, 0.07) !important;
+                    --fc-event-text-color: #ffffff !important;
+                    color: rgba(255, 255, 255, 0.9) !important;
+                  }
+                  .fc-theme-standard th,
+                  .fc-theme-standard td,
+                  .fc-theme-standard .fc-scrollgrid {
+                    border-color: rgba(255, 255, 255, 0.08) !important;
+                  }
+                  .fc-col-header-cell {
+                    background: rgba(255, 255, 255, 0.04) !important;
+                    padding: 6px 0 !important;
+                  }
+                  .fc-col-header-cell-cushion {
+                    color: rgba(255, 255, 255, 0.6) !important;
+                    font-size: 11px !important;
+                    font-weight: 600 !important;
+                    text-transform: uppercase !important;
+                    letter-spacing: 0.05em !important;
+                  }
+                  .fc-daygrid-day-number {
+                    color: rgba(255, 255, 255, 0.85) !important;
+                    font-size: 12px !important;
+                    font-weight: 500 !important;
+                    padding: 4px 6px !important;
+                  }
+                  .fc-daygrid-day.fc-day-today {
+                    background: rgba(56, 189, 248, 0.12) !important;
+                  }
+                  .fc-day-today .fc-daygrid-day-number {
+                    color: #38bdf8 !important;
+                    font-weight: 700 !important;
+                  }
+                  .fc-daygrid-day.fc-day-other .fc-daygrid-day-number {
+                    color: rgba(255, 255, 255, 0.25) !important;
+                  }
+                  .fc-daygrid-more-link {
+                    color: #38bdf8 !important;
+                    font-size: 11px !important;
+                    font-weight: 600 !important;
+                  }
+                  .fc-daygrid-event {
+                    border-radius: 6px !important;
+                    padding: 2px 4px !important;
+                    font-size: 11px !important;
+                    font-weight: 500 !important;
+                  }
+
+                  /* Table & Reset default FC borders for list view */
+                  .fc-theme-standard .fc-list,
+                  .fc-theme-standard .fc-list-table th,
+                  .fc-theme-standard .fc-list-table td {
+                    border: none !important;
+                  }
+                  .fc-list-table {
+                    border-collapse: separate !important;
+                    border-spacing: 0 4px !important;
+                    width: 100% !important;
+                  }
+
+                  /* Day header row */
+                  .fc-list-day-cushion {
+                    background: rgba(255, 255, 255, 0.05) !important;
+                    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+                    border-radius: 12px !important;
+                    padding: 8px 14px !important;
+                    margin-top: 10px !important;
+                  }
+                  .fc-list-day-text {
+                    font-size: 13.5px !important;
+                    font-weight: 600 !important;
+                    color: rgba(255, 255, 255, 0.9) !important;
+                    letter-spacing: 0.01em !important;
+                  }
+                  .fc-list-day-side-text {
+                    font-size: 12.5px !important;
+                    font-weight: 400 !important;
+                    color: rgba(255, 255, 255, 0.5) !important;
+                  }
+
+                  /* Highlight current day */
+                  .fc-day-today .fc-list-day-cushion {
+                    background: linear-gradient(90deg, rgba(56, 189, 248, 0.16) 0%, rgba(56, 189, 248, 0.04) 100%) !important;
+                    border: 1px solid rgba(56, 189, 248, 0.35) !important;
+                  }
+                  .fc-day-today .fc-list-day-text {
+                    color: #38bdf8 !important;
+                    font-weight: 700 !important;
+                  }
+                  .fc-day-today .fc-list-day-side-text {
+                    color: rgba(56, 189, 248, 0.8) !important;
+                  }
+
+                  /* Event rows */
+                  .fc-list-event {
+                    background: rgba(255, 255, 255, 0.025) !important;
+                    border-radius: 12px !important;
+                    transition: background 0.15s ease !important;
+                  }
+                  .fc-list-event:hover td {
+                    background: rgba(255, 255, 255, 0.07) !important;
+                    cursor: pointer !important;
+                  }
+                  .fc-list-event td {
+                    border: none !important;
+                    padding: 10px 12px !important;
+                  }
+                  .fc-list-event-time {
+                    border-top-left-radius: 12px !important;
+                    border-bottom-left-radius: 12px !important;
+                    font-size: 12.5px !important;
+                    font-weight: 500 !important;
+                    color: rgba(255, 255, 255, 0.6) !important;
+                    white-space: nowrap !important;
+                  }
+                  .fc-list-event-graphic {
+                    padding-left: 4px !important;
+                    padding-right: 8px !important;
+                  }
+                  .fc-list-event-dot {
+                    border-width: 5px !important;
+                    border-radius: 50% !important;
+                    box-shadow: 0 0 6px currentColor !important;
+                  }
+                  .fc-list-event-title {
+                    border-top-right-radius: 12px !important;
+                    border-bottom-right-radius: 12px !important;
+                    font-size: 13.5px !important;
+                    font-weight: 500 !important;
+                    color: rgba(255, 255, 255, 0.95) !important;
+                  }
+                  .fc-list-event-title a {
+                    color: inherit !important;
+                    text-decoration: none !important;
+                  }
+
+                  /* Scroller & Harness height inside popup */
+                  .fc-view-harness {
+                    height: auto !important;
+                    min-height: min(480px, 60vh) !important;
+                  }
+                  .fc-scroller {
+                    height: auto !important;
+                    max-height: min(480px, 60vh) !important;
+                    scrollbar-width: thin !important;
+                    scrollbar-color: rgba(255, 255, 255, 0.18) transparent !important;
+                  }
+                  .fc-scroller::-webkit-scrollbar {
+                    width: 5px !important;
+                  }
+                  .fc-scroller::-webkit-scrollbar-track {
+                    background: transparent !important;
+                  }
+                  .fc-scroller::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.18) !important;
+                    border-radius: 10px !important;
+                  }
+                  .fc-scroller::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255, 255, 255, 0.3) !important;
+                  }
+
+                  /* Empty state */
+                  .fc-list-empty {
+                    background: transparent !important;
+                    color: rgba(255, 255, 255, 0.45) !important;
+                    font-size: 14px !important;
+                    padding: 30px 10px !important;
+                    text-align: center !important;
+                  }
             grid_options:
               columns: 12
+              rows: auto
       - type: custom:bubble-card
         card_type: pop-up
         hash: "#bubble_weather_popup"
         show_header: false
         button_type: name
+        styles: |
+          .bubble-pop-up-background {
+            background: rgba(26, 26, 26, 0.82) !important;
+            backdrop-filter: blur(28px) !important;
+            -webkit-backdrop-filter: blur(28px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.10) !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+          }
         cards:
           - type: custom:bubble-card
             card_type: separator
@@ -1661,19 +1979,13 @@ views:
                     formatter: |
                       EVAL:function(val) { return Math.round(val) + "°"; }
               - id: rain
-                opposite: true
-                show: true
+                show: false
                 min: 0
                 max: 4
-                decimals: 0
-                apex_config:
-                  tickAmount: 4
-                  labels:
-                    style:
-                      colors: "#38bdf8"
-                      fontSize: "11px"
-                    formatter: |
-                      EVAL:function(val) { return Math.round(val) + " mm"; }
+              - id: wind
+                show: false
+                min: 0
+                max: 25
             now:
               show: true
               color: "rgba(255, 255, 255, 0.4)"
@@ -1682,21 +1994,61 @@ views:
               - name: Regen
                 entity: sensor.weather_home_forecast_at_midnight
                 data_generator: |
-                  return entity.attributes.datetime.map((datetime, index) => {
+                  const list = entity?.attributes?.datetime || [];
+                  const now0 = new Date();
+                  now0.setHours(0, 0, 0, 0);
+                  const t0 = now0.getTime();
+                  const pts = list.map((datetime, index) => {
                     const p = entity.attributes.precipitation[index] || 0;
                     return [new Date(datetime).getTime(), p];
                   });
+                  if (pts.length > 0 && pts[0][0] > t0) {
+                    pts.unshift([t0, pts[0][1]]);
+                  }
+                  return pts;
                 type: area
                 stroke_width: 0
                 color: "#38bdf8"
-                opacity: 0.28
+                opacity: 0.38
                 curve: smooth
                 yaxis_id: rain
                 unit: mm
+                show:
+                  in_legend: true
+                  legend_value: false
+              - name: Wind
+                entity: sensor.weather_home_forecast_at_midnight
+                data_generator: |
+                  const list = entity?.attributes?.datetime || [];
+                  const now0 = new Date();
+                  now0.setHours(0, 0, 0, 0);
+                  const t0 = now0.getTime();
+                  const pts = list.map((datetime, index) => {
+                    const raw = (entity.attributes.wind_speed && entity.attributes.wind_speed[index] !== undefined)
+                      ? entity.attributes.wind_speed[index]
+                      : 0;
+                    const w = Math.max(0, raw - 10);
+                    return [new Date(datetime).getTime(), w];
+                  });
+                  if (pts.length > 0 && pts[0][0] > t0) {
+                    pts.unshift([t0, pts[0][1]]);
+                  }
+                  return pts;
+                type: area
+                stroke_width: 0
+                color: "#cbd5e1"
+                opacity: 0.30
+                curve: smooth
+                yaxis_id: wind
+                unit: " km/h"
+                show:
+                  in_legend: true
+                  legend_value: false
               - name: Vorhersage
                 entity: sensor.weather_home_forecast
                 data_generator: |
-                  return entity.attributes.datetime.map((datetime, index) => {
+                  const list = entity?.attributes?.datetime || [];
+                  return list.map((datetime, index) => {
                     return [new Date(datetime).getTime(), entity.attributes.temperature[index]];
                   });
                 type: line
@@ -1706,6 +2058,9 @@ views:
                 curve: smooth
                 yaxis_id: temp
                 unit: "°C"
+                show:
+                  in_legend: false
+                  legend_value: false
               - name: Temperatur
                 entity: sensor.weather_home_current_temperature
                 extend_to: now
@@ -1715,6 +2070,9 @@ views:
                 curve: smooth
                 yaxis_id: temp
                 unit: "°C"
+                show:
+                  in_legend: true
+                  legend_value: false
               - name: Aktuell
                 entity: sensor.weather_home_current_temperature
                 data_generator: |
@@ -1726,13 +2084,18 @@ views:
                 color: "#ffa726"
                 yaxis_id: temp
                 unit: "°C"
+                show:
+                  in_legend: false
+                  legend_value: false
             apex_config:
               stroke:
                 curve: smooth
               markers:
                 size: 0
+                strokeWidth: 0
+                strokeColors: "transparent"
                 discrete:
-                  - seriesIndex: 3
+                  - seriesIndex: 4
                     dataPointIndex: 0
                     size: 4
                     fillColor: "#ffa726"
@@ -1745,8 +2108,13 @@ views:
                   show: false
               grid:
                 show: true
-                borderColor: "rgba(255, 255, 255, 0.12)"
+                borderColor: "rgba(255, 255, 255, 0.05)"
                 strokeDashArray: 3
+                padding:
+                  left: 6
+                  right: 6
+                  top: -10
+                  bottom: 2
                 xaxis:
                   lines:
                     show: true
@@ -1755,53 +2123,87 @@ views:
                     show: true
               xaxis:
                 type: datetime
-                tickAmount: 4
+                tickAmount: 3
                 labels:
-                  format: "ddd"
                   style:
                     colors: "#90a4ae"
-                    fontSize: "12px"
+                    fontSize: "11px"
                     fontWeight: 500
+                  formatter: |
+                    EVAL:function(val, timestamp) {
+                      const days = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+                      const d = new Date((timestamp || val) + 43200000);
+                      return days[d.getDay()];
+                    }
                 axisBorder:
                   show: false
                 axisTicks:
                   show: false
               legend:
-                show: false
+                show: true
+                position: top
+                horizontalAlign: center
+                fontSize: "11px"
+                fontWeight: 500
+                labels:
+                  colors: "#cfd8dc"
+                markers:
+                  width: 7
+                  height: 7
+                  radius: 12
+                  offsetX: -2
+                itemMargin:
+                  horizontal: 12
+                  vertical: 0
               tooltip:
                 enabled: true
                 x:
                   format: "ddd, HH:mm"
+                y:
+                  formatter: |
+                    EVAL:function(val, opts) {
+                      if (val === undefined || val === null) return "";
+                      if (opts.seriesIndex === 0) {
+                        return val.toFixed(1) + " mm";
+                      }
+                      if (opts.seriesIndex === 1) {
+                        return (val > 0 ? (val + 10).toFixed(1) : "< 10") + " km/h";
+                      }
+                      return val.toFixed(1) + " °C";
+                    }
             card_mod:
               style: |
                 ha-card {
-                  border: none !important;
-                  background: transparent !important;
-                  box-shadow: none !important;
+                  background: rgba(26, 26, 26, 0.50) !important;
+                  border-radius: var(--bubble-border-radius, 20px) !important;
+                  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+                  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
                   padding: 8px 4px 4px 4px !important;
                 }
-                ha-card::after {
-                  content: '';
-                  display: block;
-                  height: 4px;
-                  margin: 2px 69px 6px 47.5px;
-                  border-radius: 2px;
-                  background: {{ state_attr('sensor.weather_home_forecast', 'wind_gradient_3d') | default('rgba(56, 189, 248, 0.35)', true) }};
-                  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+                .apexcharts-xaxis-annotations rect {
+                  rx: 4px !important;
+                  fill: rgba(30, 30, 30, 0.75) !important;
+                  stroke: rgba(255, 255, 255, 0.22) !important;
+                }
+                .apexcharts-xaxis-annotations text {
+                  fill: #ffffff !important;
+                  font-size: 9px !important;
+                  font-weight: 500 !important;
                 }
             grid_options:
               columns: 12
           - type: custom:clock-weather-card
             entity: weather.weather_home_mock
             weather_icon_type: line
-            forecast_rows: 3
-            time_pattern: HH:mm
-            time_format: 24
-            hide_today_section: true
-            hide_forecast_section: false
-            show_humidity: false
-            hide_clock: true
-            hide_date: true
+            locale: de
+            sections:
+              header:
+                hide: true
+              forecast_strip:
+                hide: true
+              forecast_list:
+                hide: false
+                count: 3
             card_mod:
               style: |
                 ha-card {
@@ -1823,6 +2225,7 @@ views:
               columns: 12
           - type: custom:bubble-card
             card_type: button
+            button_type: name
             entity: sensor.weather_home_current_rain_probability
             name: Niederschlag
             icon: mdi:weather-rainy
@@ -1832,8 +2235,9 @@ views:
               columns: 6
           - type: custom:bubble-card
             card_type: button
+            button_type: name
             entity: sensor.weather_home_current_wind_speed
-            name: Windgeschwindigkeit
+            name: Wind
             icon: mdi:weather-windy
             show_state: true
             card_layout: large
@@ -1841,17 +2245,424 @@ views:
               columns: 6
             styles: |
               ${(() => {
-                const spd = parseFloat(hass.states['sensor.weather_home_current_wind_speed']?.state || '0');
-                const bft = hass.states['sensor.weather_home_current_wind_speed']?.attributes?.bft_desc || (spd < 12 ? 'Leichte Brise' : 'Mäßig');
+                const s = hass.states['sensor.weather_home_current_wind_speed'];
+                const spd = parseFloat(s?.state || '0');
+                const bft = s?.attributes?.bft_desc || '';
                 const gust = hass.states['sensor.weather_home_forecast']?.attributes?.max_gust_today;
-                const gustStr = (gust && gust > 0) ? Math.round(gust) + ' km/h' : '--';
+                const gustStr = (gust && gust > 0) ? Math.round(gust) + ' km/h' : '';
                 
                 const stateEl = card.querySelector('.bubble-state');
                 if (stateEl) {
-                  stateEl.innerHTML = spd.toFixed(1) + ' km/h &nbsp;·&nbsp; ' + bft;
+                  stateEl.innerHTML = spd.toFixed(1) + ' km/h' + (bft ? ' &nbsp;·&nbsp; ' + bft : '');
                 }
                 const nameEl = card.querySelector('.bubble-name');
                 if (nameEl) {
-                  nameEl.innerHTML = 'Wind &nbsp;<span style=\"font-size: 11px; opacity: 0.7;\">(Böen bis ' + gustStr + ')</span>';
+                  nameEl.innerHTML = 'Wind' + (gustStr ? ' &nbsp;<span style="font-size: 11px; opacity: 0.7;">(Böen bis ' + gustStr + ')</span>' : '');
                 }
               })()}
+      - type: custom:bubble-card
+        card_type: pop-up
+        hash: "#bubble_sensors_offline_popup"
+        show_header: false
+        button_type: name
+        styles: |
+          .bubble-pop-up-background {
+            background: rgba(26, 26, 26, 0.85) !important;
+            backdrop-filter: blur(28px) !important;
+            -webkit-backdrop-filter: blur(28px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.10) !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+          }
+        cards:
+          - type: custom:bubble-card
+            card_type: separator
+            name: Sensor Status & Offline Diagnose
+            icon: mdi:access-point-network-off
+            grid_options:
+              columns: 12
+          - type: markdown
+            card_mod:
+              style: |
+                ha-card {
+                  border: none !important;
+                  background: rgba(0, 0, 0, 0.25) !important;
+                  border-radius: var(--bubble-border-radius, 24px) !important;
+                  padding: 14px 18px !important;
+                  box-shadow: none !important;
+                }
+                blockquote {
+                  background: rgba(239, 83, 80, 0.18) !important;
+                  border-left: 4px solid #ef5350 !important;
+                  border-radius: 8px !important;
+                  padding: 10px 14px !important;
+                  margin: 0 0 14px 0 !important;
+                }
+                :host ha-markdown blockquote, ha-markdown blockquote {
+                  background: rgba(239, 83, 80, 0.18) !important;
+                  border-left: 4px solid #ef5350 !important;
+                  border-radius: 8px !important;
+                  padding: 10px 14px !important;
+                  margin: 0 0 14px 0 !important;
+                }
+                ha-card table, ha-markdown table {
+                  width: 100%;
+                  border-collapse: collapse;
+                  margin: 8px 0 14px 0;
+                }
+                ha-card th, ha-card td, ha-markdown th, ha-markdown td {
+                  padding: 7px 8px;
+                  text-align: left;
+                  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+                }
+                ha-card th, ha-markdown th {
+                  font-size: 11px;
+                  text-transform: uppercase;
+                  letter-spacing: 0.5px;
+                  color: rgba(255, 255, 255, 0.5);
+                }
+                ha-card td, ha-markdown td {
+                  font-size: 13px;
+                }
+                ul {
+                  padding-left: 18px;
+                  margin: 6px 0 2px 0;
+                }
+                li {
+                  font-size: 12px;
+                  line-height: 1.6;
+                  color: rgba(255, 255, 255, 0.75);
+                }
+            content: |
+              {% set tracked = [
+                ('binary_sensor.kitchen_window_contact', 'sensor.kitchen_window_battery', 'Küche – Fensterkontakt', 'mdi:window-closed-variant'),
+                ('binary_sensor.living_room_window_contact', 'sensor.living_room_window_battery', 'Wohnzimmer – Fensterkontakt', 'mdi:window-closed-variant'),
+                ('binary_sensor.bedroom_window_contact', 'sensor.bedroom_window_battery', 'Schlafzimmer – Fensterkontakt', 'mdi:window-closed-variant'),
+                ('binary_sensor.baby_room_window_contact', 'sensor.baby_room_window_battery', 'Kinderzimmer – Fensterkontakt', 'mdi:window-closed-variant'),
+                ('sensor.kitchen_multi_sensor_temperature', 'sensor.kitchen_multi_sensor_battery', 'Küche – Klimasensor', 'mdi:thermometer'),
+                ('sensor.living_room_multi_sensor_temperature', 'sensor.living_room_multi_sensor_battery', 'Wohnzimmer – Klimasensor', 'mdi:thermometer'),
+                ('sensor.bedroom_multi_sensor_temperature', 'sensor.bedroom_multi_sensor_battery', 'Schlafzimmer – Klimasensor', 'mdi:thermometer'),
+                ('sensor.baby_room_multi_sensor_temperature', 'sensor.baby_room_multi_sensor_battery', 'Kinderzimmer – Klimasensor', 'mdi:thermometer'),
+                ('sensor.bathroom_multi_sensor_temperature', 'sensor.bathroom_multi_sensor_battery', 'Badezimmer – Klimasensor', 'mdi:thermometer'),
+                ('sensor.garden_multi_sensor_temperature', 'sensor.garden_multi_sensor_battery', 'Garten – Klimasensor', 'mdi:thermometer'),
+                ('binary_sensor.kitchen_motion_sensor_occupancy', 'sensor.kitchen_motion_sensor_battery', 'Küche – Bewegungsmelder', 'mdi:motion-sensor'),
+                ('binary_sensor.living_room_motion_sensor_occupancy', 'sensor.living_room_motion_sensor_battery', 'Wohnzimmer – Bewegungsmelder', 'mdi:motion-sensor'),
+                ('binary_sensor.bedroom_motion_sensor_left_occupancy', 'sensor.bedroom_motion_sensor_left_battery', 'Schlafzimmer Links – Bewegungsmelder', 'mdi:motion-sensor'),
+                ('binary_sensor.bedroom_motion_sensor_right_occupancy', 'sensor.bedroom_motion_sensor_right_battery', 'Schlafzimmer Rechts – Bewegungsmelder', 'mdi:motion-sensor'),
+                ('binary_sensor.baby_room_motion_sensor_occupancy', 'sensor.baby_room_motion_sensor_battery', 'Kinderzimmer – Bewegungsmelder', 'mdi:motion-sensor'),
+                ('binary_sensor.bathroom_motion_sensor_occupancy', 'sensor.bathroom_motion_sensor_battery', 'Badezimmer – Bewegungsmelder', 'mdi:motion-sensor'),
+                ('binary_sensor.bathroom_shower_motion_sensor_occupancy', 'sensor.bathroom_shower_motion_sensor_battery', 'Badezimmer Dusche – Bewegungsmelder', 'mdi:motion-sensor')
+              ] %}
+              {% set offline = tracked | selectattr('0', 'is_state', 'unavailable') | list %}
+              {% set count = offline | count %}
+
+              {% if count > 0 %}
+              > ⚠️ **{{ count }} {{ 'Sensor ist' if count == 1 else 'Sensoren sind' }} aktuell offline**  
+              > Diese Geräte antworten nicht mehr auf Mesh-Abfragen und sind im System als `nicht verfügbar` geführt.
+
+              | Sensor / Raum | Letzter Kontakt | Offline seit | Batteriestatus |
+              | :--- | :--- | :--- | :--- |
+              {% for entity_id, batt_id, label, icon in offline %}
+              {%- set s = states[entity_id] -%}
+              {%- set diff = as_timestamp(now()) - as_timestamp(s.last_updated) -%}
+              {%- set hours = (diff // 3600) | int -%}
+              {%- set mins = ((diff % 3600) // 60) | int -%}
+              {%- set batt = states(batt_id) -%}
+              | **{{ label }}** | {{ as_timestamp(s.last_updated) | timestamp_custom('%d.%m. %H:%M') }} | {{ hours }}h {{ mins }}m | {{ batt ~ '%' if batt not in ['unavailable', 'unknown'] else '<span style="color:#ef5350;">nicht erreichbar</span>' }} |
+              {% endfor %}
+              {% else %}
+              <div style="background: rgba(102, 187, 106, 0.15); border-left: 4px solid #66bb6a; border-radius: 8px; padding: 10px 14px; color: #a5d6a7;">
+                ✅ <b>Alle 17 überwachten Sensoren sind online</b> und senden reguläre Messwerte.
+              </div>
+              {% endif %}
+
+              **🛠️ Schnellhilfe & Diagnose:**
+              - 🔋 **Batterie prüfen:** Meist ist die Knopfzelle (CR2032 oder CR2450) erschöpft.
+              - 📡 **Funk & Mesh:** Prüfen, ob Zigbee-Router (z.B. Zwischenstecker) ausgesteckt wurden.
+              - 🔄 **Aufwecken:** Pinhole-Taste am Sensor 1x kurz drücken, um Check-in zu erzwingen.
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: separator
+            name: Betroffene Sensoren (Details & Verlauf)
+            icon: mdi:devices
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: button
+            entity: binary_sensor.kitchen_window_contact
+            name: Küche – Fensterkontakt
+            icon: mdi:window-closed-variant
+            show_state: true
+            show_last_changed: true
+            card_layout: large
+            tap_action:
+              action: more-info
+            sub_button:
+              - entity: sensor.kitchen_window_battery
+                show_state: true
+                show_icon: true
+                icon: mdi:battery-alert-variant-outline
+                tap_action:
+                  action: more-info
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: button
+            entity: binary_sensor.bedroom_motion_sensor_left_occupancy
+            name: Schlafz. Links – Melder
+            icon: mdi:motion-sensor
+            show_state: true
+            show_last_changed: true
+            card_layout: large
+            tap_action:
+              action: more-info
+            sub_button:
+              - entity: sensor.bedroom_motion_sensor_left_battery
+                show_state: true
+                show_icon: true
+                icon: mdi:battery-alert-variant-outline
+                tap_action:
+                  action: more-info
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: button
+            entity: binary_sensor.bedroom_motion_sensor_right_occupancy
+            name: Schlafz. Rechts – Melder
+            icon: mdi:motion-sensor
+            show_state: true
+            show_last_changed: true
+            card_layout: large
+            tap_action:
+              action: more-info
+            sub_button:
+              - entity: sensor.bedroom_motion_sensor_right_battery
+                show_state: true
+                show_icon: true
+                icon: mdi:battery-alert-variant-outline
+                tap_action:
+                  action: more-info
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: button
+            entity: binary_sensor.bathroom_motion_sensor_occupancy
+            name: Bad – Bewegungsmelder
+            icon: mdi:motion-sensor
+            show_state: true
+            show_last_changed: true
+            card_layout: large
+            tap_action:
+              action: more-info
+            sub_button:
+              - entity: sensor.bathroom_motion_sensor_battery
+                show_state: true
+                show_icon: true
+                icon: mdi:battery-alert-variant-outline
+                tap_action:
+                  action: more-info
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: separator
+            name: Kritische Batteriestände (≤ 30%)
+            icon: mdi:battery-alert
+            grid_options:
+              columns: 12
+          - type: custom:bubble-card
+            card_type: button
+            entity: sensor.bedroom_light_switch_right_battery
+            name: Schlafz. Rechts – Schalter
+            icon: mdi:battery-20
+            show_state: true
+            card_layout: large
+            tap_action:
+              action: more-info
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: button
+            entity: sensor.kitchen_light_switch_battery
+            name: Küche – Lichtschalter
+            icon: mdi:battery-20
+            show_state: true
+            card_layout: large
+            tap_action:
+              action: more-info
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: button
+            entity: sensor.living_room_light_switch_battery
+            name: Wohnzimmer – Lichtschalter
+            icon: mdi:battery-20
+            show_state: true
+            card_layout: large
+            tap_action:
+              action: more-info
+            grid_options:
+              columns: 6
+          - type: custom:bubble-card
+            card_type: button
+            entity: sensor.bedroom_light_switch_left_battery
+            name: Schlafz. Links – Schalter
+            icon: mdi:battery-20
+            show_state: true
+            card_layout: large
+            tap_action:
+              action: more-info
+            grid_options:
+              columns: 6
+      - type: custom:bubble-card
+        card_type: pop-up
+        hash: "#bubble_map_julian_popup"
+        show_header: false
+        button_type: name
+        styles: |
+          .bubble-pop-up-background {
+            background: rgba(26, 26, 26, 0.85) !important;
+            backdrop-filter: blur(28px) !important;
+            -webkit-backdrop-filter: blur(28px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.10) !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+          }
+        cards:
+          - type: custom:bubble-card
+            card_type: separator
+            name: Standort – Julian
+            icon: mdi:map-marker-account
+            grid_options:
+              columns: 12
+          - type: map
+            default_zoom: 15
+            auto_fit: true
+            entities:
+              - entity: device_tracker.julian
+                focus: true
+              - entity: device_tracker.xingyang
+                focus: false
+              - entity: zone.aldi
+                focus: false
+              - entity: zone.bahnhof
+                focus: false
+              - entity: zone.city_galery
+                focus: false
+              - entity: zone.flosslandle
+                focus: false
+              - entity: zone.frauenarzt
+                focus: false
+              - entity: zone.ikea
+                focus: false
+              - entity: zone.kaufland
+                focus: false
+              - entity: zone.innenstadt
+                focus: false
+              - entity: zone.arbeit
+                focus: false
+              - entity: zone.l_osteria
+                focus: false
+              - entity: zone.lidl
+                focus: false
+              - entity: zone.moritzplatz
+                focus: false
+              - entity: zone.rathausplatz
+                focus: false
+              - entity: zone.schlossle
+                focus: false
+              - entity: zone.segmuller
+                focus: false
+              - entity: zone.home
+                focus: false
+            hours_to_show: 12
+            theme_mode: auto
+            card_mod:
+              style: |
+                ha-card {
+                  border: none !important;
+                  border-radius: var(--bubble-border-radius, 24px) !important;
+                  box-shadow: none !important;
+                  overflow: hidden !important;
+                  height: 480px !important;
+                }
+                #root, ha-map {
+                  height: 100% !important;
+                }
+            grid_options:
+              columns: 12
+
+      - type: custom:bubble-card
+        card_type: pop-up
+        hash: "#bubble_map_xingyang_popup"
+        show_header: false
+        button_type: name
+        styles: |
+          .bubble-pop-up-background {
+            background: rgba(26, 26, 26, 0.85) !important;
+            backdrop-filter: blur(28px) !important;
+            -webkit-backdrop-filter: blur(28px) !important;
+            border: 1px solid rgba(255, 255, 255, 0.10) !important;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+          }
+        cards:
+          - type: custom:bubble-card
+            card_type: separator
+            name: Standort – Xingyang
+            icon: mdi:map-marker-account
+            grid_options:
+              columns: 12
+          - type: map
+            default_zoom: 15
+            auto_fit: true
+            entities:
+              - entity: device_tracker.xingyang
+                focus: true
+              - entity: device_tracker.julian
+                focus: false
+              - entity: zone.aldi
+                focus: false
+              - entity: zone.bahnhof
+                focus: false
+              - entity: zone.city_galery
+                focus: false
+              - entity: zone.flosslandle
+                focus: false
+              - entity: zone.frauenarzt
+                focus: false
+              - entity: zone.ikea
+                focus: false
+              - entity: zone.kaufland
+                focus: false
+              - entity: zone.innenstadt
+                focus: false
+              - entity: zone.arbeit
+                focus: false
+              - entity: zone.l_osteria
+                focus: false
+              - entity: zone.lidl
+                focus: false
+              - entity: zone.moritzplatz
+                focus: false
+              - entity: zone.rathausplatz
+                focus: false
+              - entity: zone.schlossle
+                focus: false
+              - entity: zone.segmuller
+                focus: false
+              - entity: zone.home
+                focus: false
+            hours_to_show: 12
+            theme_mode: auto
+            card_mod:
+              style: |
+                ha-card {
+                  border: none !important;
+                  border-radius: var(--bubble-border-radius, 24px) !important;
+                  box-shadow: none !important;
+                  overflow: hidden !important;
+                  height: 480px !important;
+                }
+                #root, ha-map {
+                  height: 100% !important;
+                }
+            grid_options:
+              columns: 12

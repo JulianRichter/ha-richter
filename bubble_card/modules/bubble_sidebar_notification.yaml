@@ -18,22 +18,21 @@ bubble_sidebar_notification:
     }
     p {
       font-family: SF Display, Roboto, sans-serif;
-      font-size: 18px;
+      font-size: 15px;
       font-weight: 400;
       color: #6a7377;
-      margin-block-end: 0 !important;
-      line-height: 21px;
+      margin: 0 !important;
+      padding: 0 !important;
+      line-height: 22px;
     }
     ${(() => {
       const count = hass.states[entity]?.attributes?.count || 0;
       const isVisible = count > 0;
-      const fontSize = 18;
-      const lineHeight = 21; 
-      const hasHeader = entity.includes('sensors_offline') || entity.includes('window_contacts');
-      const height = isVisible ? 1 * fontSize + (hasHeader ? lineHeight : 0) + (2 * lineHeight * count) : 0;
       const el = card.querySelector('.bubble-button-card-container');
+      const nc = card.querySelector('.bubble-name-container');
       if (el) {
-        el.style.height = height + 'px';
+        const height = isVisible ? ((nc?.scrollHeight || nc?.offsetHeight || (count * 22 + 32)) + 4) : 0;
+        el.style.height = isVisible ? (height + 'px') : '0px';
         el.style.display = isVisible ? '' : 'none';
       }
       card.style.display = isVisible ? '' : 'none';
@@ -47,3 +46,4 @@ bubble_sidebar_notification:
       }
       return isVisible ? '' : ':host { display: none !important; } ha-card { display: none !important; }';
     })()}
+

@@ -1,10 +1,15 @@
-# Example configuration.yaml entry
+# ====================================================================
+# Theme - Bubble Code Theme
+# - Primary theme for Bubble Code Dashboard (wall tablet & desktop)
+# - Scoped card-mod styling, frosted layout, and custom grid spacing
+# ====================================================================
+
 frontend:
   extra_module_url:
     - /hacsfiles/lovelace-card-mod/card-mod.js
 
   themes:
-    tablet_grid_theme:
+    bubble_code_theme:
       modes:
         dark:
           # background image
@@ -34,7 +39,7 @@ frontend:
       # card-mod setup (name has to be the theme name!)
       ####################################################
 
-      card-mod-theme: tablet_grid_theme
+      card-mod-theme: bubble_code_theme
 
       card-mod-root-yaml: |
         #view {

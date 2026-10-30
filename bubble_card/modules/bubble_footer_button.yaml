@@ -14,3 +14,4 @@ bubble_footer_button:
       text-overflow: ellipsis;
       max-width: 90px;
     }
+

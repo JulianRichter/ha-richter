@@ -1,0 +1,27 @@
+room_light_color:
+  name: "Room Light Color"
+  description: "Standardizes warm amber illumination for standard lighting while preserving active RGB scenes"
+  version: "1.0"
+  code: |
+    .bubble-button-background {
+      background-color: ${(() => {
+        if (state !== 'on') return 'var(--bubble-background-background-color)';
+        const attr = hass.states[entity]?.attributes || {};
+        const mode = attr.color_mode;
+        const rgb = attr.rgb_color;
+        const isColor = (mode === 'xy' || mode === 'hs' || mode === 'rgb') &&
+          rgb && !(rgb[0] === 255 && rgb[1] >= 150 && rgb[1] <= 185 && rgb[2] >= 70 && rgb[2] <= 105);
+        return isColor && rgb ? `rgb(${rgb.join(',')})` : 'rgb(255, 167, 88)';
+      })()} !important;
+    }
+    .bubble-icon {
+      color: ${(() => {
+        if (state !== 'on') return 'var(--primary-text-color)';
+        const attr = hass.states[entity]?.attributes || {};
+        const mode = attr.color_mode;
+        const rgb = attr.rgb_color;
+        const isColor = (mode === 'xy' || mode === 'hs' || mode === 'rgb') &&
+          rgb && !(rgb[0] === 255 && rgb[1] >= 150 && rgb[1] <= 185 && rgb[2] >= 70 && rgb[2] <= 105);
+        return isColor && rgb ? `rgb(${rgb.join(',')})` : 'rgb(255, 167, 88)';
+      })()} !important;
+    }

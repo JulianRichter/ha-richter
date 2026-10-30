@@ -7,3 +7,4 @@ bubble_header_separator:
       font-size: var(--dashboard-header-font-size, 28px);
       font-weight: var(--dashboard-header-font-weight, 500);
     }
+
