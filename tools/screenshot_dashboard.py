@@ -65,7 +65,7 @@ def get_ha_config():
     return ha_url, token
 
 def take_screenshot(
-    dashboard_path="bubble-kiosk-dashboard/Home",
+    dashboard_path="bubble-code-dashboard/Home",
     preset="tablet",
     width=None,
     height=None,
@@ -93,12 +93,18 @@ def take_screenshot(
         viewport_h = height or 1200
         device_scale = scale or 1.0
 
-    # Format URL
+    # Format URL properly with query and hash
     clean_path = dashboard_path.lstrip("/")
-    url = f"{ha_url}/{clean_path}"
-    if kiosk:
-        separator = "&" if "?" in url else "?"
-        url = f"{url}{separator}kiosk"
+    hash_part = None
+    if "#" in clean_path:
+        base_path, hash_part = clean_path.split("#", 1)
+        separator = "&" if "?" in base_path else "?"
+        url = f"{ha_url}/{base_path}{separator}kiosk#{hash_part}" if kiosk else f"{ha_url}/{base_path}#{hash_part}"
+    else:
+        url = f"{ha_url}/{clean_path}"
+        if kiosk:
+            separator = "&" if "?" in url else "?"
+            url = f"{url}{separator}kiosk"
 
     # Default output path
     if not output_file:
@@ -177,6 +183,13 @@ def take_screenshot(
             print(f"⚠️  Note: Initial network idle timed out ({e}), proceeding with render check...")
 
         # Wait for Bubble Card and custom web components to settle animations
+        if hash_part:
+            try:
+                page.evaluate(f"window.location.hash = '{hash_part}'; window.dispatchEvent(new Event('hashchange'));")
+                time.sleep(1.0)
+            except Exception:
+                pass
+
         print(f"⏳ Waiting {wait_sec}s for Bubble Card elements & transitions to settle...")
         time.sleep(wait_sec)
 
@@ -226,8 +239,8 @@ def main():
     )
     parser.add_argument(
         "--path",
-        default="bubble-kiosk-dashboard/Home",
-        help="Dashboard path (e.g. bubble-kiosk-dashboard/Home, lovelace/0)"
+        default="bubble-code-dashboard/Home",
+        help="Dashboard path (e.g. bubble-code-dashboard/Home, lovelace/0)"
     )
     parser.add_argument(
         "--preset",
@@ -240,7 +253,7 @@ def main():
     parser.add_argument("--scale", type=float, help="Device scale factor / DPI (e.g. 1.0, 1.5, 2.0)")
     parser.add_argument("--wait", type=float, default=2.5, help="Wait time in seconds after load (default: 2.5)")
     parser.add_argument("--no-kiosk", action="store_true", help="Disable ?kiosk URL parameter")
-    parser.add_argument("--theme", help="Optional theme override (e.g. tablet_kiosk_theme)")
+    parser.add_argument("--theme", help="Optional theme override (e.g. bubble_code_theme)")
     parser.add_argument("--output", help="Custom output image file path")
     parser.add_argument("--full-page", action="store_true", help="Capture full scrollable page instead of viewport")
     parser.add_argument("--list-presets", action="store_true", help="List available resolution presets")
