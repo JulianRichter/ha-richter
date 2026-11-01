@@ -54,34 +54,8 @@ views:
               tap_action:
                 action: navigate
                 navigation_path: "#bubble_calendar_popup"
-            styles: |
-              /* position button in sidebar */
-              ha-card {
-                padding: 1.5vw 0 0 0 !important;
-                cursor: pointer !important;
-              }
-              .bubble-button-card-container {
-                background-color: rgba(0, 0, 0, 0) !important;
-                border-radius: 0 !important;
-                #height: 2em !important;
-              }
-              .bubble-name-container {
-                margin: 0 3vw !important;
-              }
-
-              /* style text */
-              .time {
-                font-family: SF Text, Roboto;
-                font-size: 56px; # 5.6vw;
-                font-weight: 500;
-                line-height: 56px;
-                #letter-spacing: -0.05vw;
-                color: rgba(255, 255, 255, 0.8);
-              }
-              .time-colon {
-                position: relative;
-                top: -.09em;
-              }
+            modules:
+              - bubble_sidebar_text
 
           - type: custom:bubble-card
             card_type: button
@@ -97,45 +71,8 @@ views:
               tap_action:
                 action: navigate
                 navigation_path: "#bubble_calendar_popup"
-            styles: >
-              /* position button in sidebar */
-
-              ha-card {
-                padding: 0 0 0 0 !important;
-                cursor: pointer !important;
-              }
-
-              .bubble-button-card-container {
-                background-color: rgba(0, 0, 0, 0) !important;
-                border-radius: 0 !important;
-              }
-
-              .bubble-name-container {
-                margin: 0 3vw !important;
-              }
-
-
-              /* style text */
-
-              .date {
-                font-family: SF Display, Roboto;
-                font-size: 18px;
-                font-weight: 700;
-                color: #6a7377;
-                line-height: 21px;
-              }
-
-
-              /* Inline JS to dynamically set height (margin-block-top + header
-              +
-
-              content) */ ${(() => {
-                const fontSize = 18;
-                const lineHeight = 21; 
-                const height = 1*fontSize + lineHeight;
-                const el = this.shadowRoot.querySelector('.bubble-button-card-container');
-                if (el) el.style.height = height + 'px';
-              })()}
+            modules:
+              - bubble_sidebar_text
 
           - type: custom:bubble-card
             card_type: button
@@ -151,40 +88,8 @@ views:
               tap_action:
                 action: navigate
                 navigation_path: "#bubble_weather_popup"
-            styles: |
-              /* position button in sidebar */
-              ha-card {
-                padding: 0 0 0 0 !important;
-              }
-              .bubble-button-card-container {
-                background-color: rgba(0, 0, 0, 0) !important;
-                border-radius: 0 !important;
-                #height: 3em !important;
-              }
-              .bubble-name-container {
-                margin: 0 3vw !important;
-              }
-
-              /* style weather display */
-              .weather-widget {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                align-items: center;
-              }
-              .condition {
-                font-family: SF Display, Roboto;
-                font-size: 16px;
-                font-weight: 400;
-                color: #6a7377;
-              }
-              .temperature {
-                font-family: SF Display, Roboto;
-                font-size: 16px;
-                font-weight: 700;
-              }
-              .weather-icon img {
-                height: 6em;
-              }
+            modules:
+              - bubble_sidebar_text
 
           - type: custom:apexcharts-card
             graph_span: 24h
@@ -370,6 +275,16 @@ views:
 
           - type: custom:bubble-card
             card_type: button
+            entity: sensor.template_tablet_sidebar_greeting
+            show_icon: false
+            show_name: false
+            show_attribute: true
+            attribute: sidebar_html_text
+            modules:
+              - bubble_sidebar_text
+
+          - type: custom:bubble-card
+            card_type: button
             entity: binary_sensor.template_tablet_sidebar_birthday_notification
             show_icon: false
             show_name: false
@@ -404,10 +319,6 @@ views:
                 navigation_path: "#bubble_sensors_offline_popup"
             modules:
               - bubble_sidebar_notification
-            styles: |
-              ha-card {
-                cursor: pointer !important;
-              }
 
           - type: custom:bubble-card
             card_type: button
@@ -486,6 +397,7 @@ views:
                 icon: mdi:dots-horizontal
             modules:
               - vacuum_attention_badge
+              - vacuum_cleaning_motion
             styles: |
               ${(() => {
                 const sIcon = hass.states['select.robi_suction_level']?.attributes?.icon;
@@ -569,6 +481,7 @@ views:
               - room_light_color
               - room_window_badge
               - room_battery_badge
+              - room_motion_badge
 
           - type: custom:bubble-card
             card_type: button
@@ -592,6 +505,7 @@ views:
               - room_light_color
               - room_window_badge
               - room_battery_badge
+              - room_motion_badge
 
           - type: custom:bubble-card
             card_type: button
@@ -615,6 +529,7 @@ views:
               - room_light_color
               - room_window_badge
               - room_battery_badge
+              - room_motion_badge
 
           - type: horizontal-stack
             cards:
@@ -641,6 +556,7 @@ views:
                   - room_light_color
                   - room_window_badge
                   - dishwasher_done_badge
+                  - room_motion_badge
 
               - type: custom:bubble-card
                 card_type: button
@@ -665,6 +581,7 @@ views:
                   - room_light_color
                   - washer_done_badge
                   - room_battery_badge
+                  - room_motion_badge
 
         columns: 1
         view_layout:
@@ -926,14 +843,18 @@ views:
                 card_type: button
                 entity: input_boolean.presence_home
                 name: Home
-                icon: mdi:home-outline
+                icon: mdi:home
                 card_layout: large
+                modules:
+                  - presence_home_motion
               - type: custom:bubble-card
                 card_type: button
                 entity: switch.presence_away
                 name: Away
                 icon: mdi:sleep
                 card_layout: large
+                modules:
+                  - presence_away_motion
         columns: 1
         # Keep buttons tightly stacked and grid cell strictly sized to content
         card_mod:
@@ -965,6 +886,7 @@ views:
             modules:
               - bubble_footer_button
               - vacuum_attention_badge
+              - vacuum_cleaning_motion
             styles: |
               ${(() => {
                 const vac = hass.states['vacuum.robi'];
@@ -999,6 +921,7 @@ views:
                 navigation_path: "#bubble_media_popup"
             modules:
               - bubble_footer_button
+              - media_playing_groove
             styles: |
               ${(() => {
                 const sp = hass.states['media_player.spotify_julian'];
@@ -1091,6 +1014,7 @@ views:
                 }
             modules:
               - bubble_footer_button
+              - tram_departure_motion
             styles: |
               ${(() => {
                 const sKp = hass.states['sensor.augsburg_curtiusstrasse_koenigsplatz'];
@@ -2112,7 +2036,7 @@ views:
                 strokeDashArray: 3
                 padding:
                   left: 6
-                  right: 6
+                  right: 18
                   top: -10
                   bottom: 2
                 xaxis:
@@ -2125,6 +2049,7 @@ views:
                 type: datetime
                 tickAmount: 3
                 labels:
+                  hideOverlappingLabels: false
                   style:
                     colors: "#90a4ae"
                     fontSize: "11px"
@@ -2143,6 +2068,7 @@ views:
                 show: true
                 position: top
                 horizontalAlign: center
+                offsetX: 18
                 fontSize: "11px"
                 fontWeight: 500
                 labels:
@@ -2153,7 +2079,7 @@ views:
                   radius: 12
                   offsetX: -2
                 itemMargin:
-                  horizontal: 12
+                  horizontal: 14
                   vertical: 0
               tooltip:
                 enabled: true
@@ -2174,11 +2100,15 @@ views:
             card_mod:
               style: |
                 ha-card {
-                  background: rgba(26, 26, 26, 0.50) !important;
-                  border-radius: var(--bubble-border-radius, 20px) !important;
-                  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-                  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+                  background: transparent !important;
+                  border: none !important;
+                  box-shadow: none !important;
                   padding: 8px 4px 4px 4px !important;
+                }
+                .apexcharts-legend-series[seriesname="Vorhersage"],
+                .apexcharts-legend-series[seriesname="Aktuell"],
+                .apexcharts-legend-series:has(.apexcharts-legend-text:empty) {
+                  display: none !important;
                 }
                 .apexcharts-xaxis-annotations rect {
                   rx: 4px !important;
@@ -2361,13 +2291,19 @@ views:
 
               | Sensor / Raum | Letzter Kontakt | Offline seit | Batteriestatus |
               | :--- | :--- | :--- | :--- |
+              {% set raw_tracked = state_attr('sensor.tablet_sidebar_offline_sensors_tracker', 'offline_timestamps') | default({}, true) %}
+              {% set tracked = (raw_tracked | from_json) if raw_tracked is string else (raw_tracked if raw_tracked is mapping else {}) %}
               {% for entity_id, batt_id, label, icon in offline %}
               {%- set s = states[entity_id] -%}
-              {%- set diff = as_timestamp(now()) - as_timestamp(s.last_updated) -%}
-              {%- set hours = (diff // 3600) | int -%}
+              {%- set rec_ts = tracked.get(entity_id) if tracked is mapping else none -%}
+              {%- set ts = as_timestamp(rec_ts) if rec_ts else as_timestamp(s.last_updated) -%}
+              {%- set diff = as_timestamp(now()) - ts -%}
+              {%- set days = (diff // 86400) | int -%}
+              {%- set hours = ((diff % 86400) // 3600) | int -%}
               {%- set mins = ((diff % 3600) // 60) | int -%}
+              {%- set elapsed = (days ~ 'd ' ~ hours ~ 'h') if days > 0 else (hours ~ 'h ' ~ mins ~ 'm') -%}
               {%- set batt = states(batt_id) -%}
-              | **{{ label }}** | {{ as_timestamp(s.last_updated) | timestamp_custom('%d.%m. %H:%M') }} | {{ hours }}h {{ mins }}m | {{ batt ~ '%' if batt not in ['unavailable', 'unknown'] else '<span style="color:#ef5350;">nicht erreichbar</span>' }} |
+              | **{{ label }}** | {{ ts | timestamp_custom('%d.%m. %H:%M') }} | {{ elapsed }} | {{ batt ~ '%' if batt not in ['unavailable', 'unknown'] else '<span style="color:#ef5350;">nicht erreichbar</span>' }} |
               {% endfor %}
               {% else %}
               <div style="background: rgba(102, 187, 106, 0.15); border-left: 4px solid #66bb6a; border-radius: 8px; padding: 10px 14px; color: #a5d6a7;">
