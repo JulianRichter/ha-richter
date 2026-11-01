@@ -1,30 +1,100 @@
 template:
   # ====================================================================
-  # Tablet Sidebar - Sensors Offline
+  # Tablet Sidebar - Offline Sensors Tracker & Display
+  # - Persistent master tracker: records and restores timestamps across restarts
+  # - Display binary sensor: renders dynamic HTML with accurate offline elapsed time
   # ====================================================================
+
+  - trigger:
+      - trigger: homeassistant
+        event: start
+      - trigger: state
+        entity_id: &monitored_sensors
+          - binary_sensor.kitchen_window_contact
+          - binary_sensor.living_room_window_contact
+          - binary_sensor.bedroom_window_contact
+          - binary_sensor.baby_room_window_contact
+          - sensor.kitchen_multi_sensor_temperature
+          - sensor.living_room_multi_sensor_temperature
+          - sensor.bedroom_multi_sensor_temperature
+          - sensor.baby_room_multi_sensor_temperature
+          - sensor.bathroom_multi_sensor_temperature
+          - sensor.garden_multi_sensor_temperature
+          - binary_sensor.kitchen_motion_sensor_occupancy
+          - binary_sensor.living_room_motion_sensor_occupancy
+          - binary_sensor.bedroom_motion_sensor_left_occupancy
+          - binary_sensor.bedroom_motion_sensor_right_occupancy
+          - binary_sensor.baby_room_motion_sensor_occupancy
+          - binary_sensor.bathroom_motion_sensor_occupancy
+          - binary_sensor.bathroom_shower_motion_sensor_occupancy
+      - trigger: event
+        event_type: tablet_sidebar_set_offline_sensor
+    sensor:
+      - name: "Tablet Sidebar - Offline Sensors Tracker"
+        unique_id: tablet_sidebar_offline_sensors_tracker
+        icon: mdi:clock-alert-outline
+        state: >
+          {% set tracked = this.attributes.get('offline_timestamps') if this is defined and this.attributes is defined else {} %}
+          {% set current = (tracked | from_json) if tracked is string else (tracked if tracked is mapping else {}) %}
+          {{ current | count }}
+        attributes:
+          offline_timestamps: >
+            {% set raw = this.attributes.get('offline_timestamps') if this is defined and this.attributes is defined else {} %}
+            {% set current = (raw | from_json) if raw is string else (raw if raw is mapping else {}) %}
+            {% set known_history = {
+              'binary_sensor.kitchen_window_contact': '2026-09-13T13:52:33.413Z',
+              'sensor.garden_multi_sensor_temperature': '2026-10-13T19:48:45.552Z',
+              'binary_sensor.bedroom_motion_sensor_left_occupancy': '2026-10-13T19:46:41.837Z',
+              'binary_sensor.bedroom_motion_sensor_right_occupancy': '2026-09-25T16:40:41.811Z',
+              'binary_sensor.bathroom_motion_sensor_occupancy': '2026-10-05T21:41:01.470Z'
+            } %}
+            {% if trigger is not defined or trigger.platform == 'homeassistant' or (trigger.platform == 'event' and not trigger.event.data.get('entity_id')) %}
+              {# Seed known history on first run or start if not yet present #}
+              {% set ns = namespace(res=current) %}
+              {% for eid, ts in known_history.items() %}
+                {% if is_state(eid, 'unavailable') and eid not in ns.res %}
+                  {% set ns.res = dict(ns.res, **{eid: ts}) %}
+                {% endif %}
+              {% endfor %}
+              {{ ns.res | to_json }}
+            {% elif trigger.platform == 'event' %}
+              {% set eid = trigger.event.data.get('entity_id') %}
+              {% set ts = trigger.event.data.get('timestamp', now().isoformat()) %}
+              {% if eid %}
+                {{ dict(current, **{eid: ts}) | to_json }}
+              {% else %}
+                {{ current | to_json }}
+              {% endif %}
+            {% elif trigger.platform == 'state' %}
+              {% set eid = trigger.entity_id %}
+              {% if trigger.to_state.state == 'unavailable' %}
+                {% if trigger.from_state is not none and trigger.from_state.state not in ['unavailable', 'unknown'] %}
+                  {# Fresh transition to unavailable from a working state #}
+                  {{ dict(current, **{eid: now().isoformat()}) | to_json }}
+                {% elif eid in current %}
+                  {# Retain already tracked timestamp across restart #}
+                  {{ current | to_json }}
+                {% elif eid in known_history %}
+                  {# Seed from known history if missing #}
+                  {{ dict(current, **{eid: known_history[eid]}) | to_json }}
+                {% else %}
+                  {{ dict(current, **{eid: now().isoformat()}) | to_json }}
+                {% endif %}
+              {% elif trigger.to_state.state not in ['unavailable', 'unknown'] %}
+                {# Restored to working state: remove from tracker #}
+                {{ dict(current.items() | rejectattr('0', 'eq', eid)) | to_json }}
+              {% else %}
+                {{ current | to_json }}
+              {% endif %}
+            {% else %}
+              {{ current | to_json }}
+            {% endif %}
 
   # Monitor offline sensors for tablet dashboard sidebar
   - binary_sensor:
       - unique_id: tablet_sidebar_sensors_offline
         variables:
-          entities:
-            - binary_sensor.kitchen_window_contact
-            - binary_sensor.living_room_window_contact
-            - binary_sensor.bedroom_window_contact
-            - binary_sensor.baby_room_window_contact
-            - sensor.kitchen_multi_sensor_temperature
-            - sensor.living_room_multi_sensor_temperature
-            - sensor.bedroom_multi_sensor_temperature
-            - sensor.baby_room_multi_sensor_temperature
-            - sensor.bathroom_multi_sensor_temperature
-            - sensor.garden_multi_sensor_temperature
-            - binary_sensor.kitchen_motion_sensor_occupancy
-            - binary_sensor.living_room_motion_sensor_occupancy
-            - binary_sensor.bedroom_motion_sensor_left_occupancy
-            - binary_sensor.bedroom_motion_sensor_right_occupancy
-            - binary_sensor.baby_room_motion_sensor_occupancy
-            - binary_sensor.bathroom_motion_sensor_occupancy
-            - binary_sensor.bathroom_shower_motion_sensor_occupancy
+          entities: *monitored_sensors
         state: >
           {{ 'on' if entities | select('is_state', 'unavailable') | list | count > 0 else 'off' }}
         attributes:
@@ -32,15 +102,18 @@ template:
             {{ entities | select('is_state', 'unavailable') | list | count }}
           sidebar_html_text: >-
             {%- set offline = entities | select('is_state', 'unavailable') | list -%}
+            {%- set raw_tracked = state_attr('sensor.tablet_sidebar_offline_sensors_tracker', 'offline_timestamps') | default({}, true) -%}
+            {%- set tracked = (raw_tracked | from_json) if raw_tracked is string else (raw_tracked if raw_tracked is mapping else {}) -%}
 
             {# Only show block if at least one sensor is offline #}
             {%- if offline | count > 0 -%}
             <p><span style="display: block; font-weight: 500; color: #94a3b8; margin: 12px 0 4px 0;">Sensor offline:</span>
             {%- for sensor in offline -%}
 
-              {# Compute time since last update #}
+              {# Compute time since last update (preferring persistent tracker) #}
               {%- set time_now     = as_timestamp(now()) -%}
-              {%- set time_changed = as_timestamp(states[sensor].last_updated) -%}
+              {%- set recorded_ts  = tracked.get(sensor) if tracked is mapping else none -%}
+              {%- set time_changed = as_timestamp(recorded_ts) if recorded_ts else as_timestamp(states[sensor].last_updated) -%}
               {%- set time_diff    = time_now - time_changed -%}
               {%- set m            = (time_diff / 60) | int -%}
 

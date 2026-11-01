@@ -10,6 +10,7 @@ secrets.yaml
 .google.token*
 .ha_token*
 ip_bans.yaml
+screenshots/
 dashboards/screenshots/
 
 # 2. Home Assistant Internal Storage (Contains Auth Tokens & Integrations Data)

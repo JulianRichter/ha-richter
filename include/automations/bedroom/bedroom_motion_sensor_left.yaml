@@ -78,12 +78,9 @@ automation:
                               - condition: state
                                 entity_id: input_boolean.presence_home
                                 state: "off"
-                              # Only turn on if bedside lamp is off AND sphere lamp is off
+                              # Only turn on if bedside lamp is off
                               - condition: state
                                 entity_id: light.bedroom_light_left
-                                state: "off"
-                              - condition: state
-                                entity_id: light.bedroom_light_sphere
                                 state: "off"
                             sequence:
                               - action: light.turn_on
@@ -103,10 +100,7 @@ automation:
                               - condition: state
                                 entity_id: input_boolean.presence_home
                                 state: "on"
-                              # Sphere lamp must be off, and bedside lamp off or recovering from fade
-                              - condition: state
-                                entity_id: light.bedroom_light_sphere
-                                state: "off"
+                              # Bedside lamp off or recovering from fade
                               - condition: template
                                 value_template: >-
                                   {% set b = state_attr('light.bedroom_light_left', 'brightness') | default(0, true) | int(0) %}

@@ -1,0 +1,60 @@
+template:
+  # ====================================================================
+  # Tablet Sidebar - Welcome Greeting
+  # - Displays time-contextual welcome greeting with fitting emoji
+  # ====================================================================
+
+  - sensor:
+      - name: "Tablet Sidebar - Greeting"
+        unique_id: tablet_sidebar_greeting
+        state: >
+          {% set h = now().hour %}
+          {% set is_weekend = now().weekday() in [5, 6] %}
+          {% if h >= 5 and h < 11 %}
+            {% if is_weekend and h >= 8 %}
+              Schönes Wochenende
+            {% else %}
+              Guten Morgen
+            {% endif %}
+          {% elif h >= 11 and h < 14 %}
+            Guten Tag
+          {% elif h >= 14 and h < 18 %}
+            Schönen Nachmittag
+          {% elif h >= 18 and h < 22 %}
+            Guten Abend
+          {% else %}
+            Gute Nacht
+          {% endif %}
+        attributes:
+          sidebar_html_text: >-
+            {% set h = now().hour %}
+            {% set m = now().minute %}
+            {% set is_weekend = now().weekday() in [5, 6] %}
+            {% if h >= 5 and (h < 8 or (h == 8 and m < 30)) %}
+              {% set text = 'Guten Morgen' %}
+              {% set emoji = '🥱' %}
+            {% elif (h == 8 and m >= 30) or (h > 8 and h < 11) %}
+              {% if is_weekend %}
+                {% set text = 'Schönes Wochenende' %}
+                {% set emoji = '😊' %}
+              {% else %}
+                {% set text = 'Guten Morgen' %}
+                {% set emoji = '😊' %}
+              {% endif %}
+            {% elif h >= 11 and h < 14 %}
+              {% set text = 'Guten Tag' %}
+              {% set emoji = '🙂' %}
+            {% elif h >= 14 and h < 18 %}
+              {% set text = 'Schönen Nachmittag' %}
+              {% set emoji = '😌' %}
+            {% elif h >= 18 and h < 22 %}
+              {% set text = 'Guten Abend' %}
+              {% set emoji = '☺️' %}
+            {% elif h >= 22 %}
+              {% set text = 'Gute Nacht' %}
+              {% set emoji = '🥱' %}
+            {% else %}
+              {% set text = 'Gute Nacht' %}
+              {% set emoji = '😴' %}
+            {% endif %}
+            <div class="sidebar-greeting"><span class="greeting-text">{{ text }}</span>&nbsp;<span class="greeting-emoji">{{ emoji }}</span></div>

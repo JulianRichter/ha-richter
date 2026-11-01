@@ -40,8 +40,9 @@ template:
               {%- set time_changed = as_timestamp(states[sensor].last_updated) -%}
               {%- set diff = time_now - time_changed -%}
               {%- set m = (diff / 60) | int -%}
+              {%- set s = (diff % 60) | int -%}
               {%- if m < 60 -%}
-                {%- set time_str = '{:02} min'.format(m) -%}
+                {%- set time_str = '{:02}:{:02} min'.format(m, s) -%}
               {%- else -%}
                 {%- set h = (m / 60) | int -%}
                 {%- set rm = (m - 60 * h) | int -%}
@@ -54,20 +55,23 @@ template:
                 | replace('Kinderzimmer', 'Kinderz.')
                 | replace('Wohnzimmer', 'Wohnz.')
               -%}
+              {%- set smiley = '' -%}
+              {%- set smiley_title = '' -%}
               {%- if m >= 25 -%}
-                {%- set smiley = '🥶' -%}
-                {%- set smiley_title = 'Zu lange offen (Kälteverlust)' -%}
+                {%- set time_html = '<span style="color: #ffa726;">' ~ time_str ~ '</span>' -%}
               {%- elif deriv <= -0.2 -%}
-                {%- set smiley = '😊' -%}
-                {%- set smiley_title = 'Lüftet gut (Feuchte sinkt)' -%}
+                {%- set time_html = time_str -%}
+                {%- set smiley = '🌬️' -%}
+                {%- set smiley_title = 'Lüftet aktiv (Feuchte sinkt)' -%}
               {%- elif deriv >= 0.2 -%}
-                {%- set smiley = '😅' -%}
+                {%- set time_html = time_str -%}
+                {%- set smiley = '🌧️' -%}
                 {%- set smiley_title = 'Feuchte steigt' -%}
               {%- else -%}
-                {%- set smiley = '😌' -%}
-                {%- set smiley_title = 'Frisch gelüftet (Optimal)' -%}
+                {%- set time_html = time_str -%}
               {%- endif -%}
-              <span style="display: block; line-height: 22px;">- {{ name }} <span style="font-variant-numeric: tabular-nums; opacity: 0.75; font-size: 13px; margin-left: 4px;">· {%- if m >= 25 -%}<span style="color: #ffa726;">{{ time_str }}</span>{%- else -%}{{ time_str }}{%- endif -%}&nbsp;<span style="font-size: 15px; vertical-align: -1px;" title="{{ smiley_title }}">{{ smiley }}</span></span></span>
+              {%- set icon_html = ('&nbsp;<span style="font-size: 14px; vertical-align: -1px;" title="' ~ smiley_title ~ '">' ~ smiley ~ '</span>') if smiley else '' -%}
+              <span style="display: block; line-height: 22px;">- {{ name }} <span style="font-variant-numeric: tabular-nums; opacity: 0.75; font-size: 13px; margin-left: 4px;">· {{ time_html }}{{ icon_html }}</span></span>
             {%- endfor -%}
             </p>
             {%- endif -%}
