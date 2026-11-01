@@ -1,0 +1,34 @@
+presence_away_motion:
+  name: "Presence Away Motion"
+  description: "Dynamic sleep icon switching with tranquil Apple-style slumber breathing when Away/Sleep is active"
+  version: "1.0"
+  code: |
+    ${(() => {
+      const el = card.querySelector('.bubble-icon');
+      if (el) {
+        if (state === 'on') el.setAttribute('icon', 'mdi:sleep');
+        else el.setAttribute('icon', 'mdi:sleep-off');
+      }
+    })()}
+    .bubble-icon {
+      transform-origin: center center;
+    }
+    .is-on .bubble-icon-container {
+      box-shadow: 0 0 12px rgba(99, 102, 241, 0.35) !important;
+      transition: box-shadow 0.4s ease !important;
+    }
+    .is-on .bubble-icon {
+      animation: bubble-slumber-breathe 4.5s cubic-bezier(0.4, 0, 0.2, 1) infinite !important;
+    }
+    @keyframes bubble-slumber-breathe {
+      0%, 100% {
+        transform: scale(0.94);
+        opacity: 0.65;
+      }
+      50% {
+        transform: scale(1.08);
+        opacity: 1;
+        filter: drop-shadow(0 0 6px rgba(130, 170, 255, 0.5));
+      }
+    }
+

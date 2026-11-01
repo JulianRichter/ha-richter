@@ -1,7 +1,7 @@
 dishwasher_done_badge:
   name: "Dishwasher Done Badge"
-  description: "Displays a dishwasher badge on the kitchen card icon when cycle finishes and is waiting to be unloaded"
-  version: "1.1"
+  description: "Displays an animated attention-wiggling dishwasher badge on the kitchen card icon when cycle finishes and is waiting to be unloaded"
+  version: "1.2"
   editor:
     - name: position
       label: "Position"
@@ -50,4 +50,29 @@ dishwasher_done_badge:
       background-repeat: no-repeat;
       z-index: 2;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+      transform-origin: center center;
+      animation: bubble-badge-wiggle 3.5s ease-in-out infinite;
+    }
+    @keyframes bubble-badge-wiggle {
+      0%, 100% {
+        transform: rotate(0deg) scale(1);
+      }
+      2% {
+        transform: rotate(-14deg) scale(1.1);
+      }
+      4% {
+        transform: rotate(14deg) scale(1.1);
+      }
+      6% {
+        transform: rotate(-10deg) scale(1.06);
+      }
+      8% {
+        transform: rotate(10deg) scale(1.06);
+      }
+      10% {
+        transform: rotate(0deg) scale(1);
+      }
+      85% {
+        transform: rotate(0deg) scale(1);
+      }
     }

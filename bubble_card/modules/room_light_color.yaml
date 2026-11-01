@@ -1,7 +1,7 @@
 room_light_color:
-  name: "Room Light Color"
-  description: "Standardizes warm amber illumination for standard lighting while preserving active RGB scenes"
-  version: "1.0"
+  name: "Room Light Color & Ignition Animation"
+  description: "Standardizes warm amber illumination for standard lighting with smooth bulb ignition/extinguish animations on toggle"
+  version: "1.1"
   code: |
     .bubble-button-background {
       background-color: ${(() => {
@@ -13,6 +13,13 @@ room_light_color:
           rgb && !(rgb[0] === 255 && rgb[1] >= 150 && rgb[1] <= 185 && rgb[2] >= 70 && rgb[2] <= 105);
         return isColor && rgb ? `rgb(${rgb.join(',')})` : 'rgb(255, 167, 88)';
       })()} !important;
+      transition: background-color 0.4s ease !important;
+    }
+    .bubble-icon-container {
+      transition: box-shadow 0.4s ease, transform 0.3s ease !important;
+    }
+    .is-on .bubble-icon-container {
+      box-shadow: 0 0 12px rgba(255, 175, 88, 0.35) !important;
     }
     .bubble-icon {
       color: ${(() => {
@@ -24,4 +31,35 @@ room_light_color:
           rgb && !(rgb[0] === 255 && rgb[1] >= 150 && rgb[1] <= 185 && rgb[2] >= 70 && rgb[2] <= 105);
         return isColor && rgb ? `rgb(${rgb.join(',')})` : 'rgb(255, 167, 88)';
       })()} !important;
+      transform-origin: center center;
+    }
+    .is-on .bubble-icon {
+      animation: bubble-light-ignite 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
+    }
+    .is-off .bubble-icon {
+      animation: bubble-light-extinguish 0.35s ease-out forwards !important;
+    }
+    @keyframes bubble-light-ignite {
+      0% {
+        transform: scale(0.8);
+        filter: brightness(0.7);
+      }
+      60% {
+        transform: scale(1.18);
+        filter: brightness(1.3) drop-shadow(0 0 6px rgba(255, 180, 90, 0.8));
+      }
+      100% {
+        transform: scale(1);
+        filter: brightness(1);
+      }
+    }
+    @keyframes bubble-light-extinguish {
+      0% {
+        transform: scale(1.1);
+        filter: brightness(1.2);
+      }
+      100% {
+        transform: scale(1);
+        filter: brightness(1);
+      }
     }

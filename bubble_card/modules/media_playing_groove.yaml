@@ -1,0 +1,35 @@
+media_playing_groove:
+  name: "Media Playing Groove"
+  description: "Dancing music note animation with rhythmic left/right bounce and rotation during playback"
+  version: "1.0"
+  code: |
+    .bubble-icon {
+      transform-origin: center center;
+      animation: ${(() => {
+        const isPlaying = state === 'playing' ||
+          hass.states['media_player.spotify_julian']?.state === 'playing' ||
+          ['living_room', 'kitchen', 'bedroom', 'bathroom', 'baby_room', 'chromecast'].some(s => hass.states['media_player.' + s]?.state === 'playing');
+        return isPlaying ? 'bubble-music-groove 1.6s ease-in-out infinite' : 'none';
+      })()} !important;
+    }
+    @keyframes bubble-music-groove {
+      0% {
+        transform: translateY(0) rotate(0deg) scale(1);
+      }
+      20% {
+        transform: translateY(-3px) rotate(-12deg) scale(1.08);
+      }
+      40% {
+        transform: translateY(0) rotate(0deg) scale(1);
+      }
+      60% {
+        transform: translateY(-3px) rotate(12deg) scale(1.08);
+      }
+      80% {
+        transform: translateY(0) rotate(0deg) scale(1);
+      }
+      100% {
+        transform: translateY(0) rotate(0deg) scale(1);
+      }
+    }
+

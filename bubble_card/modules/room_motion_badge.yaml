@@ -1,0 +1,96 @@
+room_motion_badge:
+  name: "Room Motion Badge"
+  description: "Displays a discreet, minimalist motion indicator dot at the bottom center of the room icon when occupancy is detected"
+  version: "2.0"
+  editor:
+    - name: position
+      label: "Position"
+      default: "bottom-center"
+      selector:
+        select:
+          options:
+            - label: "Bottom Center"
+              value: "bottom-center"
+            - label: "Bottom Left"
+              value: "bottom-left"
+            - label: "Bottom Right"
+              value: "bottom-right"
+            - label: "Top Center"
+              value: "top-center"
+  code: |
+    .bubble-icon-container {
+      overflow: visible !important;
+    }
+    .bubble-motion-dot {
+      position: absolute !important;
+      ${(() => {
+        const raw = this.config?.room_motion_badge?.position ?? 'bottom-center';
+        const pos = String(raw).toLowerCase().replace(/[\s_]+/g, '-');
+        const map = {
+          'bottom-center': 'bottom: 3px; left: 50%; transform: translateX(-50%);',
+          'bottom-left': 'bottom: 3px; left: 6px;',
+          'bottom-right': 'bottom: 3px; right: 6px;',
+          'top-center': 'top: 3px; left: 50%; transform: translateX(-50%);'
+        };
+        return map[pos] || map['bottom-center'];
+      })()}
+      width: 6px !important;
+      height: 6px !important;
+      border-radius: 50% !important;
+      background-color: #818cf8 !important;
+      box-shadow: 0 0 0 1.5px rgba(0, 0, 0, 0.4), 0 0 5px rgba(129, 140, 248, 0.9) !important;
+      z-index: 2 !important;
+      pointer-events: none !important;
+    }
+    ${(() => {
+      // 1. Clean up any previous dot in .bubble-state
+      const stateEl = card?.querySelector('.bubble-state');
+      const stateDot = stateEl?.querySelector('.bubble-motion-dot');
+      if (stateDot) stateDot.remove();
+
+      // 2. Clean up legacy badge if any
+      const legacy = card?.querySelector('.bubble-motion-badge');
+      if (legacy) legacy.remove();
+
+      // 3. Multi-sensor room occupancy check
+      const room = entity.replace('light.', '').replace('_group', '').replace('_light', '');
+      const multiMap = {
+        bathroom: [
+          'binary_sensor.bathroom_motion_sensor_occupancy',
+          'binary_sensor.bathroom_shower_motion_sensor_occupancy'
+        ],
+        bedroom: [
+          'binary_sensor.bedroom_motion_sensor_left_occupancy',
+          'binary_sensor.bedroom_motion_sensor_right_occupancy'
+        ],
+        living_room: ['binary_sensor.living_room_motion_sensor_occupancy'],
+        baby_room: ['binary_sensor.baby_room_motion_sensor_occupancy'],
+        kitchen: ['binary_sensor.kitchen_motion_sensor_occupancy']
+      };
+      const configuredEntity = this.config?.room_motion_badge?.entity;
+      let isMotion = false;
+      if (configuredEntity) {
+        isMotion = hass.states[configuredEntity]?.state === 'on';
+      } else {
+        const sensors = multiMap[room] || Object.keys(hass.states).filter(k =>
+          k.startsWith('binary_sensor.' + room) && k.includes('motion') && k.endsWith('_occupancy')
+        );
+        isMotion = sensors.some(s => hass.states[s]?.state === 'on');
+      }
+
+      const iconContainer = card?.querySelector('.bubble-icon-container');
+      const iconDot = iconContainer?.querySelector('.bubble-motion-dot');
+
+      if (!isMotion) {
+        if (iconDot) iconDot.remove();
+        return '';
+      }
+
+      if (iconContainer && !iconDot) {
+        const dot = document.createElement('div');
+        dot.className = 'bubble-motion-dot';
+        dot.setAttribute('title', 'Bewegung erkannt');
+        iconContainer.appendChild(dot);
+      }
+      return '';
+    })()}

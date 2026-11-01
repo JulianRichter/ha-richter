@@ -1,0 +1,33 @@
+presence_home_motion:
+  name: "Presence Home Motion"
+  description: "Dynamic home icon switching with warm welcome spring and hearth glow when Home is active"
+  version: "1.0"
+  code: |
+    ${(() => {
+      const el = card.querySelector('.bubble-icon');
+      if (el) {
+        if (state === 'on') el.setAttribute('icon', 'mdi:home');
+        else el.setAttribute('icon', 'mdi:home-outline');
+      }
+    })()}
+    .bubble-icon {
+      transform-origin: center center;
+    }
+    .is-on .bubble-icon-container {
+      box-shadow: 0 0 14px rgba(80, 110, 172, 0.4) !important;
+      transition: box-shadow 0.4s ease !important;
+    }
+    .is-on .bubble-icon {
+      animation: bubble-home-breathe 5s ease-in-out infinite !important;
+    }
+    @keyframes bubble-home-breathe {
+      0%, 100% {
+        transform: scale(1);
+        filter: brightness(1);
+      }
+      50% {
+        transform: scale(1.07);
+        filter: brightness(1.15);
+      }
+    }
+

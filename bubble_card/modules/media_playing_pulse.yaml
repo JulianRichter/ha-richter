@@ -1,0 +1,61 @@
+media_playing_pulse:
+  name: "Media Playing Pulse"
+  description: "Displays an acoustic sound wave pulse and rhythmic beat on the media icon during playback"
+  version: "1.0"
+  code: |
+    .bubble-icon-container {
+      overflow: visible !important;
+      position: relative;
+    }
+    .bubble-icon-container::before {
+      content: '';
+      display: ${(() => {
+        const isPlaying = state === 'playing' ||
+          hass.states['media_player.spotify_julian']?.state === 'playing' ||
+          ['living_room', 'kitchen', 'bedroom', 'bathroom', 'baby_room', 'chromecast'].some(s => hass.states['media_player.' + s]?.state === 'playing');
+        return isPlaying ? 'block' : 'none';
+      })()} !important;
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      pointer-events: none;
+      border: 2px solid rgba(30, 215, 96, 0.85);
+      box-shadow: 0 0 10px rgba(30, 215, 96, 0.4);
+      animation: bubble-media-pulse 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+    }
+    .bubble-icon {
+      color: ${(() => {
+        const isPlaying = state === 'playing' ||
+          hass.states['media_player.spotify_julian']?.state === 'playing' ||
+          ['living_room', 'kitchen', 'bedroom', 'bathroom', 'baby_room', 'chromecast'].some(s => hass.states['media_player.' + s]?.state === 'playing');
+        return isPlaying ? '#1db954' : 'inherit';
+      })()} !important;
+      animation: ${(() => {
+        const isPlaying = state === 'playing' ||
+          hass.states['media_player.spotify_julian']?.state === 'playing' ||
+          ['living_room', 'kitchen', 'bedroom', 'bathroom', 'baby_room', 'chromecast'].some(s => hass.states['media_player.' + s]?.state === 'playing');
+        return isPlaying ? 'bubble-icon-beat 1.8s ease-in-out infinite' : 'none';
+      })()} !important;
+    }
+    @keyframes bubble-media-pulse {
+      0% {
+        transform: scale(0.92);
+        opacity: 0.9;
+      }
+      60% {
+        transform: scale(1.38);
+        opacity: 0;
+      }
+      100% {
+        transform: scale(1.38);
+        opacity: 0;
+      }
+    }
+    @keyframes bubble-icon-beat {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.12);
+      }
+    }

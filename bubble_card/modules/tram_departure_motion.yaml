@@ -1,0 +1,33 @@
+tram_departure_motion:
+  name: "Tram Departure Motion"
+  description: "Gentle track rolling motion when tram departure is within 5 minutes"
+  version: "1.0"
+  code: |
+    .bubble-icon {
+      animation: ${(() => {
+        const sKp = hass.states['sensor.augsburg_curtiusstrasse_koenigsplatz'];
+        const sLh = hass.states['sensor.augsburg_curtiusstrasse_lechh_n_ostfriedh'];
+        const getMin = (s) => {
+          if (!s) return 999;
+          if (s.attributes && s.attributes.next_departure_minutes != null) return parseInt(s.attributes.next_departure_minutes, 10);
+          if (s.attributes && s.attributes.departures && s.attributes.departures[0]) return parseInt(s.attributes.departures[0].minutes_until_departure, 10);
+          const parsed = parseInt(s.state, 10);
+          return isNaN(parsed) ? 999 : parsed;
+        };
+        const minKp = getMin(sKp);
+        const minLh = getMin(sLh);
+        const nextMin = Math.min(minKp, minLh);
+        if (nextMin <= 2) return 'bubble-tram-glide 1.2s ease-in-out infinite';
+        if (nextMin <= 5) return 'bubble-tram-glide 1.8s ease-in-out infinite';
+        return 'none';
+      })()} !important;
+    }
+    @keyframes bubble-tram-glide {
+      0%, 100% {
+        transform: translateX(-2.5px);
+      }
+      50% {
+        transform: translateX(2.5px);
+      }
+    }
+

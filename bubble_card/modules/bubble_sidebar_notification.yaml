@@ -44,6 +44,6 @@ bubble_sidebar_notification:
       if (!card.closest('hui-card')) {
         requestAnimationFrame(updateParent);
       }
-      return isVisible ? '' : ':host { display: none !important; } ha-card { display: none !important; }';
+      return isVisible ? (entity?.includes('sensors_offline') ? 'ha-card { cursor: pointer !important; }' : '') : ':host { display: none !important; } ha-card { display: none !important; }';
     })()}
 

@@ -1,0 +1,42 @@
+vacuum_cleaning_motion:
+  name: "Vacuum Cleaning Motion"
+  description: "Sweeping vacuum cleaning motion (forward-left, back, forward-right, back) while cleaning"
+  version: "1.0"
+  code: |
+    .bubble-icon {
+      animation: ${(() => {
+        const v = hass.states[entity] || hass.states['vacuum.robi'];
+        if (!v) return 'none';
+        const isCleaning = v.state === 'cleaning' || v.attributes?.running === true || v.attributes?.status === 'cleaning';
+        const isReturning = v.state === 'returning' || v.attributes?.returning === true;
+        if (isCleaning) return 'bubble-vacuum-sweep 2.4s ease-in-out infinite';
+        if (isReturning) return 'bubble-vacuum-return 2.2s ease-in-out infinite';
+        return 'none';
+      })()} !important;
+    }
+    @keyframes bubble-vacuum-sweep {
+      0% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+      25% {
+        transform: translate(-3.5px, -3.5px) rotate(-14deg);
+      }
+      50% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+      75% {
+        transform: translate(3.5px, -3.5px) rotate(14deg);
+      }
+      100% {
+        transform: translate(0, 0) rotate(0deg);
+      }
+    }
+    @keyframes bubble-vacuum-return {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(3px) scale(0.92);
+      }
+    }
+

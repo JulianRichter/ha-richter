@@ -1,7 +1,7 @@
 room_window_badge:
   name: "Room Window Badge"
-  description: "Displays an open-window badge on the room icon when a window contact is open"
-  version: "1.1"
+  description: "Displays an open-window badge with gentle breeze drift when a window contact is open"
+  version: "1.2"
   editor:
     - name: position
       label: "Position"
@@ -50,4 +50,20 @@ room_window_badge:
       background-repeat: no-repeat;
       z-index: 2;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+      transform-origin: center center;
+      animation: bubble-window-breeze 4s ease-in-out infinite;
+    }
+    @keyframes bubble-window-breeze {
+      0%, 100% {
+        transform: rotate(0deg) translateY(0);
+      }
+      25% {
+        transform: rotate(-7deg) translateY(-1px);
+      }
+      50% {
+        transform: rotate(0deg) translateY(0);
+      }
+      75% {
+        transform: rotate(7deg) translateY(-1px);
+      }
     }

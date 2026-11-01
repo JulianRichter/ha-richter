@@ -1,0 +1,148 @@
+bubble_sidebar_text:
+  name: "Sidebar Text Display"
+  description: "Standardizes transparent background, 3vw sidebar padding, typography, and container heights across all sidebar text cards"
+  version: "1.0"
+  code: |
+    ha-card {
+      padding: 0 !important;
+      background-color: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+    .bubble-button-card-container {
+      background-color: transparent !important;
+      border-radius: 0 !important;
+    }
+    .bubble-button-background {
+      background-color: transparent !important;
+    }
+    .bubble-name-container {
+      margin: 0 3vw !important;
+    }
+
+    /* Base Typography */
+    * {
+      font-family: SF Display, Roboto, sans-serif;
+    }
+
+    /* Time block */
+    .time {
+      font-family: SF Text, Roboto, sans-serif;
+      font-size: 56px;
+      font-weight: 500;
+      line-height: 56px;
+      color: rgba(255, 255, 255, 0.8);
+    }
+    .time-colon {
+      position: relative;
+      top: -0.09em;
+    }
+
+    /* Date block */
+    .date {
+      font-size: 18px;
+      font-weight: 700;
+      color: #6a7377;
+      line-height: 21px;
+    }
+
+    /* Weather display */
+    .weather-widget {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: center;
+    }
+    .condition {
+      font-size: 16px;
+      font-weight: 400;
+      color: #6a7377;
+    }
+    .temperature {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .weather-icon img {
+      height: 6em;
+    }
+
+    /* Greeting block */
+    .sidebar-greeting {
+      display: flex;
+      align-items: center;
+      white-space: nowrap !important;
+      font-size: 16px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.85);
+      letter-spacing: 0.2px;
+      line-height: 28px;
+    }
+    .greeting-emoji {
+      font-size: 17px;
+      vertical-align: -1px;
+      margin-left: 2px;
+    }
+
+    /* Notifications typography */
+    p {
+      font-size: 15px;
+      font-weight: 400;
+      color: #6a7377;
+      margin: 0 !important;
+      padding: 0 !important;
+      line-height: 22px;
+    }
+
+    /* Dynamic heights and contextual card margins */
+    ${(() => {
+      if (entity?.includes('greeting')) {
+        return `
+          ha-card {
+            margin-top: 16px !important;
+            cursor: default !important;
+          }
+          .bubble-button-card-container {
+            height: 28px !important;
+          }
+        `;
+      }
+      if (entity?.includes('time')) {
+        return `
+          ha-card {
+            padding-top: 1.5vw !important;
+            cursor: pointer !important;
+          }
+          .bubble-button-card-container {
+            height: 56px !important;
+          }
+        `;
+      }
+      if (entity?.includes('date')) {
+        return `
+          ha-card {
+            cursor: pointer !important;
+          }
+          .bubble-button-card-container {
+            height: 39px !important;
+          }
+        `;
+      }
+      if (entity?.includes('weather') && !entity?.includes('mock')) {
+        return `
+          ha-card {
+            cursor: pointer !important;
+          }
+          .bubble-button-card-container {
+            height: 56px !important;
+          }
+        `;
+      }
+      if (entity?.includes('sensors_offline')) {
+        return `
+          ha-card {
+            cursor: pointer !important;
+          }
+        `;
+      }
+      return '';
+    })()}
+
