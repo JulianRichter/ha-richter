@@ -1,0 +1,94 @@
+script:
+  # ====================================================================
+  # Device - High Accuracy GPS
+  # - Manages high-accuracy GPS tracking and on-demand location updates
+  # - Toggles Android foreground high-accuracy service and sends iOS silent location pings
+  # ====================================================================
+
+  device_high_accuracy_gps:
+    alias: "Device - High Accuracy GPS"
+    mode: parallel
+    icon: mdi:crosshairs-gps
+
+    fields:
+      person:
+        name: Person
+        description: "Target person ('Julian', 'Xingyang', or 'both')."
+        required: false
+        default: "both"
+        selector:
+          select:
+            options:
+              - "Julian"
+              - "Xingyang"
+              - "both"
+      command:
+        name: Command
+        description: "Action to perform ('turn_on', 'turn_off', or 'update')."
+        required: false
+        default: "turn_on"
+        selector:
+          select:
+            options:
+              - "turn_on"
+              - "turn_off"
+              - "update"
+
+    sequence:
+      # ------------------------------------------------------------------
+      # Julian (Android): toggle high-accuracy service or request update
+      # ------------------------------------------------------------------
+      - if:
+          - condition: template
+            value_template: "{{ (person | lower) in ['julian', 'both'] }}"
+        then:
+          - choose:
+              # Enable high-accuracy foreground service on Android
+              - conditions:
+                  - condition: template
+                    value_template: "{{ command == 'turn_on' }}"
+                sequence:
+                  - action: notify.mobile_app_julian
+                    data:
+                      message: command_high_accuracy_mode
+                      data:
+                        command: turn_on
+
+              # Disable high-accuracy foreground service on Android
+              - conditions:
+                  - condition: template
+                    value_template: "{{ command == 'turn_off' }}"
+                sequence:
+                  - action: notify.mobile_app_julian
+                    data:
+                      message: command_high_accuracy_mode
+                      data:
+                        command: turn_off
+
+              # Send one-shot silent location request to Android
+              - conditions:
+                  - condition: template
+                    value_template: "{{ command == 'update' }}"
+                sequence:
+                  - action: notify.mobile_app_julian
+                    data:
+                      message: request_location_update
+
+      # ------------------------------------------------------------------
+      # Xingyang (iOS): silent one-shot location request (no banner spam)
+      # ------------------------------------------------------------------
+      - if:
+          - condition: template
+            value_template: "{{ (person | lower) in ['xingyang', 'both'] }}"
+        then:
+          - choose:
+              # iOS does not have high-accuracy toggle; send silent one-shot ping on turn_on or update
+              - conditions:
+                  - condition: template
+                    value_template: "{{ command in ['turn_on', 'update'] }}"
+                sequence:
+                  - action: notify.mobile_app_xingyang
+                    data:
+                      message: request_location_update
+              # Note: 'turn_off' is intentionally a no-op on iOS to prevent visible alert banners
+

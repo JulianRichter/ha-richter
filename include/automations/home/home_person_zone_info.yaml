@@ -2,7 +2,7 @@ automation:
   # ====================================================================
   # Home - Person Zone Info
   # - Plays natural TTS announcements when Julian or Xingyang depart, return, or reach zones
-  # - Enables/disables high accuracy GPS tracking on mobile devices accordingly
+  # - Optional high-accuracy GPS tracking dispatch via script.device_high_accuracy_gps
   # ====================================================================
 
   - id: "home_person_zone_info"
@@ -73,7 +73,7 @@ automation:
     # ------------------------------------------------------------------
     action:
       - choose:
-          # Julian left home: announce & enable high accuracy GPS
+          # Julian left home: announce departure
           - conditions:
               - condition: trigger
                 id: julian_left_home
@@ -83,13 +83,13 @@ automation:
                   person: "Julian"
                   event: "left_home"
                   entity_id: media_player.living_room
-              - action: notify.mobile_app_julian
-                data:
-                  message: command_high_accuracy_mode
-                  data:
-                    command: turn_on
+              # Optional on-demand GPS accuracy override:
+              # - action: script.device_high_accuracy_gps
+              #   data:
+              #     person: "Julian"
+              #     command: "turn_on"
 
-          # Xingyang left home: announce & enable high accuracy GPS
+          # Xingyang left home: announce departure
           - conditions:
               - condition: trigger
                 id: xingyang_left_home
@@ -99,13 +99,13 @@ automation:
                   person: "Xingyang"
                   event: "left_home"
                   entity_id: media_player.living_room
-              - action: notify.mobile_app_xingyang
-                data:
-                  message: command_high_accuracy_mode
-                  data:
-                    command: turn_on
+              # Optional on-demand GPS accuracy override:
+              # - action: script.device_high_accuracy_gps
+              #   data:
+              #     person: "Xingyang"
+              #     command: "turn_on"
 
-          # Julian returns home: announce & turn off high accuracy GPS
+          # Julian returns home: announce arrival
           - conditions:
               - condition: trigger
                 id: julian_returns_home
@@ -115,13 +115,13 @@ automation:
                   person: "Julian"
                   event: "returns_home"
                   entity_id: media_player.living_room
-              - action: notify.mobile_app_julian
-                data:
-                  message: command_high_accuracy_mode
-                  data:
-                    command: turn_off
+              # Optional on-demand GPS accuracy override:
+              # - action: script.device_high_accuracy_gps
+              #   data:
+              #     person: "Julian"
+              #     command: "turn_off"
 
-          # Xingyang returns home: announce & turn off high accuracy GPS
+          # Xingyang returns home: announce arrival
           - conditions:
               - condition: trigger
                 id: xingyang_returns_home
@@ -131,11 +131,11 @@ automation:
                   person: "Xingyang"
                   event: "returns_home"
                   entity_id: media_player.living_room
-              - action: notify.mobile_app_xingyang
-                data:
-                  message: command_high_accuracy_mode
-                  data:
-                    command: turn_off
+              # Optional on-demand GPS accuracy override:
+              # - action: script.device_high_accuracy_gps
+              #   data:
+              #     person: "Xingyang"
+              #     command: "turn_off"
 
           # Julian reached specific zone: announce location
           - conditions:

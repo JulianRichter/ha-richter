@@ -15,6 +15,10 @@ This document preserves operational knowledge and architectural invariants for H
   - **Hybrid Resident Tracking (GPS + Wi-Fi)**:
     - Companion App Wi-Fi SSID sensors (`sensor.julian_wifi_connection`, `sensor.xingyang_ssid`) feed template device trackers (`device_tracker.julian_wifi`, `device_tracker.xingyang_wifi` in [`include/template/template_presence.yaml`](include/template/template_presence.yaml)) matching home SSID (`Nudelauflauf`).
     - Adding these stationary trackers to `person.julian` and `person.xingyang` provides instant arrival detection (zero geofence lag) while GPS prevents false "away" triggers during phone Wi-Fi sleep at night.
+  - **Mobile GPS Tracking & On-Demand High Accuracy**:
+    - Standard presence relies on native OS geofencing (Apple CoreLocation on iOS, Google Play Services on Android) and Wi-Fi SSID detection without continuous high-accuracy GPS polling.
+    - `command_high_accuracy_mode` is Android-only. Sending it to iOS displays a visible text notification.
+    - [`script.device_high_accuracy_gps`](include/scripts/device_high_accuracy_gps.yaml) encapsulates mobile GPS controls safely: toggles Android foreground high-accuracy mode (`turn_on` / `turn_off`) and sends silent one-shot location pings (`request_location_update`) for iOS without alert spam.
 - **Morning Auto-Wake & Sunrise Architecture**:
   - Scheduled Alarm: [`bedroom_morning_routine.yaml`](include/automations/bedroom/bedroom_morning_routine.yaml) (and [`baby_room_morning_routine.yaml`](include/automations/baby_room/baby_room_morning_routine.yaml)) handles gentle wake-up (sunrise light effect, blinds opening, and bedside TTS greeting) without turning on `presence_home`. This preserves dim nightlight behavior for motion sensors between alarm time and dawn.
   - Sunrise Wake-Up: [`home_presence_detection.yaml`](include/automations/home/home_presence_detection.yaml) automatically turns `presence_home = on` silently at astronomical sunrise if residents are home (`group.residents = home`), shifting thermostats to daytime setpoints and enabling daytime motion lighting brightness.
